@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HuimanNet.App.ViewModels"
+             xmlns:loc="clr-namespace:HuimanNet.App.Localizacion"
+             xmlns:dto="clr-namespace:HuimanNet.Contracts.Documentos;assembly=HuimanNet.Contracts"
+             x:Class="HuimanNet.App.Views.DocumentosPage"
+             x:DataType="vm:DocumentosViewModel"
+             Title="{Binding Titulo}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <Border Grid.Row="0" Style="{StaticResource Tarjeta}" Margin="12,12,12,0" IsVisible="{Binding TieneError}">
+            <Label Text="{Binding MensajeDeError}" TextColor="{StaticResource Error}" />
+        </Border>
+
+        <RefreshView Grid.Row="1" Command="{Binding CargarCommand}" IsRefreshing="{Binding EstaOcupado, Mode=OneWay}">
+            <CollectionView ItemsSource="{Binding Documentos}" SelectionMode="None" Margin="12">
+                <CollectionView.EmptyView>
+                    <Label Text="{loc:T Clave=documentos.vacio}" Style="{StaticResource Tenue}"
+                           HorizontalTextAlignment="Center" Margin="0,40,0,0" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:DocumentoDto">
+                        <Border Style="{StaticResource Tarjeta}" Margin="0,0,0,10">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DocumentosViewModel}}, Path=SeleccionarDocumentoCommand, x:DataType=vm:DocumentosViewModel}"
+                                    CommandParameter="{Binding .}" />
+                            </Border.GestureRecognizers>
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
+                                <Label Grid.Row="0" Text="{Binding NombreArchivo}" Style="{StaticResource Subtitulo}" LineBreakMode="MiddleTruncation" />
+                                <Label Grid.Row="0" Grid.Column="1" Text="{Binding Estado, Converter={StaticResource Enumerado}}"
+                                       TextColor="{StaticResource Primario}" FontSize="12" />
+                                <Label Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource Tenue}">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="{Binding Tipo, Converter={StaticResource Enumerado}}" />
+                                            <Span Text=" · " />
+                                            <Span Text="{Binding TamanoBytes, Converter={StaticResource Tamano}}" />
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+                                <Label Grid.Row="2" Grid.ColumnSpan="2" Style="{StaticResource Tenue}" FontSize="12">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="{Binding CargadoPor}" />
+                                            <Span Text=" · " />
+                                            <Span Text="{Binding FechaSolicitud, Converter={StaticResource Fecha}}" />
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+
+        <Button Grid.Row="2" Margin="12" Text="{loc:T Clave=documentos.subir}" Command="{Binding SubirDocumentoCommand}"
+                IsVisible="{Binding PuedeSubir}" IsEnabled="{Binding EstaOcupado, Converter={StaticResource NoOcupado}}" />
+
+    </Grid>
+
+</ContentPage>

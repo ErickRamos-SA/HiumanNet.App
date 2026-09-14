@@ -1,0 +1,57 @@
+@* Campo numérico con etiqueta para formularios largos (incidencias, contratos,
+   razones sociales). Se enlaza con @bind-Valor. El valor viaja siempre con
+   cultura invariante: el navegador ya presenta el número en la del usuario. *@
+@using System.Globalization
+
+<div class="campo">
+    <label for="@_id">@Etiqueta</label>
+    <input id="@_id" type="number" step="@Paso" min="@Minimo" disabled="@Deshabilitado"
+           value="@Valor.ToString(CultureInfo.InvariantCulture)" @onchange="CambiarAsync" />
+    @if (Ayuda is not null)
+    {
+        <span class="ayuda">@Ayuda</span>
+    }
+</div>
+
+@code {
+    private readonly string _id = "n" + Guid.NewGuid().ToString("N")[..10];
+
+    /// <summary>Texto de la etiqueta.</summary>
+    [Parameter, EditorRequired]
+    public string Etiqueta { get; set; } = string.Empty;
+
+    /// <summary>Valor enlazado.</summary>
+    [Parameter]
+    public decimal Valor { get; set; }
+
+    /// <summary>Notificación de cambio para el enlace bidireccional.</summary>
+    [Parameter]
+    public EventCallback<decimal> ValorChanged { get; set; }
+
+    /// <summary>Incremento del control; <c>any</c> admite cualquier número de decimales.</summary>
+    [Parameter]
+    public string Paso { get; set; } = "any";
+
+    /// <summary>Valor mínimo aceptado por el control, o <c>null</c>.</summary>
+    [Parameter]
+    public string? Minimo { get; set; }
+
+    /// <summary>Texto de ayuda bajo el control, o <c>null</c>.</summary>
+    [Parameter]
+    public string? Ayuda { get; set; }
+
+    /// <summary>Indica si el control está deshabilitado.</summary>
+    [Parameter]
+    public bool Deshabilitado { get; set; }
+
+    private Task CambiarAsync(ChangeEventArgs argumentos)
+    {
+        // Un campo vacío equivale a cero: es lo que espera quien borra el valor.
+        decimal valor = decimal.TryParse(argumentos.Value?.ToString(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal leido)
+            ? leido
+            : 0m;
+
+        Valor = valor;
+        return ValorChanged.InvokeAsync(valor);
+    }
+}

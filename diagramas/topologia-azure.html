@@ -1,0 +1,588 @@
+<title>HuimanNet — Topología de red y despliegue en Azure</title>
+<style>
+  :root {
+    --ground:#f4f6f8; --surface:#ffffff; --surface-2:#edeff2; --surface-3:#e2e5ea;
+    --ink:#1c222b; --ink-2:#414a56; --ink-3:#6b7480;
+    --line:#d4d8de; --line-2:#b6bcc5;
+    --accent:#14396b; --accent-2:#1f5c8b; --accent-soft:#e4eaf3;
+    --net:#404b66; --net-soft:#e7e9ef; --net-line:#6b7591;
+    --core:#8a6520; --core-soft:#f4eede; --core-line:#a88238;
+    --ok:#1f5b3a; --ok-soft:#e3ede7;
+    --danger:#8c2a2a; --danger-soft:#f1e5e5;
+    --muted:#eef0f3; --muted-line:#a7adb6;
+
+    --font-display: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    --font-body: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    --font-mono: "Courier New", Courier, monospace;
+    --w:1180px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:#0b1016; --surface:#141c25; --surface-2:#1b242f; --surface-3:#222d3a;
+      --ink:#e6ecf2; --ink-2:#a3b4c6; --ink-3:#7b8da2;
+      --line:#26323f; --line-2:#354557;
+      --accent:#7fa3d4; --accent-2:#9dbbe4; --accent-soft:#1a2740;
+      --net:#9aa4c4; --net-soft:#22262f; --net-line:#5b6480;
+      --core:#c9a866; --core-soft:#2e2617; --core-line:#8a7440;
+      --ok:#7fb094; --ok-soft:#1a2a20;
+      --danger:#c78585; --danger-soft:#2e1c1c;
+      --muted:#1b242f; --muted-line:#3d4c5e;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0b1016; --surface:#141c25; --surface-2:#1b242f; --surface-3:#222d3a;
+    --ink:#e6ecf2; --ink-2:#a3b4c6; --ink-3:#7b8da2;
+    --line:#26323f; --line-2:#354557;
+    --accent:#7fa3d4; --accent-2:#9dbbe4; --accent-soft:#1a2740;
+    --net:#9aa4c4; --net-soft:#22262f; --net-line:#5b6480;
+    --core:#c9a866; --core-soft:#2e2617; --core-line:#8a7440;
+    --ok:#7fb094; --ok-soft:#1a2a20; --danger:#c78585; --danger-soft:#2e1c1c;
+    --muted:#1b242f; --muted-line:#3d4c5e;
+  }
+  :root[data-theme="light"]{
+    --ground:#f4f6f8; --surface:#ffffff; --surface-2:#edeff2; --surface-3:#e2e5ea;
+    --ink:#1c222b; --ink-2:#414a56; --ink-3:#6b7480;
+    --line:#d4d8de; --line-2:#b6bcc5;
+    --accent:#14396b; --accent-2:#1f5c8b; --accent-soft:#e4eaf3;
+    --net:#404b66; --net-soft:#e7e9ef; --net-line:#6b7591;
+    --core:#8a6520; --core-soft:#f4eede; --core-line:#a88238;
+    --ok:#1f5b3a; --ok-soft:#e3ede7; --danger:#8c2a2a; --danger-soft:#f1e5e5;
+    --muted:#eef0f3; --muted-line:#a7adb6;
+  }
+
+  body{background:var(--ground);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:var(--w);margin:0 auto;padding:0 24px 96px;}
+
+  header.masthead{border-bottom:2px solid var(--ink);padding:56px 0 20px;margin-bottom:40px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--net);margin-bottom:14px;}
+  h1{font-family:var(--font-display);font-size:clamp(30px,5vw,46px);font-weight:700;letter-spacing:-.022em;line-height:1.08;text-wrap:balance;margin-bottom:14px;}
+  .standfirst{font-size:17px;color:var(--ink-2);max-width:64ch;}
+  .metabar{display:flex;flex-wrap:wrap;gap:8px 28px;margin-top:24px;font-family:var(--font-mono);font-size:12px;color:var(--ink-3);}
+  .metabar b{color:var(--ink);font-weight:600;}
+
+  section{margin-top:64px;}
+  h2{font-family:var(--font-display);font-size:25px;font-weight:700;letter-spacing:-.014em;display:flex;align-items:baseline;gap:14px;padding-bottom:12px;margin-bottom:6px;border-bottom:1px solid var(--line);}
+  h2 .num{font-family:var(--font-mono);font-size:13px;font-weight:500;color:var(--net);letter-spacing:.06em;}
+  h3{font-family:var(--font-display);font-size:17px;font-weight:650;letter-spacing:-.008em;margin:32px 0 10px;}
+  .lede{color:var(--ink-2);max-width:70ch;margin-bottom:20px;}
+  p{max-width:70ch;} p+p{margin-top:12px;}
+
+  .canvas{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:20px;overflow-x:auto;margin-top:18px;}
+  .canvas svg{display:block;min-width:900px;width:100%;height:auto;}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-2);}
+  .legend span{display:inline-flex;align-items:center;gap:8px;}
+  .swatch{width:22px;height:12px;border-radius:2px;flex:none;}
+  .sw-rg{background:var(--surface-2);border:1.5px dashed var(--line-2);}
+  .sw-net{background:var(--net-soft);border:1.5px solid var(--net-line);}
+  .sw-svc{background:var(--accent-soft);border:1.5px solid var(--accent);}
+  .sw-core{background:var(--core-soft);border:2px solid var(--core-line);}
+
+  .tablewrap{overflow-x:auto;margin-top:18px;border:1px solid var(--line);border-radius:4px;}
+  table{width:100%;border-collapse:collapse;font-size:14px;background:var(--surface);min-width:620px;}
+  thead th{background:var(--surface-2);font-family:var(--font-mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;color:var(--ink-2);text-align:left;padding:11px 14px;border-bottom:1px solid var(--line-2);white-space:nowrap;}
+  tbody td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  td.mono,th.mono{font-family:var(--font-mono);font-size:12.5px;white-space:nowrap;}
+  td strong{font-weight:650;}
+  .sub{display:block;color:var(--ink-3);font-size:12.5px;margin-top:2px;}
+  code,.mono{font-family:var(--font-mono);font-size:.89em;}
+  code{background:var(--surface-2);padding:1px 5px;border-radius:3px;}
+
+  .chip{display:inline-block;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:2px 7px;border-radius:3px;white-space:nowrap;}
+  .c-f1{background:var(--ok-soft);color:var(--ok);}
+  .c-f3{background:var(--net-soft);color:var(--net);}
+  .c-no{background:var(--danger-soft);color:var(--danger);}
+
+  .note{border-left:3px solid var(--accent);background:var(--surface);padding:16px 20px;margin-top:22px;border-radius:0 4px 4px 0;font-size:14.5px;color:var(--ink-2);}
+  .note b{color:var(--ink);}
+  .note.net{border-left-color:var(--net);}
+  .note.warn{border-left-color:var(--core);}
+
+  ul.clean{list-style:none;margin-top:14px;display:flex;flex-direction:column;gap:9px;}
+  ul.clean li{position:relative;padding-left:20px;font-size:14.5px;color:var(--ink-2);max-width:74ch;}
+  ul.clean li::before{content:"";position:absolute;left:2px;top:.62em;width:6px;height:2px;background:var(--net);}
+  ul.clean li b{color:var(--ink);font-weight:650;}
+
+  footer{margin-top:80px;padding-top:22px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3);}
+  @media (max-width:640px){header.masthead{padding-top:36px;}.canvas{padding:12px;}section{margin-top:48px;}}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">HuimanNet · Portal de nómina · Microsoft Azure</div>
+  <h1>Topología de red y despliegue</h1>
+  <p class="standfirst">Fronteras de suscripción, región, grupos de recursos y red. Diagrama complementario al de arquitectura de componentes: aquí no se muestra qué hace cada servicio, sino <em>dónde vive</em> y <em>por dónde viaja el tráfico</em>.</p>
+  <div class="metabar">
+    <span><b>Fase 1</b> PaaS plana, sin VNet</span>
+    <span><b>Fase 3</b> Aislamiento con Private Endpoints</span>
+    <span><b>Región</b> única (por definir)</span>
+    <span><b>Entornos</b> dev · test · prod</span>
+  </div>
+</header>
+
+<!-- ══════════ 1. FASE 1 ══════════ -->
+<section id="fase1">
+  <h2><span class="num">01</span> Topología Fase 1 — plana, sin red virtual</h2>
+  <p class="lede">Todos los servicios son PaaS con endpoint público, restringido por el firewall de cada servicio. No existe VNet: es una decisión deliberada de costo y simplicidad para ≤ 500 usuarios, no una omisión.</p>
+
+  <div class="canvas">
+  <svg viewBox="0 0 1240 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Topología Fase 1: suscripción, región y grupos de recursos con servicios PaaS de endpoint público">
+    <defs>
+      <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+      </marker>
+
+      <!-- ═══════ Biblioteca de iconos ═══════
+           Glifos originales dibujados para este documento. No son los iconos
+           oficiales de Azure. Heredan color mediante currentColor. -->
+      <symbol id="ic-globe" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9.2"/><path d="M2.8 12h18.4"/>
+          <path d="M12 2.8c2.6 3.1 2.6 15.1 0 18.4-2.6-3.3-2.6-15.3 0-18.4z"/>
+        </g>
+      </symbol>
+      <symbol id="ic-monitor" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.5" y="3.8" width="19" height="13.4" rx="2.2"/><path d="M8.5 21h7M12 17.2V21"/>
+        </g>
+      </symbol>
+      <symbol id="ic-api" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8.6 6.8L3.4 12l5.2 5.2"/><path d="M15.4 6.8L20.6 12l-5.2 5.2"/><path d="M13.4 4.8l-2.8 14.4"/>
+        </g>
+      </symbol>
+      <symbol id="ic-db" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="12" cy="5.8" rx="7.6" ry="3.2"/>
+          <path d="M4.4 5.8v12.4c0 1.8 3.4 3.2 7.6 3.2s7.6-1.4 7.6-3.2V5.8"/>
+          <path d="M4.4 12c0 1.8 3.4 3.2 7.6 3.2s7.6-1.4 7.6-3.2"/>
+        </g>
+      </symbol>
+      <symbol id="ic-doc" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13.6 2.6H7.4a2.4 2.4 0 00-2.4 2.4v14a2.4 2.4 0 002.4 2.4h9.2a2.4 2.4 0 002.4-2.4V8z"/>
+          <path d="M13.4 2.6V8h5.6"/><path d="M8.6 13h6.8M8.6 16.6h4.6"/>
+        </g>
+      </symbol>
+      <symbol id="ic-queue" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3.4 6.6h11M3.4 12h11M3.4 17.4h11"/><path d="M17.6 9.2L20.8 12l-3.2 2.8"/>
+        </g>
+      </symbol>
+      <symbol id="ic-key" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="12" r="4.2"/><path d="M12.2 12h8.4"/><path d="M18 12v3.4M15.2 12v2.6"/>
+        </g>
+      </symbol>
+      <symbol id="ic-chart" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 3.6v16.8h16.4"/><path d="M7.4 16l3.6-4.2 3 2.6 4.6-6.2"/>
+        </g>
+      </symbol>
+      <symbol id="ic-shield" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2.6l7.6 3v6.2c0 4.4-3.1 7.9-7.6 9.6-4.5-1.7-7.6-5.2-7.6-9.6V5.6z"/>
+        </g>
+      </symbol>
+      <symbol id="ic-net" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="4.8" r="2.6"/><circle cx="5" cy="19.2" r="2.6"/><circle cx="19" cy="19.2" r="2.6"/>
+          <path d="M12 7.4v5.2M12 12.6l-5.6 4.2M12 12.6l5.6 4.2"/>
+        </g>
+      </symbol>
+      <symbol id="ic-subnet" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.8" y="5" width="18.4" height="14" rx="2.4" stroke-dasharray="3.4 2.4"/>
+          <circle cx="8.4" cy="12" r="1.9"/><circle cx="15.6" cy="12" r="1.9"/><path d="M10.3 12h3.4"/>
+        </g>
+      </symbol>
+      <symbol id="ic-link" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.2 14.4l-2.8 2.8a3.8 3.8 0 01-5.4-5.4l2.8-2.8"/>
+          <path d="M13.8 9.6l2.8-2.8a3.8 3.8 0 015.4 5.4l-2.8 2.8"/>
+          <path d="M9 15l6-6"/>
+        </g>
+      </symbol>
+      <symbol id="ic-dnszone" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9.4" cy="9.4" r="6.6"/><path d="M2.8 9.4h13.2"/>
+          <path d="M9.4 2.8c1.9 2.3 1.9 10.9 0 13.2-1.9-2.3-1.9-10.9 0-13.2z"/>
+          <path d="M13.4 19h7.8M13.4 22h5"/>
+        </g>
+      </symbol>
+    </defs>
+    <style>
+      .sub1  { fill:none; stroke:var(--ink-3); stroke-width:1.5; stroke-dasharray:7 5; rx:5; }
+      .reg1  { fill:none; stroke:var(--line-2); stroke-width:1.5; rx:5; }
+      .rg1   { fill:var(--surface-2); stroke:var(--line-2); stroke-width:1.5; stroke-dasharray:5 4; rx:4; }
+      .svc   { fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.5; rx:3; }
+      .svcc  { fill:var(--core-soft); stroke:var(--core-line); stroke-width:2.5; rx:3; }
+      .grp   { fill:var(--surface-3); stroke:var(--line-2); stroke-width:1.5; rx:4; }
+      .ext   { fill:var(--surface); stroke:var(--ink-3); stroke-width:1.5; rx:3; }
+      .bl    { font-family:var(--font-mono); font-size:10.5px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; fill:var(--ink-3); }
+      .t     { font-family:var(--font-body); font-size:13.5px; font-weight:650; fill:var(--ink); }
+      .tc    { font-family:var(--font-body); font-size:13.5px; font-weight:700; fill:var(--core); }
+      .ts    { font-family:var(--font-mono); font-size:10.5px; fill:var(--ink-3); }
+      .tsc   { font-family:var(--font-mono); font-size:10.5px; fill:var(--core); }
+      .fl    { stroke:var(--accent); stroke-width:2; fill:none; }
+      .lab   { font-family:var(--font-mono); font-size:10.5px; font-weight:600; fill:var(--ink-2); }
+      .i-a { color:var(--accent); } .i-c { color:var(--core); } .i-g { color:var(--ink-3); }
+    </style>
+
+    <!-- Internet -->
+    <rect class="ext" x="180" y="16" width="320" height="44"/>
+    <use href="#ic-globe" class="i-g" x="194" y="26" width="24" height="24"/>
+    <text class="t"  x="230" y="37">Internet</text>
+    <text class="ts" x="230" y="52">clientes web y móvil · HTTPS 443</text>
+
+    <!-- Suscripción -->
+    <rect class="sub1" x="20" y="82" width="1200" height="452"/>
+    <text class="bl" x="36" y="104">Suscripción de Azure</text>
+
+    <!-- Región -->
+    <rect class="reg1" x="40" y="118" width="1160" height="398"/>
+    <text class="bl" x="56" y="140">Región primaria — única</text>
+
+    <!-- rg-prod -->
+    <rect class="rg1" x="60" y="156" width="780" height="340"/>
+    <text class="bl" x="76" y="178">rg-huimannet-prod · bloqueo CanNotDelete</text>
+
+    <!-- App Service Plan -->
+    <rect class="grp" x="80" y="198" width="350" height="140"/>
+    <text class="bl" x="96" y="218">App Service Plan · B1/B2 Linux</text>
+    <rect class="svc" x="96" y="232" width="318" height="44"/>
+    <use href="#ic-monitor" class="i-a" x="108" y="243" width="22" height="22"/>
+    <text class="t"  x="138" y="251">app-huimannet-web</text>
+    <text class="ts" x="138" y="266">Blazor Server · HTTPS-only · TLS gestionado</text>
+    <rect class="svc" x="96" y="284" width="318" height="44"/>
+    <use href="#ic-api" class="i-a" x="108" y="295" width="22" height="22"/>
+    <text class="t"  x="138" y="303">app-huimannet-api</text>
+    <text class="ts" x="138" y="318">Minimal API AOT · JWT obligatorio</text>
+
+    <!-- SQL -->
+    <rect class="grp" x="450" y="198" width="370" height="94"/>
+    <text class="bl" x="466" y="218">Servidor lógico SQL</text>
+    <rect class="svc" x="466" y="230" width="338" height="48"/>
+    <use href="#ic-db" class="i-a" x="478" y="242" width="24" height="24"/>
+    <text class="t"  x="512" y="249">sqldb-huimannet</text>
+    <text class="ts" x="512" y="264">Serverless · firewall de servicio</text>
+
+    <!-- Storage -->
+    <rect class="grp" x="450" y="308" width="370" height="110"/>
+    <text class="bl" x="466" y="328">Cuenta de almacenamiento</text>
+    <rect class="svcc" x="466" y="340" width="164" height="36"/>
+    <use href="#ic-doc" class="i-c" x="476" y="349" width="19" height="19"/>
+    <text class="tc"  x="502" y="358">Blob · documentos</text>
+    <text class="tsc" x="502" y="371">por empresa</text>
+    <rect class="svc" x="644" y="340" width="160" height="36"/>
+    <use href="#ic-queue" class="i-a" x="654" y="349" width="19" height="19"/>
+    <text class="t"  x="680" y="358">Queue · avisos</text>
+    <text class="ts" x="680" y="371">notificaciones</text>
+    <text class="ts" x="466" y="400">firewall de servicio · versionado · soft delete · escaneo de malware</text>
+
+    <!-- Key Vault + App Insights -->
+    <rect class="svc" x="80" y="356" width="168" height="56"/>
+    <use href="#ic-key" class="i-a" x="94" y="370" width="22" height="22"/>
+    <text class="t"  x="124" y="378">Key Vault</text>
+    <text class="ts" x="124" y="393">firewall de servicio</text>
+    <rect class="svc" x="262" y="356" width="168" height="56"/>
+    <use href="#ic-chart" class="i-a" x="276" y="370" width="22" height="22"/>
+    <text class="t"  x="306" y="378">App Insights</text>
+    <text class="ts" x="306" y="393">telemetría</text>
+
+    <!-- nota fase 1 -->
+    <text class="lab" x="80" y="443">Sin red virtual. El control de acceso a datos son dos capas:</text>
+    <text class="lab" x="80" y="461">① firewall de cada servicio — sólo servicios de Azure de confianza e IP conocidas</text>
+    <text class="lab" x="80" y="479">② Managed Identity — no existen contraseñas en las cadenas de conexión</text>
+
+    <!-- rg-dev -->
+    <rect class="rg1" x="860" y="156" width="320" height="104"/>
+    <text class="bl" x="876" y="178">rg-huimannet-dev</text>
+    <text class="ts" x="876" y="200">réplica reducida · apagable fuera de horario</text>
+    <text class="ts" x="876" y="218">App Service B1 · SQL serverless mínimo</text>
+    <text class="ts" x="876" y="236">cuenta de almacenamiento propia</text>
+
+    <!-- rg-test -->
+    <rect class="rg1" x="860" y="280" width="320" height="104"/>
+    <text class="bl" x="876" y="302">rg-huimannet-test</text>
+    <text class="ts" x="876" y="324">efímero · se crea desde Bicep</text>
+    <text class="ts" x="876" y="342">se destruye al terminar la validación</text>
+    <text class="ts" x="876" y="360">costo cercano a cero</text>
+
+    <!-- rg-shared -->
+    <rect class="rg1" x="860" y="404" width="320" height="92"/>
+    <text class="bl" x="876" y="426">rg-huimannet-shared</text>
+    <text class="ts" x="876" y="448">Log Analytics Workspace</text>
+    <text class="ts" x="876" y="466">retención de logs y auditoría</text>
+    <text class="ts" x="876" y="484">compartido por los tres entornos</text>
+
+    <!-- flujos -->
+    <path class="fl" d="M340,60 L340,228" marker-end="url(#a1)"/>
+    <text class="lab" x="350" y="150">entrada pública</text>
+    <text class="lab" x="350" y="166">HTTPS 443</text>
+
+    <path class="fl" d="M430,254 L462,250" marker-end="url(#a1)"/>
+    <path class="fl" d="M430,300 L462,352" marker-end="url(#a1)"/>
+    <path class="fl" d="M214,338 L182,352" marker-end="url(#a1)"/>
+  </svg>
+  </div>
+
+  <div class="legend">
+    <span><i class="swatch sw-rg"></i> Grupo de recursos</span>
+    <span><i class="swatch sw-svc"></i> Servicio PaaS</span>
+    <span><i class="swatch sw-core"></i> Almacén de documentos</span>
+  </div>
+
+  <div class="note warn">
+    <b>Lo que esta topología acepta conscientemente.</b> Los servicios de datos conservan su endpoint público, aunque cerrado por firewall. El riesgo residual es que una regla mal configurada abra el acceso: por eso Azure Policy exige HTTPS y TLS 1.2+, y el CSPM gratuito de Defender for Cloud alerta si una cuenta de almacenamiento queda expuesta. Cerrar por completo la superficie pública exige Private Endpoints, y eso es la Fase 3.
+  </div>
+</section>
+
+<!-- ══════════ 2. FASE 3 ══════════ -->
+<section id="fase3">
+  <h2><span class="num">02</span> Topología Fase 3 — aislamiento con red virtual</h2>
+  <p class="lede">Topología objetivo cuando lo exija cumplimiento o el volumen de usuarios. El cómputo se integra a una VNet para su tráfico saliente, y los servicios de datos sólo son alcanzables por dirección IP privada.</p>
+
+  <div class="canvas">
+  <svg viewBox="0 0 1240 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Topología Fase 3: VNet con subred delegada, subred de private endpoints, zonas DNS privadas y servicios PaaS sin acceso público">
+    <defs>
+      <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--net)"/>
+      </marker>
+      <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--muted-line)"/>
+      </marker>
+    </defs>
+    <style>
+      .vnet  { fill:var(--net-soft); stroke:var(--net-line); stroke-width:2; rx:5; }
+      .snet  { fill:var(--surface); stroke:var(--net-line); stroke-width:1.5; stroke-dasharray:6 4; rx:4; }
+      .pe    { fill:var(--net-soft); stroke:var(--net); stroke-width:1.5; rx:3; }
+      .svc2  { fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.5; rx:3; }
+      .svcc2 { fill:var(--core-soft); stroke:var(--core-line); stroke-width:2.5; rx:3; }
+      .grp2  { fill:var(--surface-3); stroke:var(--line-2); stroke-width:1.5; rx:4; }
+      .ext2  { fill:var(--surface); stroke:var(--ink-3); stroke-width:1.5; rx:3; }
+      .dns   { fill:var(--surface); stroke:var(--net-line); stroke-width:1.5; rx:4; }
+      .bl2   { font-family:var(--font-mono); font-size:10.5px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; fill:var(--net); }
+      .blg   { font-family:var(--font-mono); font-size:10.5px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; fill:var(--ink-3); }
+      .t2    { font-family:var(--font-body); font-size:13.5px; font-weight:650; fill:var(--ink); }
+      .tc2   { font-family:var(--font-body); font-size:13.5px; font-weight:700; fill:var(--core); }
+      .ts2   { font-family:var(--font-mono); font-size:10.5px; fill:var(--ink-3); }
+      .tsn   { font-family:var(--font-mono); font-size:10.5px; fill:var(--net); }
+      .tsc2  { font-family:var(--font-mono); font-size:10.5px; fill:var(--core); }
+      .fl2   { stroke:var(--net); stroke-width:2; fill:none; }
+      .fd2   { stroke:var(--muted-line); stroke-width:1.5; stroke-dasharray:4 4; fill:none; }
+      .lab2  { font-family:var(--font-mono); font-size:10.5px; font-weight:600; fill:var(--net); }
+      .labg  { font-family:var(--font-mono); font-size:10.5px; font-weight:600; fill:var(--ink-3); }
+      .nsg   { font-family:var(--font-mono); font-size:9.5px; font-weight:700; letter-spacing:.08em; fill:var(--net); }
+      .i-a { color:var(--accent); } .i-c { color:var(--core); }
+      .i-g { color:var(--ink-3); }  .i-n { color:var(--net); }
+    </style>
+
+    <!-- Internet -->
+    <rect class="ext2" x="60" y="20" width="300" height="44"/>
+    <use href="#ic-globe" class="i-g" x="74" y="31" width="22" height="22"/>
+    <text class="t2" x="104" y="41">Internet</text>
+    <text class="ts2" x="104" y="56">clientes web y móvil</text>
+
+    <!-- Front Door -->
+    <rect class="svc2" x="60" y="96" width="300" height="52"/>
+    <use href="#ic-shield" class="i-a" x="74" y="110" width="24" height="24"/>
+    <text class="t2" x="106" y="118">Front Door + WAF</text>
+    <text class="ts2" x="106" y="134">TLS · OWASP · CDN · rate limiting</text>
+
+    <!-- App Service Plan -->
+    <rect class="grp2" x="60" y="186" width="300" height="128"/>
+    <text class="blg" x="76" y="206">App Service Plan · entrada pública</text>
+    <rect class="svc2" x="76" y="220" width="268" height="40"/>
+    <use href="#ic-monitor" class="i-a" x="88" y="229" width="21" height="21"/>
+    <text class="t2" x="116" y="238">app-huimannet-web</text>
+    <text class="ts2" x="116" y="252">Blazor Server</text>
+    <rect class="svc2" x="76" y="266" width="268" height="40"/>
+    <use href="#ic-api" class="i-a" x="88" y="275" width="21" height="21"/>
+    <text class="t2" x="116" y="284">app-huimannet-api</text>
+    <text class="ts2" x="116" y="298">Minimal API AOT</text>
+
+    <!-- Zonas DNS privadas -->
+    <rect class="dns" x="800" y="186" width="380" height="150"/>
+    <use href="#ic-dnszone" class="i-n" x="816" y="196" width="22" height="22"/>
+    <text class="bl2" x="846" y="208">Zonas DNS privadas · vinculadas a la VNet</text>
+    <text class="ts2" x="816" y="240">privatelink.database.windows.net</text>
+    <text class="ts2" x="816" y="260">privatelink.blob.core.windows.net</text>
+    <text class="ts2" x="816" y="280">privatelink.vaultcore.azure.net</text>
+    <text class="labg" x="816" y="306">Sin estas zonas, el nombre público del</text>
+    <text class="labg" x="816" y="322">servicio seguiría resolviendo a IP pública</text>
+
+    <!-- VNET -->
+    <rect class="vnet" x="60" y="360" width="700" height="330"/>
+    <use href="#ic-net" class="i-n" x="76" y="370" width="20" height="20"/>
+    <text class="bl2" x="104" y="384">Red virtual · vnet-huimannet · 10.0.0.0/16</text>
+
+    <!-- snet-app -->
+    <rect class="snet" x="80" y="400" width="660" height="86"/>
+    <use href="#ic-subnet" class="i-n" x="96" y="406" width="19" height="19"/>
+    <text class="bl2" x="122" y="420">snet-app · 10.0.1.0/24</text>
+    <text class="nsg" x="640" y="420">NSG</text>
+    <text class="ts2" x="96" y="442">Subred delegada a Microsoft.Web/serverFarms</text>
+    <text class="ts2" x="96" y="460">Recibe el tráfico saliente del App Service (VNet Integration)</text>
+    <text class="ts2" x="96" y="476">El App Service no vive en la subred: sólo inyecta su salida</text>
+
+    <!-- snet-pep -->
+    <rect class="snet" x="80" y="506" width="660" height="166"/>
+    <use href="#ic-subnet" class="i-n" x="96" y="512" width="19" height="19"/>
+    <text class="bl2" x="122" y="526">snet-pep · 10.0.2.0/24</text>
+    <text class="nsg" x="640" y="526">NSG</text>
+
+    <rect class="pe" x="150" y="530" width="280" height="40"/>
+    <use href="#ic-link" class="i-n" x="162" y="539" width="21" height="21"/>
+    <text class="t2" x="190" y="548">pep-sql</text>
+    <text class="tsn" x="190" y="562">10.0.2.4 · NIC privada</text>
+
+    <rect class="pe" x="150" y="578" width="280" height="40"/>
+    <use href="#ic-link" class="i-n" x="162" y="587" width="21" height="21"/>
+    <text class="t2" x="190" y="596">pep-blob</text>
+    <text class="tsn" x="190" y="610">10.0.2.5 · NIC privada</text>
+
+    <rect class="pe" x="150" y="626" width="280" height="40"/>
+    <use href="#ic-link" class="i-n" x="162" y="635" width="21" height="21"/>
+    <text class="t2" x="190" y="644">pep-kv</text>
+    <text class="tsn" x="190" y="658">10.0.2.6 · NIC privada</text>
+
+    <!-- Anotaciones colocadas en el hueco entre flechas (y=550/598/646) para no cruzarlas -->
+    <text class="labg" x="450" y="576">Directivas de red de private endpoint deshabilitadas</text>
+    <text class="labg" x="450" y="624">Una interfaz de red por servicio, con IP del rango</text>
+
+    <!-- Servicios PaaS destino -->
+    <rect class="grp2" x="800" y="506" width="380" height="166"/>
+    <text class="blg" x="816" y="526">Servicios PaaS · acceso público deshabilitado</text>
+
+    <rect class="svc2" x="816" y="530" width="348" height="40"/>
+    <use href="#ic-db" class="i-a" x="828" y="539" width="21" height="21"/>
+    <text class="t2" x="856" y="548">Azure SQL Database</text>
+    <text class="ts2" x="856" y="562">public network access: disabled</text>
+
+    <rect class="svcc2" x="816" y="578" width="348" height="40"/>
+    <use href="#ic-doc" class="i-c" x="828" y="587" width="21" height="21"/>
+    <text class="tc2" x="856" y="596">Blob Storage · documentos</text>
+    <text class="tsc2" x="856" y="610">public network access: disabled</text>
+
+    <rect class="svc2" x="816" y="626" width="348" height="40"/>
+    <use href="#ic-key" class="i-a" x="828" y="635" width="21" height="21"/>
+    <text class="t2" x="856" y="644">Key Vault</text>
+    <text class="ts2" x="856" y="658">public network access: disabled</text>
+
+    <!-- flujos -->
+    <path class="fl2" d="M210,64 L210,92" marker-end="url(#a2)"/>
+    <path class="fl2" d="M210,148 L210,182" marker-end="url(#a2)"/>
+    <path class="fl2" d="M210,314 L210,396" marker-end="url(#a2)"/>
+    <text class="lab2" x="222" y="342">VNet Integration</text>
+    <text class="lab2" x="222" y="358">tráfico saliente</text>
+
+    <!-- trunk snet-app -> peps -->
+    <path class="fl2" d="M120,486 L120,646"/>
+    <path class="fl2" d="M120,550 L146,550" marker-end="url(#a2)"/>
+    <path class="fl2" d="M120,598 L146,598" marker-end="url(#a2)"/>
+    <path class="fl2" d="M120,646 L146,646" marker-end="url(#a2)"/>
+
+    <!-- peps -> servicios -->
+    <path class="fl2" d="M434,550 L812,550" marker-end="url(#a2)"/>
+    <path class="fl2" d="M434,598 L812,598" marker-end="url(#a2)"/>
+    <path class="fl2" d="M434,646 L812,646" marker-end="url(#a2)"/>
+    <text class="lab2" x="560" y="542">Private Link · nunca sale a Internet</text>
+
+    <!-- dns -> vnet -->
+    <path class="fd2" d="M860,340 L784,392" marker-end="url(#a3)"/>
+    <text class="labg" x="856" y="356" text-anchor="end">resolución</text>
+  </svg>
+  </div>
+
+  <div class="legend">
+    <span><i class="swatch sw-net"></i> Red virtual y subredes</span>
+    <span><i class="swatch sw-svc"></i> Servicio PaaS</span>
+    <span><i class="swatch sw-core"></i> Almacén de documentos</span>
+  </div>
+
+  <div class="note">
+    <b>Sobre los iconos.</b> Son glifos originales dibujados para este documento y heredan el color del contenedor, por lo que funcionan en tema claro y oscuro. <b>No son los iconos oficiales de Azure Architecture Icons.</b> Para una presentación que requiera la iconografía corporativa de Microsoft, exporta a draw.io y sustitúyelos por el set oficial integrado en <span class="mono">Más formas → Redes → Azure</span>.
+  </div>
+
+  <div class="note net">
+    <b>Los tres detalles que suelen fallar al implementar esta topología.</b> Primero, la subred de integración debe estar <b>delegada</b> a <code>Microsoft.Web/serverFarms</code> y no puede alojar nada más. Segundo, un Private Endpoint sin su <b>zona DNS privada vinculada a la VNet</b> no sirve de nada: el nombre público del servicio seguiría resolviendo a la IP pública y la conexión fallaría al tener el acceso público deshabilitado. Tercero, la integración de VNet del App Service afecta sólo al <b>tráfico saliente</b>; la entrada sigue llegando por el endpoint público del servicio, y eso es precisamente lo que Front Door y el WAF protegen.
+  </div>
+</section>
+
+<!-- ══════════ 3. DIRECCIONAMIENTO ══════════ -->
+<section id="direccionamiento">
+  <h2><span class="num">03</span> Plan de direccionamiento</h2>
+  <p class="lede">Rangos propuestos para la Fase 3. El espacio se reserva ahora para evitar solapamientos si más adelante aparece conectividad híbrida o emparejamiento con otra red.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead>
+      <tr><th>Recurso</th><th class="mono">Rango CIDR</th><th class="mono">IP útiles</th><th>Propósito y restricciones</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>vnet-huimannet</strong></td><td class="mono">10.0.0.0/16</td><td class="mono">65 531</td><td>Espacio de direcciones de la red virtual regional.</td></tr>
+      <tr><td><strong>snet-app</strong><span class="sub">Integración de salida del App Service</span></td><td class="mono">10.0.1.0/24</td><td class="mono">251</td><td>Delegada a <code>Microsoft.Web/serverFarms</code>. Uso exclusivo: no admite otros recursos. Cada instancia del plan consume una dirección.</td></tr>
+      <tr><td><strong>snet-pep</strong><span class="sub">Interfaces de los Private Endpoints</span></td><td class="mono">10.0.2.0/24</td><td class="mono">251</td><td>Directivas de red de private endpoint deshabilitadas. Una NIC por servicio conectado.</td></tr>
+      <tr><td>Reserva de crecimiento</td><td class="mono">10.0.3.0/24 →</td><td class="mono">—</td><td>Sin asignar. Disponible para futuras subredes (Container Apps, agentes de compilación, bastión).</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <b>Por qué /24 y no algo más ajustado.</b> Azure reserva cinco direcciones por subred, y la subred delegada del App Service consume direcciones al escalar instancias y durante los despliegues sin caída. Un /24 cuesta lo mismo que un /27 —el direccionamiento privado es gratuito— y evita tener que rehacer la red al crecer, que sí es caro en tiempo.
+  </div>
+</section>
+
+<!-- ══════════ 4. COMPARACIÓN ══════════ -->
+<section id="comparacion">
+  <h2><span class="num">04</span> Qué cambia entre una topología y otra</h2>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Aspecto</th><th>Fase 1 — plana</th><th>Fase 3 — aislada</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Red virtual</strong></td><td><span class="chip c-no">No existe</span></td><td><span class="chip c-f3">VNet + 2 subredes</span></td></tr>
+      <tr><td><strong>Acceso a datos</strong></td><td>Endpoint público restringido por firewall de servicio</td><td>Sólo IP privada; acceso público deshabilitado</td></tr>
+      <tr><td><strong>Resolución de nombres</strong></td><td>DNS público de Azure</td><td>Zonas DNS privadas vinculadas a la VNet</td></tr>
+      <tr><td><strong>Entrada de tráfico</strong></td><td>Directa al App Service con TLS gestionado</td><td>Front Door + WAF delante del App Service</td></tr>
+      <tr><td><strong>Superficie expuesta</strong></td><td>Endpoints públicos cerrados por regla</td><td>Sólo el frontal web; los datos no son alcanzables desde Internet</td></tr>
+      <tr><td><strong>Costo adicional</strong></td><td class="mono">USD 0</td><td class="mono">≈ USD 57 / mes<span class="sub">3 endpoints + Front Door Standard</span></td></tr>
+      <tr><td><strong>Cambios en la aplicación</strong></td><td>—</td><td><strong>Ninguno.</strong> Es un cambio de infraestructura: las cadenas de conexión y la Managed Identity no se tocan</td></tr>
+      <tr><td><strong>Disparador</strong></td><td>Punto de partida</td><td>Requisito de cumplimiento, auditoría externa o exposición pública con tráfico real</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note net">
+    <b>El punto que hace viable empezar plano.</b> Migrar de la Fase 1 a la Fase 3 no toca una sola línea de código de la aplicación: se crea la red, se añaden los endpoints, se vinculan las zonas DNS y se deshabilita el acceso público. Si el acceso a datos se hubiera resuelto con contraseñas en cadenas de conexión en lugar de Managed Identity, esta migración sí obligaría a cambios y rotaciones. La decisión de seguridad tomada el día 1 es la que mantiene barata la evolución.
+  </div>
+</section>
+
+<!-- ══════════ 5. GOBIERNO ══════════ -->
+<section id="gobierno">
+  <h2><span class="num">05</span> Topología de gestión</h2>
+  <p class="lede">Jerarquía de control que aplica a ambas fases, independiente de la red.</p>
+
+  <ul class="clean">
+    <li><b>Inquilino de Microsoft Entra.</b> Frontera de identidad. Emite los JWT y aloja las identidades administradas de cada aplicación.</li>
+    <li><b>Suscripción única.</b> Frontera de facturación y de cuota. Con tres entornos de este tamaño no se justifica separar suscripciones; los grupos de recursos y el RBAC bastan para aislarlos.</li>
+    <li><b>Grupos de recursos por entorno.</b> <code>dev</code>, <code>test</code>, <code>prod</code> y un <code>shared</code> para el workspace de Log Analytics. El de producción lleva bloqueo <code>CanNotDelete</code>.</li>
+    <li><b>RBAC de privilegio mínimo.</b> Permisos asignados por grupo de recursos, nunca a nivel de suscripción, y con MFA obligatorio para las cuentas con acceso a producción.</li>
+    <li><b>Azure Policy a nivel de suscripción.</b> Exige HTTPS, TLS 1.2+ y etiquetas obligatorias en todo recurso nuevo, en los tres entornos.</li>
+    <li><b>Despliegue por infraestructura como código.</b> Las mismas plantillas Bicep con distintos parámetros generan los tres entornos; la topología de red de la Fase 3 se activa cambiando un parámetro, no reescribiendo plantillas.</li>
+    <li><b>Etiquetas de gobierno.</b> Entorno, propietario y centro de costo en cada recurso, que es lo que permite que el presupuesto por entorno sea medible.</li>
+  </ul>
+
+  <div class="note">
+    <b>Continuidad regional.</b> Ambas topologías usan una sola región. La región emparejada sólo entra en juego si se decide implementar recuperación ante desastre geográfica, evaluada en la Fase 3 mediante geo-réplica de SQL y almacenamiento GRS. Mientras tanto, la recuperación se apoya en respaldos con restauración a un punto en el tiempo y en el redespliegue desde Bicep.
+  </div>
+</section>
+
+<footer>
+  HuimanNet · Topología de red y despliegue en Azure. Complementa al diagrama de arquitectura de componentes y a <span class="mono">ARQUITECTURA.md</span>. Los rangos CIDR son una propuesta inicial: confírmalos antes de aprovisionar si existe conectividad con redes corporativas.
+</footer>
+
+</div>

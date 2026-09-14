@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Paleta del portal, alineada con la de la web (wwwroot/app.css). -->
+    <Color x:Key="Primario">#14568C</Color>
+    <Color x:Key="PrimarioOscuro">#0F4271</Color>
+    <Color x:Key="Superficie">#FFFFFF</Color>
+    <Color x:Key="SuperficieOscura">#16212B</Color>
+    <Color x:Key="Fondo">#F6F7F9</Color>
+    <Color x:Key="FondoOscuro">#101820</Color>
+    <Color x:Key="Texto">#1F2933</Color>
+    <Color x:Key="TextoInverso">#F2F5F8</Color>
+    <Color x:Key="Tenue">#6B7784</Color>
+    <Color x:Key="Borde">#D9DEE5</Color>
+    <Color x:Key="Exito">#107C41</Color>
+    <Color x:Key="Error">#A4262C</Color>
+    <Color x:Key="Aviso">#B25E00</Color>
+
+</ResourceDictionary>

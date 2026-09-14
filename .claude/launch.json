@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "huimannet-web",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/HuimanNet.Web/HuimanNet.Web.csproj", "--launch-profile", "HuimanNet.Web"],
+      "port": 7108,
+      "url": "https://localhost:7108"
+    },
+    {
+      "name": "huimannet-api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/HuimanNet.Api/HuimanNet.Api.csproj", "--launch-profile", "HuimanNet.Api"],
+      "port": 7208,
+      "url": "https://localhost:7208"
+    }
+  ]
+}

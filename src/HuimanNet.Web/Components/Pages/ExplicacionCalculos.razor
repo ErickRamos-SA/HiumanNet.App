@@ -1,0 +1,201 @@
+@page "/explicacion"
+@inherits ComponenteDelPortal
+
+<PageTitle>@T["explicacion.titulo"] · HuimanNet</PageTitle>
+
+<div class="encabezado-pagina">
+    <div>
+        <h1>@T["explicacion.titulo"]</h1>
+        <p class="subtitulo">@T["explicacion.subtitulo"]</p>
+    </div>
+    <div class="acciones">
+        <div class="campo">
+            <label for="fecha">@T["explicacion.fechaReferencia"]</label>
+            <input id="fecha" type="date" @bind="_fecha" @bind:after="() => EjecutarAsync(CargarDatosAsync)" />
+        </div>
+    </div>
+</div>
+
+<div class="pestanas">
+    @foreach (EsquemaDePago esquema in Esquemas)
+    {
+        <button type="button" class="pestana @(esquema == _esquema ? "activa" : null)" @onclick="() => SeleccionarAsync(esquema)">
+            @T.Enumerado(esquema)
+        </button>
+    }
+</div>
+
+<Mensajes Error="@MensajeDeError" />
+
+@if (_explicacion is { } e)
+{
+    @if (e.ErrorDeCatalogo is not null)
+    {
+        <div class="aviso aviso-advertencia"><Icono Nombre="alerta" /> <span>@T["explicacion.errorDeCatalogo"] @e.ErrorDeCatalogo</span></div>
+    }
+
+    <section class="tarjeta">
+        @if (e.Secciones.Count == 0)
+        {
+            <p class="tenue">@T["explicacion.sinNarrativa"]</p>
+        }
+        @foreach (ExplicacionDeCalculoDto seccion in e.Secciones.OrderBy(s => s.Orden))
+        {
+            <article class="explicacion-seccion">
+                <h2>@seccion.Titulo</h2>
+                <div class="prosa">@seccion.Cuerpo</div>
+            </article>
+        }
+    </section>
+
+    <section class="tarjeta">
+        <header class="tarjeta-cabecera">
+            <h2>@T["explicacion.conceptos"]</h2>
+            <span class="tenue">@T.Formato("explicacion.conceptosCuenta", e.Conceptos.Count, Fecha(e.FechaDeReferencia))</span>
+        </header>
+        <p class="tenue">@T["explicacion.conceptosAyuda"]</p>
+
+        @foreach (IGrouping<TipoDeConcepto, ConceptoDeNominaDto> grupo in e.Conceptos.OrderBy(c => c.Orden).GroupBy(c => c.Tipo).OrderBy(g => (int)g.Key))
+        {
+            <h3 style="margin-top:1.25rem">@T.Enumerado(grupo.Key)</h3>
+            @foreach (ConceptoDeNominaDto concepto in grupo)
+            {
+                <div class="concepto-explicado">
+                    <header>
+                        <strong>@concepto.Nombre</strong>
+                        <code class="tenue">@concepto.Clave</code>
+                        @if (concepto.EmpresaId is not null)
+                        {
+                            <span class="etiqueta etiqueta-violeta">@T["catalogos.propioDeEmpresa"]</span>
+                        }
+                        @if (!concepto.VisibleEnRecibo)
+                        {
+                            <span class="etiqueta">@T["catalogos.intermedio"]</span>
+                        }
+                    </header>
+                    @if (!string.IsNullOrWhiteSpace(concepto.Descripcion))
+                    {
+                        <p class="tenue">@concepto.Descripcion</p>
+                    }
+                    <code class="formula">@concepto.Formula</code>
+                </div>
+            }
+        }
+    </section>
+
+    <div class="rejilla-2">
+        <section class="tarjeta tarjeta-tabla">
+            <header class="tarjeta-cabecera"><h2>@T["explicacion.parametros"]</h2></header>
+            <div class="tabla-contenedor">
+                <table class="tabla tabla-compacta">
+                    <thead>
+                        <tr><th>@T["catalogos.clave"]</th><th>@T["comun.descripcion"]</th><th class="numero">@T["catalogos.valor"]</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (ParametroDeCalculoDto parametro in e.Parametros.OrderBy(p => p.Grupo).ThenBy(p => p.Clave))
+                        {
+                            <tr>
+                                <td><code>@parametro.Clave</code></td>
+                                <td>@parametro.Descripcion</td>
+                                <td class="numero">@parametro.Valor.ToString("#,##0.######", T.Cultura) <span class="tenue">@parametro.Unidad</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="tarjeta tarjeta-tabla">
+            <header class="tarjeta-cabecera"><h2>@T["explicacion.variables"]</h2></header>
+            <div class="tabla-contenedor">
+                <table class="tabla tabla-compacta">
+                    <thead>
+                        <tr><th>@T["catalogos.clave"]</th><th>@T["comun.descripcion"]</th><th>@T["explicacion.origen"]</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (VariableDeCalculoDto variable in e.Variables)
+                        {
+                            <tr><td><code>@variable.Clave</code></td><td>@variable.Descripcion</td><td class="tenue">@variable.Origen</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    @foreach (TablaDeRangosDto tabla in e.Tablas)
+    {
+        <section class="tarjeta tarjeta-tabla">
+            <header class="tarjeta-cabecera">
+                <h2>@tabla.Descripcion</h2>
+                <code class="tenue">TABLA("@tabla.Clave"; …)</code>
+            </header>
+            <div class="tabla-contenedor">
+                <table class="tabla tabla-compacta">
+                    <thead>
+                        <tr>
+                            <th class="numero">@T["catalogos.limiteInferior"]</th>
+                            <th class="numero">@T["catalogos.limiteSuperior"]</th>
+                            <th class="numero">@T["catalogos.cuotaFija"]</th>
+                            <th class="numero">@T["catalogos.porcentaje"]</th>
+                            <th class="numero">@T["catalogos.valor"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (RangoDeTablaDto rango in tabla.Rangos)
+                        {
+                            <tr>
+                                <td class="numero">@Moneda(rango.LimiteInferior)</td>
+                                <td class="numero">@(rango.LimiteSuperior is { } superior ? Moneda(superior) : "∞")</td>
+                                <td class="numero">@Moneda(rango.CuotaFija)</td>
+                                <td class="numero">@((rango.Porcentaje * 100m).ToString("0.####", T.Cultura)) %</td>
+                                <td class="numero">@rango.Valor.ToString("#,##0.####", T.Cultura)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+
+    <section class="tarjeta tarjeta-tabla">
+        <header class="tarjeta-cabecera"><h2>@T["explicacion.funciones"]</h2></header>
+        <div class="tabla-contenedor">
+            <table class="tabla tabla-compacta">
+                <thead><tr><th>@T["explicacion.firma"]</th><th>@T["comun.descripcion"]</th></tr></thead>
+                <tbody>
+                    @foreach (FuncionDeFormulaDto funcion in e.Funciones)
+                    {
+                        <tr><td><code>@funcion.Firma</code></td><td>@funcion.Descripcion</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+else if (!Inicializado || EstaCargando)
+{
+    <div class="cargando"><span class="giro"></span> @T["comun.cargando"]</div>
+}
+
+@code {
+    private static readonly EsquemaDePago[] Esquemas = [EsquemaDePago.Imss, EsquemaDePago.Sindicato, EsquemaDePago.Honorarios];
+
+    private EsquemaDePago _esquema = EsquemaDePago.Imss;
+    private DateOnly? _fecha;
+    private ExplicacionCompletaDto? _explicacion;
+
+    /// <inheritdoc/>
+    protected override bool DependeDeEmpresa => true;
+
+    /// <inheritdoc/>
+    protected override async Task CargarDatosAsync()
+        => _explicacion = await Casos.ConsultarAsync<ObtenerExplicacionCompletaQuery, ExplicacionCompletaDto>(
+            new ObtenerExplicacionCompletaQuery(_esquema, T.Idioma, EmpresaDeConsulta, _fecha));
+
+    private Task SeleccionarAsync(EsquemaDePago esquema)
+    {
+        _esquema = esquema;
+        return EjecutarAsync(CargarDatosAsync);
+    }
+}

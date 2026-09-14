@@ -1,0 +1,13 @@
+@* Indica si un elemento del catálogo de cálculo es global o propio de una
+   empresa (sustitución que prevalece sobre el global para esa empresa). *@
+@inject Traductor T
+
+<span class="etiqueta @(EmpresaId is null ? "etiqueta-info" : "etiqueta-violeta")">
+    @(EmpresaId is null ? T["catalogos.global"] : T["catalogos.propioDeEmpresa"])
+</span>
+
+@code {
+    /// <summary>Empresa propietaria, o <c>null</c> si el elemento es global.</summary>
+    [Parameter]
+    public Guid? EmpresaId { get; set; }
+}

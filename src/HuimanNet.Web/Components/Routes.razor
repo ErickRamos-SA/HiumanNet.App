@@ -1,0 +1,16 @@
+@* Enrutador del portal. Todo el sitio exige autenticación: la política de
+   respaldo se declara en Program.cs; si la sesión caduca con el circuito
+   abierto, se redirige a la pantalla de acceso. *@
+<Router AppAssembly="typeof(Program).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <NotAuthorized>
+                <RedirigirAlAcceso />
+            </NotAuthorized>
+            <Authorizing>
+                <div class="cargando"><span class="giro"></span></div>
+            </Authorizing>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>

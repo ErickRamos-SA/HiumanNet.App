@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:conv="clr-namespace:HuimanNet.App.Converters"
+             x:Class="HuimanNet.App.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Convertidores compartidos; los que muestran texto usan el idioma elegido. -->
+            <conv:ConvertidorDeNegacion x:Key="NoOcupado" />
+            <conv:ConvertidorDeNoNulo x:Key="NoNulo" />
+            <conv:ConvertidorDeTamano x:Key="Tamano" />
+            <conv:ConvertidorDeEnumerado x:Key="Enumerado" />
+            <conv:ConvertidorDeTexto x:Key="Texto" />
+            <conv:ConvertidorDeMoneda x:Key="Moneda" />
+            <conv:ConvertidorDeFecha x:Key="Fecha" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

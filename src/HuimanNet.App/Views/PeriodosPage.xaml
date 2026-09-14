@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HuimanNet.App.ViewModels"
+             xmlns:loc="clr-namespace:HuimanNet.App.Localizacion"
+             xmlns:dto="clr-namespace:HuimanNet.Contracts.Periodos;assembly=HuimanNet.Contracts"
+             x:Class="HuimanNet.App.Views.PeriodosPage"
+             x:DataType="vm:PeriodosViewModel"
+             Title="{Binding Titulo}">
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="12,12,12,0" RowSpacing="8">
+
+        <HorizontalStackLayout Grid.Row="0" Spacing="8">
+            <Switch IsToggled="{Binding IncluirCerrados}" />
+            <Label Text="{loc:T Clave=periodos.incluirCerrados}" VerticalOptions="Center" />
+        </HorizontalStackLayout>
+
+        <Border Grid.Row="1" Style="{StaticResource Tarjeta}" IsVisible="{Binding TieneError}">
+            <Label Text="{Binding MensajeDeError}" TextColor="{StaticResource Error}" />
+        </Border>
+
+        <RefreshView Grid.Row="2" Command="{Binding CargarCommand}" IsRefreshing="{Binding EstaOcupado, Mode=OneWay}">
+            <CollectionView ItemsSource="{Binding Periodos}" SelectionMode="None">
+                <CollectionView.EmptyView>
+                    <Label Text="{loc:T Clave=periodos.sinPeriodos}" Style="{StaticResource Tenue}"
+                           HorizontalTextAlignment="Center" Margin="0,40,0,0" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:PeriodoDto">
+                        <Border Style="{StaticResource Tarjeta}" Margin="0,0,0,10">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:PeriodosViewModel}}, Path=AbrirPeriodoCommand, x:DataType=vm:PeriodosViewModel}"
+                                    CommandParameter="{Binding .}" />
+                            </Border.GestureRecognizers>
+                            <VerticalStackLayout Spacing="4">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Label Text="{Binding Descripcion}" Style="{StaticResource Subtitulo}" />
+                                    <Label Grid.Column="1" Text="{Binding Estado, Converter={StaticResource Enumerado}}"
+                                           TextColor="{StaticResource Primario}" FontSize="13" />
+                                </Grid>
+                                <Label Text="{Binding Clave}" Style="{StaticResource Tenue}" />
+                                <HorizontalStackLayout Spacing="16" Margin="0,6,0,0">
+                                    <HorizontalStackLayout Spacing="4">
+                                        <Label Text="{loc:T Clave=periodos.documentosCliente}" FontSize="13" Style="{StaticResource Tenue}" />
+                                        <Label Text="{Binding DocumentosDelCliente}" FontSize="13" />
+                                    </HorizontalStackLayout>
+                                    <HorizontalStackLayout Spacing="4">
+                                        <Label Text="{loc:T Clave=periodos.documentosResultado}" FontSize="13" Style="{StaticResource Tenue}" />
+                                        <Label Text="{Binding DocumentosDeResultado}" FontSize="13" />
+                                    </HorizontalStackLayout>
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+
+    </Grid>
+
+</ContentPage>

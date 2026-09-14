@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <!-- El portal es exclusivamente en línea: sin red no hay funcionalidad. -->
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+  <!--
+    Tráfico sin cifrar prohibido salvo hacia el equipo de desarrollo
+    (Resources/xml/network_security_config.xml).
+  -->
+  <application android:allowBackup="false"
+               android:icon="@mipmap/appicon"
+               android:roundIcon="@mipmap/appicon_round"
+               android:supportsRtl="true"
+               android:networkSecurityConfig="@xml/network_security_config">
+
+    <!--
+      Recepción del retorno del inicio de sesión de MSAL. El esquema
+      msal{ClientId} debe coincidir con el URI de redirección registrado en
+      Microsoft Entra (Configuracion/OpcionesDeLaApp.cs).
+    -->
+    <activity android:name="microsoft.identity.client.BrowserTabActivity"
+              android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="msal00000000-0000-0000-0000-000000000000"
+              android:host="auth" />
+      </intent-filter>
+    </activity>
+
+  </application>
+
+</manifest>

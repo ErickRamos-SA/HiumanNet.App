@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HuimanNet.App.ViewModels"
+             xmlns:loc="clr-namespace:HuimanNet.App.Localizacion"
+             x:Class="HuimanNet.App.Views.SesionPage"
+             x:DataType="vm:SesionViewModel"
+             Title="{loc:T Clave=acceso.titulo}">
+
+    <ScrollView>
+        <Grid Padding="24" RowDefinitions="*,Auto,*" MinimumHeightRequest="560">
+
+            <VerticalStackLayout Grid.Row="1" Spacing="16">
+
+                <Label Text="HuimanNet" FontSize="32" FontAttributes="Bold"
+                       HorizontalOptions="Center" TextColor="{StaticResource Primario}" />
+
+                <Label Text="{loc:T Clave=acceso.subtitulo}" Style="{StaticResource Tenue}" HorizontalTextAlignment="Center" />
+
+                <ActivityIndicator IsRunning="{Binding ComprobandoSesion}" IsVisible="{Binding ComprobandoSesion}"
+                                   Color="{StaticResource Primario}" />
+
+                <!-- Modo local: correo y contraseña validados por la API. -->
+                <VerticalStackLayout Spacing="10" IsVisible="{Binding EsLocal}">
+                    <Entry Text="{Binding Correo}" Placeholder="{loc:T Clave=acceso.correo}"
+                           Keyboard="Email" IsSpellCheckEnabled="False" IsTextPredictionEnabled="False" />
+                    <Entry Text="{Binding Contrasena}" Placeholder="{loc:T Clave=acceso.contrasena}"
+                           IsPassword="True" ReturnCommand="{Binding IniciarSesionCommand}" />
+                    <Button Text="{loc:T Clave=acceso.entrar}" Command="{Binding IniciarSesionCommand}"
+                            IsEnabled="{Binding EstaOcupado, Converter={StaticResource NoOcupado}}" />
+                </VerticalStackLayout>
+
+                <!-- Modo Entra: inicio de sesión de la organización en el navegador del sistema. -->
+                <Button Text="{loc:T Clave=acceso.entrarConMicrosoft}" Command="{Binding IniciarSesionCommand}"
+                        IsVisible="{Binding EsLocal, Converter={StaticResource NoOcupado}}"
+                        IsEnabled="{Binding EstaOcupado, Converter={StaticResource NoOcupado}}" />
+
+                <Border Style="{StaticResource Tarjeta}" IsVisible="{Binding TieneError}">
+                    <Label Text="{Binding MensajeDeError}" TextColor="{StaticResource Error}" />
+                </Border>
+
+                <Label Text="{loc:T Clave=movil.navegadorEntra}" Style="{StaticResource Tenue}" HorizontalTextAlignment="Center"
+                       IsVisible="{Binding EsLocal, Converter={StaticResource NoOcupado}}" />
+
+            </VerticalStackLayout>
+
+        </Grid>
+    </ScrollView>
+
+</ContentPage>

@@ -1,0 +1,11 @@
+@* Envía a la pantalla de acceso conservando la página de destino. *@
+@inject NavigationManager Navegacion
+
+@code {
+    /// <inheritdoc/>
+    protected override void OnInitialized()
+    {
+        string destino = "/" + Navegacion.ToBaseRelativePath(Navegacion.Uri);
+        Navegacion.NavigateTo("autenticacion/entrar?volverA=" + Uri.EscapeDataString(destino), forceLoad: true);
+    }
+}

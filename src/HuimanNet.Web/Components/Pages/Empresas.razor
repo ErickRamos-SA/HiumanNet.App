@@ -1,0 +1,399 @@
+@page "/empresas"
+@inherits ComponenteDelPortal
+
+<PageTitle>@T["empresas.titulo"] · HuimanNet</PageTitle>
+
+<div class="encabezado-pagina">
+    <div>
+        <h1>@T["empresas.titulo"]</h1>
+        <p class="subtitulo">@T["empresas.subtitulo"]</p>
+    </div>
+    <button type="button" class="boton boton-primario" @onclick="NuevaEmpresa">
+        <Icono Nombre="agregar" /> @T["empresas.nueva"]
+    </button>
+</div>
+
+<Mensajes Error="@MensajeDeError" Exito="@MensajeDeExito" />
+
+<section class="tarjeta tarjeta-tabla">
+    <div class="barra-herramientas">
+        <label class="casilla">
+            <input type="checkbox" @bind="_soloActivas" @bind:after="() => EjecutarAsync(CargarDatosAsync)" /> @T["empresas.soloActivas"]
+        </label>
+    </div>
+
+    @if (_empresas.Count == 0)
+    {
+        <div class="vacio"><Icono Nombre="empresas" Tamano="36" /><p>@T["empresas.vacio"]</p></div>
+    }
+    else
+    {
+        <div class="tabla-contenedor">
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th>@T["empresas.razonSocial"]</th>
+                        <th>@T["empresas.identificadorFiscal"]</th>
+                        <th class="numero">@T["razones.titulo"]</th>
+                        <th class="numero">@T["nav.empleados"]</th>
+                        <th class="numero">@T["nav.usuarios"]</th>
+                        <th>@T["comun.estado"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (EmpresaDetalleDto empresa in _empresas)
+                    {
+                        <tr class="@(empresa.Id == _seleccionada?.Id ? "fila-activa" : null)">
+                            <td>
+                                <div class="celda-principal">
+                                    <strong>@empresa.RazonSocial</strong>
+                                    <span class="tenue">@T.Formato("empresas.altaEl", Fecha(empresa.FechaAlta))</span>
+                                </div>
+                            </td>
+                            <td>@empresa.IdentificadorFiscal</td>
+                            <td class="numero">@empresa.TotalRazonesSociales</td>
+                            <td class="numero">@empresa.TotalEmpleados.ToString("N0", T.Cultura)</td>
+                            <td class="numero">@empresa.TotalUsuarios</td>
+                            <td><span class="etiqueta @(empresa.Activa ? "etiqueta-ok" : "etiqueta-error")">@(empresa.Activa ? T["comun.activa"] : T["comun.inactiva"])</span></td>
+                            <td class="acciones-fila">
+                                <div class="acciones" style="justify-content:flex-end">
+                                    <button type="button" class="boton boton-pequeno" @onclick="() => SeleccionarAsync(empresa)"><Icono Nombre="empresas" Tamano="16" /> @T["razones.titulo"]</button>
+                                    <button type="button" class="boton-icono" title="@T["comun.editar"]" @onclick="() => EditarEmpresa(empresa)"><Icono Nombre="editar" Tamano="18" /></button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@if (_seleccionada is { } seleccionada)
+{
+    <section class="tarjeta tarjeta-tabla">
+        <header class="tarjeta-cabecera">
+            <h2>@T.Formato("razones.de", seleccionada.RazonSocial)</h2>
+            <button type="button" class="boton boton-pequeno boton-primario" @onclick="NuevaRazon"><Icono Nombre="agregar" Tamano="16" /> @T["razones.nueva"]</button>
+        </header>
+        <p class="tenue" style="padding:0 1.4rem">@T["razones.ayuda"]</p>
+
+        @if (_razones.Count == 0)
+        {
+            <div class="vacio"><Icono Nombre="empresas" Tamano="32" /><p>@T["razones.vacio"]</p></div>
+        }
+        else
+        {
+            <div class="tabla-contenedor">
+                <table class="tabla tabla-compacta">
+                    <thead>
+                        <tr>
+                            <th>@T["comun.nombre"]</th>
+                            <th>@T["razones.rfc"]</th>
+                            <th>@T["razones.registroPatronal"]</th>
+                            <th>@T["razones.tipoDeServicio"]</th>
+                            <th>@T["razones.comision"]</th>
+                            <th>@T["razones.zonaIsn"]</th>
+                            <th class="numero">@T["razones.tasaIva"]</th>
+                            <th>@T["comun.estado"]</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (RazonSocialDto razon in _razones)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="celda-principal">
+                                        <strong>@razon.Nombre</strong>
+                                        <span class="tenue">@T["contratos.zona"] @T.Enumerado(razon.Zona)@(razon.BancoDispersor is { } banco ? $" · {banco}" : null)</span>
+                                    </div>
+                                </td>
+                                <td>@razon.Rfc</td>
+                                <td>@(razon.RegistroPatronal ?? "—")</td>
+                                <td>@T.Enumerado(razon.TipoDeServicio)</td>
+                                <td>@Porcentaje(razon.PorcentajeComision) · @T.Enumerado(razon.ModalidadDeComision)</td>
+                                <td>@T.Enumerado(razon.ZonaIsn)</td>
+                                <td class="numero">@Porcentaje(razon.TasaIva)</td>
+                                <td><span class="etiqueta @(razon.Activa ? "etiqueta-ok" : "etiqueta-error")">@(razon.Activa ? T["comun.activa"] : T["comun.inactiva"])</span></td>
+                                <td class="acciones-fila">
+                                    <button type="button" class="boton-icono" title="@T["comun.editar"]" @onclick="() => EditarRazon(razon)"><Icono Nombre="editar" Tamano="18" /></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+}
+
+<Dialogo Visible="_modeloEmpresa is not null" Titulo="@(_modeloEmpresa?.Id is null ? T["empresas.nueva"] : T["empresas.editar"])" AlCerrar="() => _modeloEmpresa = null">
+    <ChildContent>
+        @if (_modeloEmpresa is { } m)
+        {
+            <div class="formulario">
+                <div class="campo campo-ancho">
+                    <label for="razon-social">@T["empresas.razonSocial"]</label>
+                    <input id="razon-social" type="text" maxlength="200" @bind="m.RazonSocial" />
+                </div>
+                <div class="campo">
+                    <label for="identificador">@T["empresas.identificadorFiscal"]</label>
+                    <input id="identificador" type="text" maxlength="20" @bind="m.IdentificadorFiscal" />
+                </div>
+                @if (m.Id is not null)
+                {
+                    <div class="campo">
+                        <label class="casilla" style="margin-top:1.6rem"><input type="checkbox" @bind="m.Activa" /> @T["comun.activa"]</label>
+                    </div>
+                }
+            </div>
+        }
+    </ChildContent>
+    <Pie>
+        <button type="button" class="boton" @onclick="() => _modeloEmpresa = null">@T["comun.cancelar"]</button>
+        <button type="button" class="boton boton-primario" disabled="@EstaCargando" @onclick="GuardarEmpresaAsync">@T["comun.guardar"]</button>
+    </Pie>
+</Dialogo>
+
+<Dialogo Visible="_modeloRazon is not null" Titulo="@(_modeloRazon?.Id is null ? T["razones.nueva"] : T["razones.editar"])" Ancho="true" AlCerrar="() => _modeloRazon = null">
+    <ChildContent>
+        @if (_modeloRazon is { } r)
+        {
+            <div class="formulario formulario-3">
+                <div class="campo campo-ancho">
+                    <label for="rs-nombre">@T["comun.nombre"]</label>
+                    <input id="rs-nombre" type="text" maxlength="200" @bind="r.Nombre" />
+                </div>
+                <div class="campo">
+                    <label for="rs-rfc">@T["razones.rfc"]</label>
+                    <input id="rs-rfc" type="text" maxlength="13" @bind="r.Rfc" />
+                </div>
+                <div class="campo">
+                    <label for="rs-registro">@T["razones.registroPatronal"]</label>
+                    <input id="rs-registro" type="text" maxlength="20" @bind="r.RegistroPatronal" />
+                </div>
+                <div class="campo">
+                    <label for="rs-banco">@T["razones.bancoDispersor"]</label>
+                    <input id="rs-banco" type="text" maxlength="100" @bind="r.BancoDispersor" />
+                </div>
+
+                <div class="seccion-formulario"><h3>@T["razones.grupoOperacion"]</h3></div>
+                <div class="campo">
+                    <label for="rs-servicio">@T["razones.tipoDeServicio"]</label>
+                    <select id="rs-servicio" @bind="r.TipoDeServicio">
+                        <option value="@TipoDeServicio.Nomina">@T.Enumerado(TipoDeServicio.Nomina)</option>
+                        <option value="@TipoDeServicio.Maquila">@T.Enumerado(TipoDeServicio.Maquila)</option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label for="rs-zona">@T["contratos.zona"]</label>
+                    <select id="rs-zona" @bind="r.Zona">
+                        <option value="@ZonaSalarioMinimo.A">@T.Enumerado(ZonaSalarioMinimo.A)</option>
+                        <option value="@ZonaSalarioMinimo.B">@T.Enumerado(ZonaSalarioMinimo.B)</option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label for="rs-isn">@T["razones.zonaIsn"]</label>
+                    <select id="rs-isn" @bind="r.ZonaIsn">
+                        @foreach (ZonaIsn zona in Enum.GetValues<ZonaIsn>())
+                        {
+                            <option value="@zona">@T.Enumerado(zona)</option>
+                        }
+                    </select>
+                </div>
+                <div class="campo">
+                    <label class="casilla"><input type="checkbox" @bind="r.SubsidioAbsorbido" /> @T["razones.subsidioAbsorbido"]</label>
+                    <span class="ayuda">@T["razones.subsidioAbsorbidoAyuda"]</span>
+                </div>
+                <div class="campo">
+                    <label class="casilla"><input type="checkbox" @bind="r.AplicaFaltasProporcionales" /> @T["razones.faltasProporcionales"]</label>
+                    <span class="ayuda">@T["razones.faltasProporcionalesAyuda"]</span>
+                </div>
+                @if (r.Id is not null)
+                {
+                    <div class="campo">
+                        <label class="casilla"><input type="checkbox" @bind="r.Activa" /> @T["comun.activa"]</label>
+                    </div>
+                }
+
+                <div class="seccion-formulario"><h3>@T["razones.grupoCobro"]</h3></div>
+                <div class="campo">
+                    <label for="rs-modalidad">@T["razones.modalidad"]</label>
+                    <select id="rs-modalidad" @bind="r.ModalidadDeComision">
+                        <option value="@ModalidadDeComision.SobreCosto">@T.Enumerado(ModalidadDeComision.SobreCosto)</option>
+                        <option value="@ModalidadDeComision.SobreBrutos">@T.Enumerado(ModalidadDeComision.SobreBrutos)</option>
+                    </select>
+                </div>
+                <CampoNumerico Etiqueta="@T["razones.comision"]" @bind-Valor="r.PorcentajeComision" Minimo="0" Ayuda="@T["comun.fraccionAyuda"]" />
+                <CampoNumerico Etiqueta="@T["razones.tasaIva"]" @bind-Valor="r.TasaIva" Minimo="0" Ayuda="@T["comun.fraccionAyuda"]" />
+                <CampoNumerico Etiqueta="@T["razones.otrosCostos"]" @bind-Valor="r.PorcentajeOtrosCostos" Minimo="0" Ayuda="@T["razones.otrosCostosAyuda"]" />
+                <div class="campo">
+                    <label for="rs-prima">@T["razones.primaDeRiesgo"]</label>
+                    <input id="rs-prima" type="number" step="any" min="0" @bind="r.PrimaDeRiesgo" />
+                    <span class="ayuda">@T["razones.primaDeRiesgoAyuda"]</span>
+                </div>
+            </div>
+        }
+    </ChildContent>
+    <Pie>
+        <button type="button" class="boton" @onclick="() => _modeloRazon = null">@T["comun.cancelar"]</button>
+        <button type="button" class="boton boton-primario" disabled="@EstaCargando" @onclick="GuardarRazonAsync">@T["comun.guardar"]</button>
+    </Pie>
+</Dialogo>
+
+@code {
+    private IReadOnlyList<EmpresaDetalleDto> _empresas = [];
+    private bool _soloActivas;
+    private EmpresaDetalleDto? _seleccionada;
+    private IReadOnlyList<RazonSocialDto> _razones = [];
+    private ModeloEmpresa? _modeloEmpresa;
+    private ModeloRazon? _modeloRazon;
+
+    /// <inheritdoc/>
+    protected override async Task CargarDatosAsync()
+    {
+        _empresas = await Casos.ConsultarAsync<ListarEmpresasDetalleQuery, IReadOnlyList<EmpresaDetalleDto>>(new ListarEmpresasDetalleQuery(_soloActivas));
+
+        if (_seleccionada is not null)
+        {
+            _seleccionada = _empresas.FirstOrDefault(e => e.Id == _seleccionada.Id);
+        }
+    }
+
+    private string Porcentaje(decimal fraccion) => fraccion.ToString("P2", T.Cultura);
+
+    private Task SeleccionarAsync(EmpresaDetalleDto empresa) => EjecutarAsync(async () =>
+    {
+        _seleccionada = empresa;
+        await CargarRazonesAsync();
+    });
+
+    private async Task CargarRazonesAsync()
+        => _razones = _seleccionada is { } empresa
+            ? await Casos.ConsultarAsync<ListarRazonesSocialesQuery, IReadOnlyList<RazonSocialDto>>(new ListarRazonesSocialesQuery(empresa.Id, SoloActivas: false))
+            : [];
+
+    private void NuevaEmpresa()
+    {
+        LimpiarMensajes();
+        _modeloEmpresa = new ModeloEmpresa();
+    }
+
+    private void EditarEmpresa(EmpresaDetalleDto empresa)
+    {
+        LimpiarMensajes();
+        _modeloEmpresa = new ModeloEmpresa
+        {
+            Id = empresa.Id,
+            RazonSocial = empresa.RazonSocial,
+            IdentificadorFiscal = empresa.IdentificadorFiscal,
+            Activa = empresa.Activa,
+        };
+    }
+
+    private Task GuardarEmpresaAsync() => EjecutarAsync(async () =>
+    {
+        if (_modeloEmpresa is not { } m)
+        {
+            return;
+        }
+
+        EmpresaDetalleDto guardada = m.Id is { } id
+            ? await Casos.EjecutarAsync<ActualizarEmpresaCommand, EmpresaDetalleDto>(new ActualizarEmpresaCommand(id, m.RazonSocial.Trim(), m.IdentificadorFiscal.Trim().ToUpperInvariant(), m.Activa))
+            : await Casos.EjecutarAsync<CrearEmpresaCommand, EmpresaDetalleDto>(new CrearEmpresaCommand(m.RazonSocial.Trim(), m.IdentificadorFiscal.Trim().ToUpperInvariant()));
+
+        _modeloEmpresa = null;
+        MensajeDeExito = T.Formato("empresas.guardada", guardada.RazonSocial);
+        await CargarDatosAsync();
+
+        // El selector de empresa de la cabecera debe reflejar el alta o el cambio.
+        await Estado.NotificarEmpresasModificadasAsync();
+    });
+
+    private void NuevaRazon()
+    {
+        LimpiarMensajes();
+        _modeloRazon = new ModeloRazon();
+    }
+
+    private void EditarRazon(RazonSocialDto razon)
+    {
+        LimpiarMensajes();
+        _modeloRazon = ModeloRazon.Desde(razon);
+    }
+
+    private Task GuardarRazonAsync() => EjecutarAsync(async () =>
+    {
+        if (_modeloRazon is not { } r || _seleccionada is not { } empresa)
+        {
+            return;
+        }
+
+        RazonSocialDto guardada = await Casos.EjecutarAsync<GuardarRazonSocialCommand, RazonSocialDto>(
+            new GuardarRazonSocialCommand(r.Id, r.ARequest(empresa.Id)));
+
+        _modeloRazon = null;
+        MensajeDeExito = T.Formato("razones.guardada", guardada.Nombre);
+        await CargarRazonesAsync();
+        await CargarDatosAsync();
+    });
+
+    /// <summary>Estado editable de una empresa.</summary>
+    private sealed class ModeloEmpresa
+    {
+        public Guid? Id { get; init; }
+        public string RazonSocial { get; set; } = string.Empty;
+        public string IdentificadorFiscal { get; set; } = string.Empty;
+        public bool Activa { get; set; } = true;
+    }
+
+    /// <summary>Estado editable de una razón social.</summary>
+    private sealed class ModeloRazon
+    {
+        public Guid? Id { get; init; }
+        public string Nombre { get; set; } = string.Empty;
+        public string Rfc { get; set; } = string.Empty;
+        public string? RegistroPatronal { get; set; }
+        public ZonaSalarioMinimo Zona { get; set; } = ZonaSalarioMinimo.A;
+        public TipoDeServicio TipoDeServicio { get; set; } = TipoDeServicio.Nomina;
+        public bool SubsidioAbsorbido { get; set; }
+        public bool AplicaFaltasProporcionales { get; set; }
+        public ModalidadDeComision ModalidadDeComision { get; set; } = ModalidadDeComision.SobreCosto;
+        public decimal PorcentajeComision { get; set; }
+        public ZonaIsn ZonaIsn { get; set; } = ZonaIsn.SegunZonaDelTrabajador;
+        public decimal TasaIva { get; set; } = 0.16m;
+        public decimal PorcentajeOtrosCostos { get; set; }
+        public decimal? PrimaDeRiesgo { get; set; }
+        public string? BancoDispersor { get; set; }
+        public bool Activa { get; set; } = true;
+
+        public static ModeloRazon Desde(RazonSocialDto r) => new()
+        {
+            Id = r.Id,
+            Nombre = r.Nombre,
+            Rfc = r.Rfc,
+            RegistroPatronal = r.RegistroPatronal,
+            Zona = r.Zona,
+            TipoDeServicio = r.TipoDeServicio,
+            SubsidioAbsorbido = r.SubsidioAbsorbido,
+            AplicaFaltasProporcionales = r.AplicaFaltasProporcionales,
+            ModalidadDeComision = r.ModalidadDeComision,
+            PorcentajeComision = r.PorcentajeComision,
+            ZonaIsn = r.ZonaIsn,
+            TasaIva = r.TasaIva,
+            PorcentajeOtrosCostos = r.PorcentajeOtrosCostos,
+            PrimaDeRiesgo = r.PrimaDeRiesgo,
+            BancoDispersor = r.BancoDispersor,
+            Activa = r.Activa,
+        };
+
+        public GuardarRazonSocialRequest ARequest(Guid empresaId) => new(
+            empresaId, Nombre.Trim(), Rfc.Trim().ToUpperInvariant(),
+            string.IsNullOrWhiteSpace(RegistroPatronal) ? null : RegistroPatronal.Trim(),
+            Zona, TipoDeServicio, SubsidioAbsorbido, AplicaFaltasProporcionales, ModalidadDeComision,
+            PorcentajeComision, ZonaIsn, TasaIva, PorcentajeOtrosCostos, PrimaDeRiesgo,
+            string.IsNullOrWhiteSpace(BancoDispersor) ? null : BancoDispersor.Trim(), Activa);
+    }
+}

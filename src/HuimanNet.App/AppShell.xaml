@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:vistas="clr-namespace:HuimanNet.App.Views"
+       x:Class="HuimanNet.App.AppShell"
+       Title="HuimanNet"
+       FlyoutBehavior="Disabled">
+
+    <!-- La sesión es la primera pantalla: sin token no hay nada que mostrar. -->
+    <ShellContent Route="sesion"
+                  ContentTemplate="{DataTemplate vistas:SesionPage}"
+                  Shell.NavBarIsVisible="False" />
+
+    <!--
+      Barra inferior equivalente a la navegación de la web. Los títulos se
+      traducen y la visibilidad sigue los permisos del usuario (AppShell.xaml.cs);
+      la API vuelve a autorizar cada operación.
+    -->
+    <TabBar Route="portal">
+        <Tab x:Name="TabInicio" Route="inicio">
+            <ShellContent ContentTemplate="{DataTemplate vistas:InicioPage}" />
+        </Tab>
+        <Tab x:Name="TabPeriodos" Route="periodos">
+            <ShellContent ContentTemplate="{DataTemplate vistas:PeriodosPage}" />
+        </Tab>
+        <Tab x:Name="TabIncidencias" Route="incidencias">
+            <ShellContent ContentTemplate="{DataTemplate vistas:IncidenciasPage}" />
+        </Tab>
+        <Tab x:Name="TabNomina" Route="nomina">
+            <ShellContent ContentTemplate="{DataTemplate vistas:NominaPage}" />
+        </Tab>
+        <Tab x:Name="TabMas" Route="mas">
+            <ShellContent ContentTemplate="{DataTemplate vistas:MasPage}" />
+        </Tab>
+    </TabBar>
+
+</Shell>

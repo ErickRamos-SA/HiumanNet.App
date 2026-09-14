@@ -1,0 +1,26 @@
+@* Tarjeta de indicador del panel de inicio. *@
+<div class="indicador">
+    <span class="indicador-icono indicador-@Tono"><Icono Nombre="@Icono" Tamano="22" /></span>
+    <div>
+        <div class="indicador-valor">@Valor</div>
+        <div class="indicador-etiqueta">@Etiqueta</div>
+    </div>
+</div>
+
+@code {
+    /// <summary>Nombre del icono.</summary>
+    [Parameter, EditorRequired]
+    public string Icono { get; set; } = string.Empty;
+
+    /// <summary>Valor ya formateado.</summary>
+    [Parameter, EditorRequired]
+    public string Valor { get; set; } = string.Empty;
+
+    /// <summary>Texto descriptivo.</summary>
+    [Parameter, EditorRequired]
+    public string Etiqueta { get; set; } = string.Empty;
+
+    /// <summary>Tono de color: azul, verde, ambar o violeta.</summary>
+    [Parameter]
+    public string Tono { get; set; } = "azul";
+}

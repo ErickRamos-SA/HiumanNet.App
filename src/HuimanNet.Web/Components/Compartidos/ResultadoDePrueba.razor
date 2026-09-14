@@ -1,0 +1,50 @@
+@* Resultado de evaluar una fórmula de prueba: validez, valor calculado,
+   referencias que usa y conceptos previos que hubo que calcular antes. *@
+@inject Traductor T
+
+<div class="resultado-prueba">
+    @if (Respuesta.Valida)
+    {
+        <div class="aviso aviso-exito"><Icono Nombre="check" Tamano="18" /> <span>@T["catalogos.formulaValida"]</span></div>
+        @if (Respuesta.Resultado is { } resultado)
+        {
+            <div class="cifra-etiqueta">@T["catalogos.resultado"]</div>
+            <div class="resultado-formula">@resultado.ToString("N6", T.Cultura)</div>
+        }
+    }
+    else
+    {
+        <div class="aviso aviso-error"><Icono Nombre="alerta" Tamano="18" /> <span>@Respuesta.Error</span></div>
+    }
+
+    @if (Respuesta.Referencias.Count > 0)
+    {
+        <p style="margin:.75rem 0 .25rem">
+            <span class="tenue">@T["catalogos.referencias"]:</span>
+            @foreach (string referencia in Respuesta.Referencias)
+            {
+                <code style="margin-right:.4rem">@referencia</code>
+            }
+        </p>
+    }
+
+    @if (Respuesta.ConceptosPrevios.Count > 0)
+    {
+        <details style="margin-top:.5rem">
+            <summary>@T.Formato("catalogos.conceptosPrevios", Respuesta.ConceptosPrevios.Count)</summary>
+            <dl class="definiciones" style="margin-top:.5rem">
+                @foreach (ValorDto previo in Respuesta.ConceptosPrevios)
+                {
+                    <dt><code>@previo.Clave</code></dt>
+                    <dd>@previo.Valor.ToString("N4", T.Cultura)</dd>
+                }
+            </dl>
+        </details>
+    }
+</div>
+
+@code {
+    /// <summary>Respuesta del caso de uso de prueba de fórmula.</summary>
+    [Parameter, EditorRequired]
+    public ProbarFormulaResponse Respuesta { get; set; } = default!;
+}

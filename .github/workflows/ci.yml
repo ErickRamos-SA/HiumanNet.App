@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  # Activa TreatWarningsAsErrors en Directory.Build.props.
+  ContinuousIntegrationBuild: true
+
+jobs:
+  servidor:
+    name: Servidor (Domain · Application · Infrastructure · Api · Web)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restaurar
+        run: dotnet restore src/HuimanNet.Web/HuimanNet.Web.csproj
+
+      - name: Compilar
+        run: dotnet build src/HuimanNet.Web/HuimanNet.Web.csproj -c Release --no-restore
+
+      - name: Probar
+        run: |
+          dotnet test tests/HuimanNet.Domain.Tests -c Release
+          dotnet test tests/HuimanNet.Application.Tests -c Release
+          dotnet test tests/HuimanNet.Api.Tests -c Release
+
+      # La publicación AOT es la única forma de detectar problemas de recorte:
+      # las advertencias IL2xxx/IL3xxx sólo aparecen aquí, no al compilar.
+      #
+      # No se usa -warnaserror: Microsoft.Data.SqlClient emite advertencias en
+      # rutas que la solución no ejecuta (UDT, SqlVector, autenticación por
+      # app.config). Lo que sí debe romper la compilación es una advertencia IL
+      # en un ensamblado propio, y eso es lo que comprueba el paso siguiente.
+      - name: Publicar API con Native AOT
+        shell: bash
+        run: |
+          set -o pipefail
+          sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+          dotnet publish src/HuimanNet.Api -c Release -r linux-x64 2>&1 | tee publicacion-aot.log
+
+      - name: Verificar que ningún ensamblado propio produce advertencias de recorte
+        shell: bash
+        run: |
+          # Se recorta el sufijo "[ruta/al/.csproj]" que MSBuild añade a cada
+          # línea: aparece en todas y haría coincidir también las advertencias
+          # de terceros.
+          propias=$(grep -E 'warning IL[0-9]+' publicacion-aot.log \
+                    | sed -E 's/\[[^][]*\][[:space:]]*$//' \
+                    | grep -i 'HuimanNet' || true)
+
+          if [ -n "$propias" ]; then
+            echo "$propias"
+            echo "::error::Hay advertencias de recorte en código propio de HuimanNet."
+            exit 1
+          fi
+
+          echo "Sin advertencias de recorte en ensamblados de HuimanNet."
+
+  movil:
+    name: Móvil (MAUI · Android)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Instalar cargas de trabajo de MAUI
+        run: dotnet workload install maui-android
+
+      - name: Compilar Android
+        run: dotnet build src/HuimanNet.App/HuimanNet.App.csproj -c Release -f net10.0-android

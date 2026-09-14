@@ -1,0 +1,227 @@
+@page "/periodos/{PeriodoId:guid}/documentos"
+@inherits ComponenteDelPortal
+@inject IJSRuntime Js
+
+<PageTitle>@T["documentos.titulo"] · HuimanNet</PageTitle>
+
+<div class="encabezado-pagina">
+    <div>
+        <div class="migas"><a href="periodos">@T["periodos.titulo"]</a> <Icono Nombre="derecha" Tamano="14" /> @T["documentos.titulo"]</div>
+        <h1>@T["documentos.titulo"]</h1>
+        <p class="subtitulo">@T["documentos.subtitulo"]</p>
+    </div>
+</div>
+
+<Mensajes Error="@MensajeDeError" Exito="@MensajeDeExito" />
+
+@if (_importacion is { } importacion)
+{
+    <div class="aviso @(importacion.Errores.Count > 0 ? "aviso-advertencia" : "aviso-info")">
+        <Icono Nombre="incidencias" Tamano="18" />
+        <div>
+            @if (importacion.Errores.Count > 0)
+            {
+                <strong>@T.Formato("incidencias.erroresDeImportacion", importacion.Errores.Count)</strong>
+                <ul class="lista-errores">
+                    @foreach (string error in importacion.Errores.Take(50))
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            }
+            <a href="@($"incidencias?periodoId={PeriodoId}")">@T["nav.incidencias"]</a>
+        </div>
+    </div>
+}
+
+@if (ContextoDeUsuario.Puede(AccionDelSistema.CargarDocumentos) || ContextoDeUsuario.Puede(AccionDelSistema.PublicarResultados))
+{
+    <section class="tarjeta">
+        <header class="tarjeta-cabecera">
+            <h2>@T["documentos.subir"]</h2>
+        </header>
+        <p class="tenue">@T["documentos.subirDescripcion"]</p>
+
+        <div class="formulario">
+            <div class="campo">
+                <label for="archivo">@T["documentos.archivo"]</label>
+                <input type="file" id="archivo" />
+            </div>
+            <div class="campo">
+                <label for="tipo">@T["documentos.tipo"]</label>
+                <select id="tipo" @bind="_tipoSeleccionado">
+                    @foreach (TipoDocumento tipo in TiposPermitidos())
+                    {
+                        <option value="@tipo">@T.Enumerado(tipo)</option>
+                    }
+                </select>
+            </div>
+            <div class="campo-ancho">
+                <button type="button" class="boton boton-primario" disabled="@EstaCargando" @onclick="SubirAsync">
+                    <Icono Nombre="subir" /> @(EstaCargando ? T["documentos.subiendo"] : T["documentos.subir"])
+                </button>
+            </div>
+        </div>
+    </section>
+}
+
+<section class="tarjeta tarjeta-tabla">
+    <header class="tarjeta-cabecera">
+        <h2>@T["documentos.listado"]</h2>
+        <button type="button" class="boton boton-pequeno" disabled="@EstaCargando" @onclick="() => EjecutarAsync(CargarDatosAsync)">
+            <Icono Nombre="actualizar" Tamano="16" /> @T["comun.actualizar"]
+        </button>
+    </header>
+
+    @if (_documentos.Count == 0)
+    {
+        <div class="vacio">
+            <Icono Nombre="documentos" Tamano="36" />
+            <p>@T["documentos.vacio"]</p>
+        </div>
+    }
+    else
+    {
+        <div class="tabla-contenedor">
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th>@T["documentos.nombre"]</th>
+                        <th>@T["documentos.tipo"]</th>
+                        <th class="numero">@T["documentos.tamano"]</th>
+                        <th>@T["comun.estado"]</th>
+                        <th>@T["documentos.cargadoPor"]</th>
+                        <th>@T["comun.fecha"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (DocumentoDto documento in _documentos)
+                    {
+                        <tr>
+                            <td><Icono Nombre="documentos" Tamano="16" Clase="tenue" /> @documento.NombreArchivo</td>
+                            <td>@T.Enumerado(documento.Tipo)</td>
+                            <td class="numero">@FormatearTamano(documento.TamanoBytes)</td>
+                            <td><span class="etiqueta @ClaseDeEstado(documento.Estado)">@T.Enumerado(documento.Estado)</span></td>
+                            <td>@documento.CargadoPor</td>
+                            <td>@Fecha(documento.FechaSolicitud)</td>
+                            <td class="acciones-fila">
+                                @if (PuedeImportar(documento))
+                                {
+                                    <button type="button" class="boton boton-pequeno" disabled="@EstaCargando" title="@T["documentos.importarIncidenciasAyuda"]" @onclick="() => ImportarAsync(documento)">
+                                        <Icono Nombre="incidencias" Tamano="16" /> @T["documentos.importarIncidencias"]
+                                    </button>
+                                }
+                                @if (documento.EsDescargable && ContextoDeUsuario.Puede(AccionDelSistema.DescargarDocumentos))
+                                {
+                                    <button type="button" class="boton boton-pequeno" disabled="@EstaCargando" @onclick="() => DescargarAsync(documento)">
+                                        <Icono Nombre="descargar" Tamano="16" /> @T["comun.descargar"]
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@code {
+    /// <summary>Período cuyos documentos se muestran.</summary>
+    [Parameter]
+    public Guid PeriodoId { get; set; }
+
+    private IReadOnlyList<DocumentoDto> _documentos = [];
+    private TipoDocumento _tipoSeleccionado = TipoDocumento.Incidencia;
+    private ResultadoDeImportacionDto? _importacion;
+
+    /// <inheritdoc/>
+    protected override async Task CargarDatosAsync()
+    {
+        _tipoSeleccionado = TiposPermitidos().FirstOrDefault(TipoDocumento.Incidencia);
+        _documentos = await Casos.ConsultarAsync<ListarDocumentosPorPeriodoQuery, IReadOnlyList<DocumentoDto>>(
+            new ListarDocumentosPorPeriodoQuery(PeriodoId, Tipo: null, SoloDescargables: false, EmpresaDeConsulta));
+    }
+
+    private Task SubirAsync() => EjecutarAsync(async () =>
+    {
+        MensajeDeExito = null;
+        _importacion = null;
+
+        ArchivoSeleccionado? archivo = await Js.InvokeAsync<ArchivoSeleccionado?>("huimanNet.leerArchivoSeleccionado", "archivo");
+
+        if (archivo is null)
+        {
+            throw new HuimanNet.Domain.Exceptions.DocumentoInvalidoException(T["documentos.seleccioneArchivo"]);
+        }
+
+        // 1. El servidor autoriza y firma; todavía no existe ningún byte en el almacén.
+        SolicitarCargaResponse autorizacion = await Casos.EjecutarAsync<SolicitarCargaDocumentoCommand, SolicitarCargaResponse>(
+            new SolicitarCargaDocumentoCommand(PeriodoId, _tipoSeleccionado, archivo.Nombre, archivo.Tamano, EmpresaDeConsulta));
+
+        // 2. El navegador sube el archivo directo al almacenamiento.
+        ResultadoDeCargaDirecta resultado = await Js.InvokeAsync<ResultadoDeCargaDirecta>(
+            "huimanNet.subirArchivo", "archivo", autorizacion.UrlCarga.ToString(), autorizacion.EncabezadoTipoBlob);
+
+        if (!resultado.Exito || string.IsNullOrWhiteSpace(resultado.Huella))
+        {
+            throw new HuimanNet.Domain.Exceptions.DocumentoInvalidoException(resultado.Mensaje ?? T["documentos.cargaFallida"]);
+        }
+
+        // 3. El servidor verifica contra el almacenamiento y dispara el análisis.
+        await Casos.EjecutarAsync<ConfirmarCargaCommand, DocumentoDto>(new ConfirmarCargaCommand(autorizacion.DocumentoId, resultado.Huella));
+
+        MensajeDeExito = T["documentos.recibido"];
+        await CargarDatosAsync();
+    });
+
+    private Task DescargarAsync(DocumentoDto documento) => EjecutarAsync(async () =>
+    {
+        EnlaceDescargaResponse enlace = await Casos.ConsultarAsync<ObtenerEnlaceDescargaQuery, EnlaceDescargaResponse>(
+            new ObtenerEnlaceDescargaQuery(documento.Id));
+
+        await Js.InvokeVoidAsync("huimanNet.descargar", enlace.UrlDescarga.ToString());
+    });
+
+    /// <summary>
+    /// Un archivo de incidencias disponible se puede importar al período sin
+    /// volver a subirlo: el servidor lo lee del almacenamiento.
+    /// </summary>
+    private bool PuedeImportar(DocumentoDto documento)
+        => documento.Tipo == TipoDocumento.Incidencia
+           && documento.EsDescargable
+           && ContextoDeUsuario.Puede(AccionDelSistema.CapturarIncidencias);
+
+    private Task ImportarAsync(DocumentoDto documento) => EjecutarAsync(async () =>
+    {
+        LimpiarMensajes();
+        _importacion = null;
+
+        ResultadoDeImportacionDto importacion = await Casos.EjecutarAsync<ImportarIncidenciasCommand, ResultadoDeImportacionDto>(
+            new ImportarIncidenciasCommand(documento.Id, EmpresaDeConsulta));
+
+        _importacion = importacion;
+        MensajeDeExito = T.Formato("incidencias.importadas", importacion.FilasLeidas, importacion.Creadas, importacion.Actualizadas);
+    });
+
+    /// <summary>La empresa aporta incidencias y datos de empleados; nómina y administración, resultados y ajustes.</summary>
+    private IReadOnlyList<TipoDocumento> TiposPermitidos()
+        => ContextoDeUsuario.Rol == RolUsuario.ClienteEmpresa
+            ? [TipoDocumento.Incidencia, TipoDocumento.DatosEmpleado]
+            : [TipoDocumento.Resultado, TipoDocumento.Ajuste];
+
+    private static string ClaseDeEstado(EstadoDocumento estado) => estado switch
+    {
+        EstadoDocumento.Disponible => "etiqueta-ok",
+        EstadoDocumento.Escaneando => "etiqueta-info",
+        EstadoDocumento.EnCuarentena => "etiqueta-error",
+        EstadoDocumento.Pendiente => "etiqueta-advertencia",
+        _ => string.Empty,
+    };
+
+    private string FormatearTamano(long bytes)
+        => bytes < 1_048_576
+            ? string.Create(T.Cultura, $"{bytes / 1024d:N1} KB")
+            : string.Create(T.Cultura, $"{bytes / 1_048_576d:N2} MB");
+}

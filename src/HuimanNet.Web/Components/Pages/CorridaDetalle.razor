@@ -1,0 +1,591 @@
+@page "/nomina/corridas/{CorridaId:guid}"
+@inherits ComponenteDelPortal
+@inject IJSRuntime JS
+
+<PageTitle>@T["corrida.tituloPagina"] · HuimanNet</PageTitle>
+
+<Mensajes Error="@MensajeDeError" Exito="@MensajeDeExito" />
+
+@if (_resumen is { } resumen)
+{
+    CorridaDeNominaDto c = resumen.Corrida;
+
+    <nav class="migas">
+        <a href="@($"nomina?periodoId={c.PeriodoId}&empresaId={c.EmpresaId}")">@T["nomina.titulo"]</a>
+        <Icono Nombre="derecha" Tamano="14" />
+        <span>@c.PeriodoClave · #@c.Numero</span>
+    </nav>
+
+    <div class="encabezado-pagina">
+        <div>
+            <h1>@T.Formato("corrida.titulo", c.Numero) <EtiquetaDeCorrida Estado="c.Estado" /></h1>
+            <p class="subtitulo">@c.PeriodoDescripcion · @T.Formato("corrida.calculadaPorEl", c.CalculadaPor, Fecha(c.FechaCalculo))</p>
+        </div>
+        <div class="acciones">
+            <button type="button" class="boton" disabled="@EstaCargando" @onclick="ExportarAsync">
+                <Icono Nombre="descargar" /> @T["corrida.exportar"]
+            </button>
+            @if (ContextoDeUsuario.Puede(AccionDelSistema.AprobarNomina) && c.Estado is EstadoDeCorrida.Calculada or EstadoDeCorrida.Cotejada)
+            {
+                <button type="button" class="boton boton-peligro" @onclick="() => PedirEstado(EstadoDeCorrida.Descartada)">
+                    <Icono Nombre="cerrar" /> @T["corrida.descartar"]
+                </button>
+                <button type="button" class="boton boton-exito" @onclick="() => PedirEstado(EstadoDeCorrida.Aprobada)">
+                    <Icono Nombre="aprobar" /> @T["corrida.aprobar"]
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(c.Advertencias))
+    {
+        <div class="aviso aviso-advertencia"><Icono Nombre="alerta" Tamano="18" /> <span>@c.Advertencias</span></div>
+    }
+
+    <section class="tarjeta">
+        <div class="resumen-cifras">
+            <div class="cifra"><div class="cifra-valor">@c.Trabajadores.ToString("N0", T.Cultura)</div><div class="cifra-etiqueta">@T["nomina.trabajadores"]</div></div>
+            <div class="cifra"><div class="cifra-valor">@Moneda(c.Bruto)</div><div class="cifra-etiqueta">@T["nomina.bruto"]</div></div>
+            <div class="cifra"><div class="cifra-valor">@Moneda(c.Percepciones)</div><div class="cifra-etiqueta">@T["corrida.percepciones"]</div></div>
+            <div class="cifra"><div class="cifra-valor">@Moneda(c.Deducciones)</div><div class="cifra-etiqueta">@T["corrida.deducciones"]</div></div>
+            <div class="cifra"><div class="cifra-valor">@Moneda(c.Neto)</div><div class="cifra-etiqueta">@T["nomina.neto"]</div></div>
+            <div class="cifra"><div class="cifra-valor">@Moneda(c.ComplementoSindical)</div><div class="cifra-etiqueta">@T["corrida.complemento"]</div></div>
+            <div class="cifra"><div class="cifra-valor">@Moneda(c.Isr)</div><div class="cifra-etiqueta">@T["corrida.isr"]</div></div>
+            <div class="cifra"><div class="cifra-valor">@Moneda(c.ImssTrabajador)</div><div class="cifra-etiqueta">@T["corrida.imssTrabajador"]</div></div>
+            <div class="cifra"><div class="cifra-valor">@Moneda(c.ImssPatronal)</div><div class="cifra-etiqueta">@T["corrida.imssPatronal"]</div></div>
+            <div class="cifra"><div class="cifra-valor">@Moneda(c.Infonavit)</div><div class="cifra-etiqueta">@T["corrida.infonavit"]</div></div>
+            <div class="cifra"><div class="cifra-valor">@Moneda(c.Isn)</div><div class="cifra-etiqueta">@T["corrida.isn"]</div></div>
+            <div class="cifra"><div class="cifra-valor">@Moneda(c.Facturable)</div><div class="cifra-etiqueta">@T["corrida.facturable"]</div></div>
+            <div class="cifra"><div class="cifra-valor">@Moneda(c.Comision)</div><div class="cifra-etiqueta">@T["corrida.comision"]</div></div>
+            <div class="cifra"><div class="cifra-valor"><strong>@Moneda(c.CostoTotal)</strong></div><div class="cifra-etiqueta">@T["nomina.costoTotal"]</div></div>
+        </div>
+        <p class="tenue" style="margin:.9rem 0 0">
+            @T.Formato("corrida.referencia", Fecha(c.FechaDeReferencia), c.DuracionMs.ToString("N0", T.Cultura))
+            @if (!string.IsNullOrWhiteSpace(c.Observaciones))
+            {
+                <span> · @c.Observaciones</span>
+            }
+        </p>
+    </section>
+
+    <div class="pestanas">
+        <button type="button" class="pestana @(_pestana == Pestana.Resultados ? "activa" : null)" @onclick="() => _pestana = Pestana.Resultados">@T["corrida.resultados"]</button>
+        <button type="button" class="pestana @(_pestana == Pestana.Facturacion ? "activa" : null)" @onclick="() => _pestana = Pestana.Facturacion">@T["corrida.facturacion"]</button>
+        @if (ContextoDeUsuario.Puede(AccionDelSistema.CotejarNomina))
+        {
+            <button type="button" class="pestana @(_pestana == Pestana.Cotejo ? "activa" : null)" @onclick="AbrirCotejosAsync">@T["cotejo.titulo"]</button>
+        }
+    </div>
+
+    @switch (_pestana)
+    {
+        case Pestana.Resultados:
+            IReadOnlyList<ResultadoDeNominaDto> filtrados = ResultadosFiltrados(resumen.Resultados);
+            int totalPaginas = Math.Max(1, (filtrados.Count + TamanoPagina - 1) / TamanoPagina);
+            int pagina = Math.Min(_pagina, totalPaginas);
+
+            <section class="tarjeta tarjeta-tabla">
+                <div class="barra-herramientas">
+                    <div class="buscador">
+                        <Icono Nombre="buscar" Tamano="18" />
+                        <input type="search" placeholder="@T["incidencias.buscar"]" @bind="_texto" @bind:event="oninput" @bind:after="() => _pagina = 1" />
+                    </div>
+                    <select @bind="_esquema" @bind:after="() => _pagina = 1" aria-label="@T["contratos.esquema"]">
+                        <option value="@EsquemaDePago.NoEspecificado">@T["corrida.todosLosEsquemas"]</option>
+                        <option value="@EsquemaDePago.Imss">@T.Enumerado(EsquemaDePago.Imss)</option>
+                        <option value="@EsquemaDePago.Sindicato">@T.Enumerado(EsquemaDePago.Sindicato)</option>
+                        <option value="@EsquemaDePago.Honorarios">@T.Enumerado(EsquemaDePago.Honorarios)</option>
+                    </select>
+                    <span class="espaciador"></span>
+                    <span class="tenue">@T.Formato("corrida.cuentaResultados", filtrados.Count)</span>
+                </div>
+                <div class="tabla-contenedor">
+                    <table class="tabla tabla-compacta">
+                        <thead>
+                            <tr>
+                                <th>@T["empleados.clave"]</th>
+                                <th>@T["incidencias.empleado"]</th>
+                                <th>@T["contratos.esquema"]</th>
+                                <th class="numero">@T["nomina.bruto"]</th>
+                                <th class="numero">@T["corrida.percepciones"]</th>
+                                <th class="numero">@T["corrida.deducciones"]</th>
+                                <th class="numero">@T["nomina.neto"]</th>
+                                <th class="numero">@T["corrida.complemento"]</th>
+                                <th class="numero">@T["nomina.costoTotal"]</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (ResultadoDeNominaDto r in filtrados.Skip((pagina - 1) * TamanoPagina).Take(TamanoPagina))
+                            {
+                                <tr class="fila-seleccionable" @onclick="() => AbrirDetalleAsync(r)">
+                                    <td><strong>@r.ClaveEmpleado</strong></td>
+                                    <td>
+                                        <div class="celda-principal">
+                                            <span>@r.NombreEmpleado</span>
+                                            <span class="tenue">@r.RazonSocialNombre · @T.Enumerado(r.TipoDeMovimiento)</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="etiqueta etiqueta-info">@T.Enumerado(r.Esquema)</span></td>
+                                    <td class="numero">@Moneda(r.Bruto)</td>
+                                    <td class="numero">@Moneda(r.TotalPercepciones)</td>
+                                    <td class="numero">@Moneda(r.TotalDeducciones)</td>
+                                    <td class="numero">@Moneda(r.Neto)</td>
+                                    <td class="numero">@Moneda(r.ComplementoSindical)</td>
+                                    <td class="numero"><strong>@Moneda(r.CostoTotal)</strong></td>
+                                    <td class="acciones-fila">
+                                        @if (r.Advertencia is not null)
+                                        {
+                                            <span title="@r.Advertencia"><Icono Nombre="alerta" Tamano="16" /></span>
+                                        }
+                                        <Icono Nombre="derecha" Tamano="16" />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (totalPaginas > 1)
+                {
+                    <div class="paginacion">
+                        <button type="button" class="boton boton-pequeno" disabled="@(pagina <= 1)" @onclick="() => _pagina = pagina - 1">@T["comun.anterior"]</button>
+                        <span class="tenue">@T.Formato("comun.paginaDe", pagina, totalPaginas)</span>
+                        <button type="button" class="boton boton-pequeno" disabled="@(pagina >= totalPaginas)" @onclick="() => _pagina = pagina + 1">@T["comun.siguiente"]</button>
+                    </div>
+                }
+            </section>
+            break;
+
+        case Pestana.Facturacion:
+            <section class="tarjeta tarjeta-tabla">
+                <div class="tabla-contenedor">
+                    <table class="tabla tabla-compacta">
+                        <thead>
+                            <tr>
+                                <th>@T["razones.titulo"]</th>
+                                <th>@T["razones.tipoDeServicio"]</th>
+                                <th class="numero">@T["nomina.trabajadores"]</th>
+                                <th class="numero">@T["corrida.baseNomina"]</th>
+                                <th class="numero">@T["corrida.baseFiniquitos"]</th>
+                                <th class="numero">@T["corrida.isn"]</th>
+                                <th class="numero">@T["corrida.isr"]</th>
+                                <th class="numero">@T["corrida.imss"]</th>
+                                <th class="numero">@T["corrida.infonavit"]</th>
+                                <th class="numero">@T["corrida.otros"]</th>
+                                <th class="numero">@T["corrida.comision"]</th>
+                                <th class="numero">@T["corrida.subtotal"]</th>
+                                <th class="numero">@T["corrida.iva"]</th>
+                                <th class="numero">@T["corrida.total"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (FacturacionDeCorridaDto f in resumen.Facturacion)
+                            {
+                                <tr>
+                                    <td><strong>@f.RazonSocialNombre</strong></td>
+                                    <td>@T.Enumerado(f.TipoDeServicio)</td>
+                                    <td class="numero">@f.Trabajadores.ToString("N0", T.Cultura)</td>
+                                    <td class="numero">@Moneda(f.BaseNomina)</td>
+                                    <td class="numero">@Moneda(f.BaseFiniquitos)</td>
+                                    <td class="numero">@Moneda(f.Isn)</td>
+                                    <td class="numero">@Moneda(f.Isr)</td>
+                                    <td class="numero">@Moneda(f.Imss)</td>
+                                    <td class="numero">@Moneda(f.Infonavit)</td>
+                                    <td class="numero">@Moneda(f.Otros)</td>
+                                    <td class="numero">@Moneda(f.Comision)</td>
+                                    <td class="numero">@Moneda(f.Subtotal)</td>
+                                    <td class="numero">@Moneda(f.Iva)</td>
+                                    <td class="numero"><strong>@Moneda(f.Total)</strong></td>
+                                </tr>
+                            }
+                        </tbody>
+                        @if (resumen.Facturacion.Count > 1)
+                        {
+                            <tfoot>
+                                <tr>
+                                    <th colspan="2">@T["corrida.total"]</th>
+                                    <th class="numero">@resumen.Facturacion.Sum(f => f.Trabajadores).ToString("N0", T.Cultura)</th>
+                                    <th class="numero">@Moneda(resumen.Facturacion.Sum(f => f.BaseNomina))</th>
+                                    <th class="numero">@Moneda(resumen.Facturacion.Sum(f => f.BaseFiniquitos))</th>
+                                    <th class="numero">@Moneda(resumen.Facturacion.Sum(f => f.Isn))</th>
+                                    <th class="numero">@Moneda(resumen.Facturacion.Sum(f => f.Isr))</th>
+                                    <th class="numero">@Moneda(resumen.Facturacion.Sum(f => f.Imss))</th>
+                                    <th class="numero">@Moneda(resumen.Facturacion.Sum(f => f.Infonavit))</th>
+                                    <th class="numero">@Moneda(resumen.Facturacion.Sum(f => f.Otros))</th>
+                                    <th class="numero">@Moneda(resumen.Facturacion.Sum(f => f.Comision))</th>
+                                    <th class="numero">@Moneda(resumen.Facturacion.Sum(f => f.Subtotal))</th>
+                                    <th class="numero">@Moneda(resumen.Facturacion.Sum(f => f.Iva))</th>
+                                    <th class="numero">@Moneda(resumen.Facturacion.Sum(f => f.Total))</th>
+                                </tr>
+                            </tfoot>
+                        }
+                    </table>
+                </div>
+            </section>
+            break;
+
+        case Pestana.Cotejo:
+            <div class="rejilla-2">
+                <section class="tarjeta">
+                    <header class="tarjeta-cabecera"><h2>@T["cotejo.nuevo"]</h2></header>
+                    <p class="tenue">@T["cotejo.ayuda"]</p>
+                    @if (c.Estado is EstadoDeCorrida.Calculada or EstadoDeCorrida.Cotejada)
+                    {
+                        if (_archivosDeResultados.Count == 0)
+                        {
+                            <p class="tenue">
+                                @T["cotejo.sinArchivos"]
+                                <a href="@($"periodos/{c.PeriodoId}/documentos?empresaId={c.EmpresaId}")">@T["incidencias.irADocumentos"]</a>
+                            </p>
+                        }
+                        else
+                        {
+                            <div class="formulario">
+                                <div class="campo campo-ancho">
+                                    <label for="archivo-cotejo">@T["cotejo.archivoManual"]</label>
+                                    <select id="archivo-cotejo" value="@(_documentoCotejoId?.ToString() ?? string.Empty)"
+                                            @onchange="e => _documentoCotejoId = Guid.TryParse(e.Value?.ToString(), out Guid id) ? id : null">
+                                        <option value="">@T["cotejo.seleccioneArchivo"]</option>
+                                        @foreach (DocumentoDto archivo in _archivosDeResultados)
+                                        {
+                                            <option value="@archivo.Id">@archivo.NombreArchivo · @T.Enumerado(archivo.Tipo) · @Fecha(archivo.FechaSolicitud)</option>
+                                        }
+                                    </select>
+                                </div>
+                                <CampoNumerico Etiqueta="@T["cotejo.tolerancia"]" @bind-Valor="_tolerancia" Minimo="0" Ayuda="@T["cotejo.toleranciaAyuda"]" />
+                            </div>
+                            <div class="acciones" style="margin-top:1rem">
+                                <button type="button" class="boton boton-primario" disabled="@(EstaCargando || _documentoCotejoId is null)" @onclick="CotejarAsync">
+                                    <Icono Nombre="cotejo" /> @T["cotejo.cotejar"]
+                                </button>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p>@T["cotejo.noDisponible"]</p>
+                    }
+                </section>
+
+                <section class="tarjeta tarjeta-tabla">
+                    <header class="tarjeta-cabecera"><h2>@T["cotejo.historial"]</h2></header>
+                    @if (_cotejos.Count == 0)
+                    {
+                        <div class="vacio"><Icono Nombre="cotejo" Tamano="32" /><p>@T["cotejo.sinCotejos"]</p></div>
+                    }
+                    else
+                    {
+                        <div class="tabla-contenedor">
+                            <table class="tabla tabla-compacta">
+                                <thead>
+                                    <tr>
+                                        <th>@T["comun.fecha"]</th>
+                                        <th>@T["documentos.archivo"]</th>
+                                        <th class="numero">@T["cotejo.comparaciones"]</th>
+                                        <th class="numero">@T["cotejo.fueraDeTolerancia"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (CotejoDto cotejo in _cotejos)
+                                    {
+                                        <tr class="fila-seleccionable" @onclick="() => AbrirCotejoAsync(cotejo.Id)">
+                                            <td>
+                                                <div class="celda-principal">
+                                                    <span>@Fecha(cotejo.FechaCotejo)</span>
+                                                    <span class="tenue">@cotejo.Usuario</span>
+                                                </div>
+                                            </td>
+                                            <td>@cotejo.NombreArchivo</td>
+                                            <td class="numero">@cotejo.TotalComparaciones.ToString("N0", T.Cultura)</td>
+                                            <td class="numero">
+                                                <span class="etiqueta @(cotejo.TotalFueraDeTolerancia == 0 ? "etiqueta-ok" : "etiqueta-error")">@cotejo.TotalFueraDeTolerancia.ToString("N0", T.Cultura)</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </section>
+            </div>
+
+            @if (_cotejo is { } cotejoAbierto)
+            {
+                IEnumerable<DiferenciaDeCotejoDto> diferencias = _soloFueraDeTolerancia
+                    ? cotejoAbierto.Diferencias.Where(d => !d.DentroDeTolerancia)
+                    : cotejoAbierto.Diferencias;
+
+                <section class="tarjeta tarjeta-tabla">
+                    <header class="tarjeta-cabecera">
+                        <h2>@T.Formato("cotejo.detalle", cotejoAbierto.NombreArchivo, Fecha(cotejoAbierto.FechaCotejo))</h2>
+                        <label class="casilla">
+                            <input type="checkbox" @bind="_soloFueraDeTolerancia" /> @T["cotejo.soloFueraDeTolerancia"]
+                        </label>
+                    </header>
+                    @if (!diferencias.Any())
+                    {
+                        <div class="vacio"><Icono Nombre="check" Tamano="32" /><p>@T["cotejo.sinDiferencias"]</p></div>
+                    }
+                    else
+                    {
+                        <div class="tabla-contenedor">
+                            <table class="tabla tabla-compacta">
+                                <thead>
+                                    <tr>
+                                        <th>@T["empleados.clave"]</th>
+                                        <th>@T["cotejo.concepto"]</th>
+                                        <th class="numero">@T["cotejo.sistema"]</th>
+                                        <th class="numero">@T["cotejo.manual"]</th>
+                                        <th class="numero">@T["cotejo.diferencia"]</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (DiferenciaDeCotejoDto d in diferencias.Take(MaximoDiferenciasVisibles))
+                                    {
+                                        <tr>
+                                            <td>@d.ClaveEmpleado</td>
+                                            <td><code>@d.ConceptoClave</code></td>
+                                            <td class="numero">@(d.ImporteSistema is { } s ? Moneda(s) : "—")</td>
+                                            <td class="numero">@(d.ImporteManual is { } m ? Moneda(m) : "—")</td>
+                                            <td class="numero"><strong>@Moneda(d.Diferencia)</strong></td>
+                                            <td>
+                                                <span class="etiqueta @(d.DentroDeTolerancia ? "etiqueta-ok" : "etiqueta-error")">
+                                                    @(d.DentroDeTolerancia ? T["cotejo.dentro"] : T["cotejo.fuera"])
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        @if (diferencias.Count() > MaximoDiferenciasVisibles)
+                        {
+                            <p class="tenue" style="padding:0 1.4rem 1rem">@T.Formato("cotejo.recortadas", MaximoDiferenciasVisibles)</p>
+                        }
+                    }
+                </section>
+            }
+            break;
+    }
+}
+else if (!Inicializado || EstaCargando)
+{
+    <div class="cargando"><span class="giro"></span> @T["comun.cargando"]</div>
+}
+
+<Dialogo Visible="_detalle is not null" Titulo="@TituloDeDetalle" Ancho="true" AlCerrar="() => _detalle = null">
+    <ChildContent>
+        @if (_detalle is { } detalle)
+        {
+            <div class="rejilla-2">
+                <div>
+                    @foreach (IGrouping<TipoDeConcepto, ConceptoCalculadoDto> grupo in detalle.Conceptos.GroupBy(k => k.Tipo).OrderBy(g => (int)g.Key))
+                    {
+                        <h3>@T.Enumerado(grupo.Key)</h3>
+                        <table class="tabla tabla-compacta">
+                            <tbody>
+                                @foreach (ConceptoCalculadoDto concepto in grupo)
+                                {
+                                    <tr title="@concepto.Formula">
+                                        <td>
+                                            <div class="celda-principal">
+                                                <span>@concepto.Nombre</span>
+                                                <code class="formula-corta">@concepto.Clave = @concepto.Formula</code>
+                                            </div>
+                                        </td>
+                                        <td class="numero">@Numero(concepto.Importe)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+                <div>
+                    <h3>@T["corrida.variables"]</h3>
+                    <p class="tenue">@T["corrida.variablesAyuda"]</p>
+                    <dl class="definiciones">
+                        @foreach (ValorDto variable in detalle.Variables)
+                        {
+                            <dt><code>@variable.Clave</code></dt>
+                            <dd class="numero" style="text-align:left">@Numero(variable.Valor, 4)</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        }
+    </ChildContent>
+    <Pie>
+        <button type="button" class="boton" @onclick="() => _detalle = null">@T["comun.cerrar"]</button>
+    </Pie>
+</Dialogo>
+
+<Dialogo Visible="_estadoPedido is not null" Titulo="@(_estadoPedido == EstadoDeCorrida.Aprobada ? T["corrida.aprobar"] : T["corrida.descartar"])" AlCerrar="() => _estadoPedido = null">
+    <ChildContent>
+        <p>@(_estadoPedido == EstadoDeCorrida.Aprobada ? T["corrida.confirmarAprobar"] : T["corrida.confirmarDescartar"])</p>
+        <div class="campo">
+            <label for="obs-estado">@T["nomina.observaciones"]</label>
+            <input id="obs-estado" type="text" maxlength="500" @bind="_observacionesEstado" />
+        </div>
+    </ChildContent>
+    <Pie>
+        <button type="button" class="boton" @onclick="() => _estadoPedido = null">@T["comun.cancelar"]</button>
+        <button type="button" class="boton @(_estadoPedido == EstadoDeCorrida.Aprobada ? "boton-exito" : "boton-peligro")" disabled="@EstaCargando" @onclick="CambiarEstadoAsync">
+            @(_estadoPedido == EstadoDeCorrida.Aprobada ? T["corrida.aprobar"] : T["corrida.descartar"])
+        </button>
+    </Pie>
+</Dialogo>
+
+@code {
+    private const int TamanoPagina = 100;
+    private const int MaximoDiferenciasVisibles = 1000;
+
+    private ResumenDeCorridaDto? _resumen;
+    private Pestana _pestana = Pestana.Resultados;
+    private string? _texto;
+    private EsquemaDePago _esquema = EsquemaDePago.NoEspecificado;
+    private int _pagina = 1;
+
+    private DetalleDeResultadoDto? _detalle;
+
+    private EstadoDeCorrida? _estadoPedido;
+    private string? _observacionesEstado;
+
+    private IReadOnlyList<CotejoDto> _cotejos = [];
+    private CotejoDto? _cotejo;
+    private bool _soloFueraDeTolerancia = true;
+    private IReadOnlyList<DocumentoDto> _archivosDeResultados = [];
+    private Guid? _documentoCotejoId;
+    private decimal _tolerancia = 1m;
+
+    private enum Pestana
+    {
+        Resultados,
+        Facturacion,
+        Cotejo,
+    }
+
+    /// <summary>Corrida mostrada.</summary>
+    [Parameter]
+    public Guid CorridaId { get; set; }
+
+    private string TituloDeDetalle => _detalle is { } d
+        ? $"{d.Resultado.ClaveEmpleado} · {d.Resultado.NombreEmpleado} · {T.Enumerado(d.Resultado.Esquema)}"
+        : string.Empty;
+
+    /// <inheritdoc/>
+    protected override async Task CargarDatosAsync()
+        => _resumen = await Casos.ConsultarAsync<ObtenerResumenDeCorridaQuery, ResumenDeCorridaDto>(
+            new ObtenerResumenDeCorridaQuery(CorridaId, EmpresaDeConsulta));
+
+    private IReadOnlyList<ResultadoDeNominaDto> ResultadosFiltrados(IReadOnlyList<ResultadoDeNominaDto> resultados)
+    {
+        IEnumerable<ResultadoDeNominaDto> consulta = resultados;
+
+        if (_esquema != EsquemaDePago.NoEspecificado)
+        {
+            consulta = consulta.Where(r => r.Esquema == _esquema);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_texto))
+        {
+            string texto = _texto.Trim();
+            consulta = consulta.Where(r => r.ClaveEmpleado.Contains(texto, StringComparison.OrdinalIgnoreCase)
+                || r.NombreEmpleado.Contains(texto, StringComparison.OrdinalIgnoreCase)
+                || r.RazonSocialNombre.Contains(texto, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return consulta as IReadOnlyList<ResultadoDeNominaDto> ?? consulta.ToList();
+    }
+
+    private Task AbrirDetalleAsync(ResultadoDeNominaDto resultado) => EjecutarAsync(async () =>
+        _detalle = await Casos.ConsultarAsync<ObtenerDetalleDeResultadoQuery, DetalleDeResultadoDto>(
+            new ObtenerDetalleDeResultadoQuery(resultado.Id, EmpresaDeConsulta)));
+
+    private Task ExportarAsync() => EjecutarAsync(async () =>
+    {
+        ArchivoExportado archivo = await Casos.ConsultarAsync<ExportarCorridaQuery, ArchivoExportado>(
+            new ExportarCorridaQuery(CorridaId, EmpresaDeConsulta));
+
+        using var flujo = new MemoryStream(archivo.Contenido);
+        using var referencia = new DotNetStreamReference(flujo);
+        await JS.InvokeVoidAsync("huimanNet.descargarFlujo", archivo.Nombre, archivo.TipoDeContenido, referencia);
+    });
+
+    private void PedirEstado(EstadoDeCorrida estado)
+    {
+        LimpiarMensajes();
+        _observacionesEstado = null;
+        _estadoPedido = estado;
+    }
+
+    private Task CambiarEstadoAsync() => EjecutarAsync(async () =>
+    {
+        if (_estadoPedido is not { } estado)
+        {
+            return;
+        }
+
+        await Casos.EjecutarAsync(new CambiarEstadoCorridaCommand(CorridaId, estado, EmpresaDeConsulta, _observacionesEstado));
+        _estadoPedido = null;
+        MensajeDeExito = T.Formato("corrida.estadoCambiado", T.Enumerado(estado));
+        await CargarDatosAsync();
+    });
+
+    private Task AbrirCotejosAsync()
+    {
+        _pestana = Pestana.Cotejo;
+        return EjecutarAsync(async () =>
+        {
+            await CargarCotejosAsync();
+            await CargarArchivosDeResultadosAsync();
+        });
+    }
+
+    private async Task CargarCotejosAsync()
+        => _cotejos = await Casos.ConsultarAsync<ListarCotejosQuery, IReadOnlyList<CotejoDto>>(
+            new ListarCotejosQuery(CorridaId, EmpresaDeConsulta));
+
+    /// <summary>
+    /// El archivo del cálculo manual se elige entre los resultados y ajustes ya
+    /// publicados en el período de la corrida: ningún archivo entra por fuera del período.
+    /// </summary>
+    private async Task CargarArchivosDeResultadosAsync()
+    {
+        if (_resumen is not { } resumen)
+        {
+            _archivosDeResultados = [];
+            return;
+        }
+
+        IReadOnlyList<DocumentoDto> documentos = await Casos.ConsultarAsync<ListarDocumentosPorPeriodoQuery, IReadOnlyList<DocumentoDto>>(
+            new ListarDocumentosPorPeriodoQuery(resumen.Corrida.PeriodoId, Tipo: null, SoloDescargables: true, EmpresaDeConsulta));
+
+        _archivosDeResultados = documentos.Where(d => d.Tipo is TipoDocumento.Resultado or TipoDocumento.Ajuste).ToList();
+
+        if (_archivosDeResultados.All(d => d.Id != _documentoCotejoId))
+        {
+            _documentoCotejoId = _archivosDeResultados.FirstOrDefault()?.Id;
+        }
+    }
+
+    private Task AbrirCotejoAsync(Guid cotejoId) => EjecutarAsync(async () =>
+        _cotejo = await Casos.ConsultarAsync<ObtenerCotejoQuery, CotejoDto>(new ObtenerCotejoQuery(cotejoId, EmpresaDeConsulta)));
+
+    private Task CotejarAsync() => EjecutarAsync(async () =>
+    {
+        if (_documentoCotejoId is not { } documentoId)
+        {
+            return;
+        }
+
+        CotejoDto cotejo = await Casos.EjecutarAsync<CotejarNominaCommand, CotejoDto>(
+            new CotejarNominaCommand(CorridaId, EmpresaDeConsulta, documentoId, _tolerancia));
+
+        _cotejo = cotejo;
+        MensajeDeExito = T.Formato("cotejo.terminado", cotejo.TotalComparaciones, cotejo.TotalFueraDeTolerancia);
+
+        await CargarDatosAsync();
+        await CargarCotejosAsync();
+    });
+}

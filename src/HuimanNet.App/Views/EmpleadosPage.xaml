@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Cada empleado pertenece a una empresa. Nómina y administración filtran por
+  empresa (o ven todas); a la empresa cliente se le muestran sólo los suyos.
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HuimanNet.App.ViewModels"
+             xmlns:loc="clr-namespace:HuimanNet.App.Localizacion"
+             xmlns:emp="clr-namespace:HuimanNet.Contracts.Empleados;assembly=HuimanNet.Contracts"
+             x:Class="HuimanNet.App.Views.EmpleadosPage"
+             x:DataType="vm:EmpleadosViewModel"
+             Title="{Binding Titulo}">
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="12,12,12,0" RowSpacing="8">
+
+        <VerticalStackLayout Grid.Row="0" Spacing="4">
+            <Picker ItemsSource="{Binding NombresDeEmpresas}" SelectedIndex="{Binding IndiceDeEmpresa}"
+                    Title="{loc:T Clave=comun.empresa}" IsVisible="{Binding EligeEmpresa}" />
+            <SearchBar Text="{Binding Texto}" Placeholder="{loc:T Clave=empleados.buscar}" SearchCommand="{Binding BuscarCommand}" />
+            <Label Text="{Binding Total}" Style="{StaticResource Tenue}" />
+        </VerticalStackLayout>
+
+        <Border Grid.Row="1" Style="{StaticResource Tarjeta}" IsVisible="{Binding TieneError}">
+            <Label Text="{Binding MensajeDeError}" TextColor="{StaticResource Error}" />
+        </Border>
+
+        <CollectionView Grid.Row="2" ItemsSource="{Binding Empleados}" SelectionMode="None"
+                        RemainingItemsThreshold="5" RemainingItemsThresholdReachedCommand="{Binding CargarMasCommand}">
+            <CollectionView.EmptyView>
+                <Label Text="{loc:T Clave=empleados.vacio}" Style="{StaticResource Tenue}"
+                       HorizontalTextAlignment="Center" Margin="0,40,0,0" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="emp:EmpleadoResumenDto">
+                    <Border Style="{StaticResource Tarjeta}" Margin="0,0,0,10">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:EmpleadosViewModel}}, Path=AbrirCommand, x:DataType=vm:EmpleadosViewModel}"
+                                CommandParameter="{Binding .}" />
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout Spacing="3">
+                            <Label FontAttributes="Bold">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="{Binding Clave}" />
+                                        <Span Text=" · " />
+                                        <Span Text="{Binding NombreCompleto}" />
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+                            <Label Text="{Binding EmpresaRazonSocial}" Style="{StaticResource Tenue}" FontSize="12"
+                                   IsVisible="{Binding Source={RelativeSource AncestorType={x:Type vm:EmpleadosViewModel}}, Path=EligeEmpresa, x:DataType=vm:EmpleadosViewModel}" />
+                            <Label Text="{Binding RazonesSociales}" Style="{StaticResource Tenue}" FontSize="13" />
+                            <Label Text="{Binding Esquemas}" TextColor="{StaticResource Primario}" FontSize="12" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+    </Grid>
+
+</ContentPage>

@@ -1,0 +1,19 @@
+@* Estado de una corrida de nómina con su color. *@
+@inject Traductor T
+
+<span class="etiqueta @Clase">@T.Enumerado(Estado)</span>
+
+@code {
+    /// <summary>Estado a mostrar.</summary>
+    [Parameter]
+    public EstadoDeCorrida Estado { get; set; }
+
+    private string Clase => Estado switch
+    {
+        EstadoDeCorrida.Calculada => "etiqueta-info",
+        EstadoDeCorrida.Cotejada => "etiqueta-violeta",
+        EstadoDeCorrida.Aprobada => "etiqueta-ok",
+        EstadoDeCorrida.Descartada => "etiqueta-error",
+        _ => string.Empty,
+    };
+}

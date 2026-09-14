@@ -1,0 +1,19 @@
+@* Avisos de error y de éxito de la última operación. *@
+@if (Error is not null)
+{
+    <div class="aviso aviso-error" role="alert"><Icono Nombre="alerta" Tamano="18" /> <span>@Error</span></div>
+}
+@if (Exito is not null)
+{
+    <div class="aviso aviso-exito" role="status"><Icono Nombre="check" Tamano="18" /> <span>@Exito</span></div>
+}
+
+@code {
+    /// <summary>Mensaje de error, o <c>null</c>.</summary>
+    [Parameter]
+    public string? Error { get; set; }
+
+    /// <summary>Mensaje de éxito, o <c>null</c>.</summary>
+    [Parameter]
+    public string? Exito { get; set; }
+}

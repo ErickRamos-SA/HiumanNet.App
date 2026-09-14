@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HuimanNet.App.ViewModels"
+             xmlns:loc="clr-namespace:HuimanNet.App.Localizacion"
+             xmlns:com="clr-namespace:HuimanNet.Contracts.Usuarios;assembly=HuimanNet.Contracts"
+             x:Class="HuimanNet.App.Views.InicioPage"
+             x:DataType="vm:InicioViewModel"
+             Title="{Binding Titulo}">
+
+    <RefreshView Command="{Binding CargarCommand}" IsRefreshing="{Binding EstaOcupado, Mode=OneWay}">
+        <ScrollView>
+            <VerticalStackLayout Padding="16" Spacing="14">
+
+                <Label Text="{Binding Saludo}" Style="{StaticResource Titulo}" />
+                <Label Text="{loc:T Clave=inicio.subtitulo}" Style="{StaticResource Tenue}" />
+
+                <Border Style="{StaticResource Tarjeta}" IsVisible="{Binding EligeEmpresa}">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="{loc:T Clave=comun.empresaDeTrabajo}" Style="{StaticResource Subtitulo}" />
+                        <Picker ItemsSource="{Binding NombresDeEmpresas}"
+                                SelectedIndex="{Binding IndiceDeEmpresa}"
+                                Title="{loc:T Clave=comun.seleccioneEmpresa}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource Tarjeta}" IsVisible="{Binding TieneError}">
+                    <Label Text="{Binding MensajeDeError}" TextColor="{StaticResource Error}" />
+                </Border>
+
+                <FlexLayout BindableLayout.ItemsSource="{Binding Indicadores}" Wrap="Wrap" JustifyContent="SpaceBetween">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:Indicador">
+                            <Border Style="{StaticResource Tarjeta}" FlexLayout.Basis="48%" Margin="0,0,0,10">
+                                <VerticalStackLayout Spacing="2">
+                                    <Label Text="{Binding Valor, Converter={StaticResource Moneda}}"
+                                           FontSize="24" FontAttributes="Bold" TextColor="{StaticResource Primario}" />
+                                    <Label Text="{Binding Etiqueta}" Style="{StaticResource Tenue}" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </FlexLayout>
+
+                <Label Text="{loc:T Clave=inicio.pendientes}" Style="{StaticResource Subtitulo}" />
+                <Label Text="{loc:T Clave=inicio.sinPendientes}" Style="{StaticResource Tenue}" IsVisible="{Binding SinPendientes}" />
+
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Pendientes}" Spacing="10">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="com:PendienteDto">
+                            <Border Style="{StaticResource Tarjeta}">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:InicioViewModel}}, Path=AbrirPendienteCommand, x:DataType=vm:InicioViewModel}"
+                                        CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+                                <VerticalStackLayout Spacing="3">
+                                    <Label Text="{Binding Clave, Converter={StaticResource Texto}}" FontAttributes="Bold" />
+                                    <Label Text="{Binding Detalle}" Style="{StaticResource Tenue}" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+
+</ContentPage>

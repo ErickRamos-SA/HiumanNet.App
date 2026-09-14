@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  La lista de usuarios puede crecer mucho: va en un CollectionView virtualizado
+  y la prueba de fórmulas queda en su encabezado.
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HuimanNet.App.ViewModels"
+             xmlns:loc="clr-namespace:HuimanNet.App.Localizacion"
+             xmlns:usu="clr-namespace:HuimanNet.Contracts.Usuarios;assembly=HuimanNet.Contracts"
+             x:Class="HuimanNet.App.Views.AdministracionPage"
+             x:DataType="vm:AdministracionViewModel"
+             Title="{Binding Titulo}">
+
+    <CollectionView ItemsSource="{Binding Usuarios}" SelectionMode="None" Margin="16,0">
+
+        <CollectionView.Header>
+            <VerticalStackLayout Spacing="12" Padding="0,16,0,8">
+
+                <Label Text="{loc:T Clave=movil.administracionWeb}" Style="{StaticResource Tenue}" />
+
+                <Border Style="{StaticResource Tarjeta}" IsVisible="{Binding TieneError}">
+                    <Label Text="{Binding MensajeDeError}" TextColor="{StaticResource Error}" />
+                </Border>
+
+                <VerticalStackLayout Spacing="8" IsVisible="{Binding PuedeCatalogos}">
+                    <Label Text="{loc:T Clave=catalogos.probarFormula}" Style="{StaticResource Subtitulo}" />
+                    <Label Text="{loc:T Clave=catalogos.probarAyuda}" Style="{StaticResource Tenue}" FontSize="12" />
+                    <Picker ItemsSource="{Binding NombresDeEsquemas}" SelectedIndex="{Binding IndiceDeEsquemaDePrueba}"
+                            Title="{loc:T Clave=contratos.esquema}" />
+                    <Editor Text="{Binding Formula}" AutoSize="TextChanges" FontFamily="monospace" MinimumHeightRequest="80" />
+                    <Label Text="{loc:T Clave=catalogos.sintaxisAyuda}" Style="{StaticResource Tenue}" FontSize="12" />
+                    <Button Text="{loc:T Clave=catalogos.evaluar}" Command="{Binding ProbarCommand}"
+                            IsEnabled="{Binding EstaOcupado, Converter={StaticResource NoOcupado}}" />
+                    <Border Style="{StaticResource Tarjeta}" IsVisible="{Binding ResultadoDePrueba, Converter={StaticResource NoNulo}}">
+                        <Label Text="{Binding ResultadoDePrueba}" FontFamily="monospace" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <Label Text="{loc:T Clave=usuarios.titulo}" Style="{StaticResource Subtitulo}" IsVisible="{Binding PuedeUsuarios}" />
+            </VerticalStackLayout>
+        </CollectionView.Header>
+
+        <CollectionView.ItemTemplate>
+            <DataTemplate x:DataType="usu:UsuarioDto">
+                <Border Style="{StaticResource Tarjeta}" Padding="10" Margin="0,0,0,8">
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                        <Label Text="{Binding NombreCompleto}" FontAttributes="Bold" />
+                        <Label Grid.Column="1" Text="{Binding Rol, Converter={StaticResource Enumerado}}"
+                               TextColor="{StaticResource Primario}" FontSize="12" />
+                        <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Correo}" Style="{StaticResource Tenue}" FontSize="13" />
+                        <Label Grid.Row="2" Text="{Binding EmpresaRazonSocial}" Style="{StaticResource Tenue}" FontSize="12" />
+                        <Label Grid.Row="2" Grid.Column="1" Text="{loc:T Clave=comun.inactivo}" TextColor="{StaticResource Error}"
+                               FontSize="12" IsVisible="{Binding Activo, Converter={StaticResource NoOcupado}}" />
+                    </Grid>
+                </Border>
+            </DataTemplate>
+        </CollectionView.ItemTemplate>
+
+    </CollectionView>
+
+</ContentPage>

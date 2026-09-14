@@ -1,0 +1,785 @@
+<title>HuimanNet — Diagrama de Arquitectura Azure</title>
+<style>
+  :root {
+    --ground:      #f4f6f8;
+    --surface:     #ffffff;
+    --surface-2:   #edeff2;
+    --ink:         #1c222b;
+    --ink-2:       #414a56;
+    --ink-3:       #6b7480;
+    --line:        #d4d8de;
+    --line-2:      #b6bcc5;
+    --accent:      #14396b;
+    --accent-2:    #1f5c8b;
+    --accent-soft: #e4eaf3;
+    --core:        #8a6520;
+    --core-soft:   #f4eede;
+    --core-line:   #a88238;
+    --ok:          #1f5b3a;
+    --ok-soft:     #e3ede7;
+    --danger:      #8c2a2a;
+    --danger-soft: #f1e5e5;
+    --muted:       #eef0f3;
+    --muted-line:  #a7adb6;
+
+    --font-display: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    --font-body: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    --font-mono: "Courier New", Courier, monospace;
+
+    --w: 1180px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:      #0b1016;
+      --surface:     #141c25;
+      --surface-2:   #1b242f;
+      --ink:         #e6ecf2;
+      --ink-2:       #a3b4c6;
+      --ink-3:       #7b8da2;
+      --line:        #26323f;
+      --line-2:      #354557;
+      --accent:      #7fa3d4;
+      --accent-2:    #9dbbe4;
+      --accent-soft: #1a2740;
+      --core:        #c9a866;
+      --core-soft:   #2e2617;
+      --core-line:   #8a7440;
+      --ok:          #7fb094;
+      --ok-soft:     #1a2a20;
+      --danger:      #c78585;
+      --danger-soft: #2e1c1c;
+      --muted:       #1b242f;
+      --muted-line:  #3d4c5e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#0b1016; --surface:#141c25; --surface-2:#1b242f;
+    --ink:#e6ecf2; --ink-2:#a3b4c6; --ink-3:#7b8da2;
+    --line:#26323f; --line-2:#354557;
+    --accent:#7fa3d4; --accent-2:#9dbbe4; --accent-soft:#1a2740;
+    --core:#c9a866; --core-soft:#2e2617; --core-line:#8a7440;
+    --ok:#7fb094; --ok-soft:#1a2a20;
+    --danger:#c78585; --danger-soft:#2e1c1c;
+    --muted:#1b242f; --muted-line:#3d4c5e;
+  }
+  :root[data-theme="light"] {
+    --ground:#f4f6f8; --surface:#ffffff; --surface-2:#edeff2;
+    --ink:#1c222b; --ink-2:#414a56; --ink-3:#6b7480;
+    --line:#d4d8de; --line-2:#b6bcc5;
+    --accent:#14396b; --accent-2:#1f5c8b; --accent-soft:#e4eaf3;
+    --core:#8a6520; --core-soft:#f4eede; --core-line:#a88238;
+    --ok:#1f5b3a; --ok-soft:#e3ede7;
+    --danger:#8c2a2a; --danger-soft:#f1e5e5;
+    --muted:#eef0f3; --muted-line:#a7adb6;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: var(--w); margin: 0 auto; padding: 0 24px 96px; }
+
+  /* ---------- header ---------- */
+  header.masthead {
+    border-bottom: 2px solid var(--ink);
+    padding: 56px 0 20px;
+    margin-bottom: 40px;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(30px, 5vw, 46px);
+    font-weight: 700;
+    letter-spacing: -.022em;
+    line-height: 1.08;
+    text-wrap: balance;
+    margin-bottom: 14px;
+  }
+  .standfirst {
+    font-size: 17px;
+    color: var(--ink-2);
+    max-width: 62ch;
+  }
+  .metabar {
+    display: flex; flex-wrap: wrap; gap: 8px 28px;
+    margin-top: 24px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .metabar b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- sections ---------- */
+  section { margin-top: 64px; scroll-margin-top: 24px; }
+  h2 {
+    font-family: var(--font-display);
+    font-size: 25px; font-weight: 700; letter-spacing: -.014em;
+    display: flex; align-items: baseline; gap: 14px;
+    padding-bottom: 12px; margin-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  h2 .num {
+    font-family: var(--font-mono); font-size: 13px; font-weight: 500;
+    color: var(--accent); letter-spacing: .06em;
+  }
+  h3 {
+    font-family: var(--font-display);
+    font-size: 17px; font-weight: 650; letter-spacing: -.008em;
+    margin: 32px 0 10px;
+  }
+  .lede { color: var(--ink-2); max-width: 68ch; margin-bottom: 22px; }
+  p { max-width: 70ch; }
+  p + p { margin-top: 12px; }
+
+  /* ---------- diagram ---------- */
+  .canvas {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 20px;
+    overflow-x: auto;
+    margin-top: 20px;
+  }
+  .canvas svg { display: block; min-width: 940px; width: 100%; height: auto; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 10px 26px;
+    margin-top: 18px; padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--ink-2);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .swatch { width: 22px; height: 12px; border-radius: 2px; flex: none; }
+  .sw-f1  { background: var(--accent-soft); border: 1.5px solid var(--accent); }
+  .sw-core{ background: var(--core-soft);   border: 2px solid var(--core-line); }
+  .sw-def { background: var(--muted); border: 1.5px dashed var(--muted-line); }
+  .sw-flow{ background: var(--accent); height: 3px; border-radius: 2px; }
+
+  /* ---------- tables ---------- */
+  .tablewrap { overflow-x: auto; margin-top: 18px; border: 1px solid var(--line); border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--surface); min-width: 620px; }
+  thead th {
+    background: var(--surface-2);
+    font-family: var(--font-mono);
+    font-size: 11px; letter-spacing: .09em; text-transform: uppercase;
+    font-weight: 600; color: var(--ink-2);
+    text-align: left; padding: 11px 14px;
+    border-bottom: 1px solid var(--line-2);
+    white-space: nowrap;
+  }
+  tbody td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.total td {
+    background: var(--accent-soft);
+    font-weight: 650;
+    border-top: 2px solid var(--accent);
+  }
+  td.num, th.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.id { font-family: var(--font-mono); font-size: 12.5px; color: var(--accent); font-weight: 600; white-space: nowrap; }
+  td strong { font-weight: 650; }
+  .sub { display: block; color: var(--ink-3); font-size: 12.5px; margin-top: 2px; }
+
+  code, .mono { font-family: var(--font-mono); font-size: .89em; }
+  code { background: var(--surface-2); padding: 1px 5px; border-radius: 3px; }
+
+  /* ---------- chips ---------- */
+  .chip {
+    display: inline-block; font-family: var(--font-mono);
+    font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
+    font-weight: 600; padding: 2px 7px; border-radius: 3px; white-space: nowrap;
+  }
+  .c-f1  { background: var(--ok-soft);    color: var(--ok); }
+  .c-def { background: var(--muted);      color: var(--ink-3); }
+  .c-core{ background: var(--core-soft);  color: var(--core); }
+  .c-free{ background: var(--accent-soft);color: var(--accent); }
+
+  /* ---------- attribute cards ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; margin-top: 18px; }
+  .cell { background: var(--surface); padding: 18px 20px; }
+  .cell .k { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px; }
+  .cell .v { font-family: var(--font-display); font-size: 25px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; margin-bottom: 6px; }
+  .cell .d { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+
+  /* ---------- callout ---------- */
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 16px 20px; margin-top: 22px; border-radius: 0 4px 4px 0;
+    font-size: 14.5px; color: var(--ink-2);
+  }
+  .note b { color: var(--ink); }
+  .note.warn { border-left-color: var(--core); }
+
+  ul.clean { list-style: none; margin-top: 14px; display: flex; flex-direction: column; gap: 9px; }
+  ul.clean li { position: relative; padding-left: 20px; font-size: 14.5px; color: var(--ink-2); max-width: 72ch; }
+  ul.clean li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 6px; height: 2px; background: var(--accent); }
+  ul.clean li b { color: var(--ink); font-weight: 650; }
+
+  footer { margin-top: 80px; padding-top: 22px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
+
+  @media (max-width: 640px) {
+    header.masthead { padding-top: 36px; }
+    .canvas { padding: 12px; }
+    section { margin-top: 48px; }
+  }
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">HuimanNet · Portal de nómina · Microsoft Azure</div>
+  <h1>Diagrama de arquitectura, inventario y modelo de costos</h1>
+  <p class="standfirst">Arquitectura de referencia para la V1: un portal seguro de intercambio de documentos entre empresas cliente y el operador de nómina. Dimensionada para 500 usuarios, con ruta de crecimiento a 9 000+.</p>
+  <div class="metabar">
+    <span><b>Versión</b> 1.0 — V1</span>
+    <span><b>Nube</b> Microsoft Azure</span>
+    <span><b>Usuarios</b> ≤ 500 (proyección 9 000+)</span>
+    <span><b>Costo est.</b> USD 47–92 / mes</span>
+  </div>
+</header>
+
+<!-- ══════════ 1. DIAGRAMA ══════════ -->
+<section id="diagrama">
+  <h2><span class="num">01</span> Diagrama de arquitectura</h2>
+  <p class="lede">Vista de despliegue por zonas de confianza. Cada bloque indica el servicio de Azure y su SKU; los números ① – ⑥ marcan los flujos e identifican las filas del inventario en la sección 02.</p>
+
+  <div class="canvas">
+  <svg viewBox="0 0 1240 706" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagrama de arquitectura Azure de HuimanNet por zonas de confianza">
+    <defs>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+      </marker>
+      <marker id="ahc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--core)"/>
+      </marker>
+      <marker id="ahm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--muted-line)"/>
+      </marker>
+
+      <!-- ═══════ Biblioteca de iconos ═══════
+           Glifos originales dibujados para este documento, en el mismo lenguaje
+           visual del diagrama. No son los iconos oficiales de Azure. Heredan el
+           color del contenedor mediante currentColor, por lo que funcionan en
+           tema claro y oscuro sin duplicar definiciones. -->
+      <symbol id="ic-browser" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.5" y="4" width="19" height="16" rx="2.5"/><path d="M2.5 9.5h19"/>
+          <circle cx="6" cy="6.8" r=".85" fill="currentColor" stroke="none"/>
+          <circle cx="8.8" cy="6.8" r=".85" fill="currentColor" stroke="none"/>
+        </g>
+      </symbol>
+      <symbol id="ic-mobile" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.6h3"/>
+        </g>
+      </symbol>
+      <symbol id="ic-lock" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4.5" y="10.5" width="15" height="10.5" rx="2.2"/>
+          <path d="M8 10.5V7.2a4 4 0 018 0v3.3"/><path d="M12 14.8v2.4"/>
+        </g>
+      </symbol>
+      <symbol id="ic-shield" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2.6l7.6 3v6.2c0 4.4-3.1 7.9-7.6 9.6-4.5-1.7-7.6-5.2-7.6-9.6V5.6z"/>
+        </g>
+      </symbol>
+      <symbol id="ic-shield-check" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2.6l7.6 3v6.2c0 4.4-3.1 7.9-7.6 9.6-4.5-1.7-7.6-5.2-7.6-9.6V5.6z"/>
+          <path d="M8.8 11.8l2.3 2.3 4.1-4.4"/>
+        </g>
+      </symbol>
+      <symbol id="ic-monitor" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.5" y="3.8" width="19" height="13.4" rx="2.2"/>
+          <path d="M8.5 21h7M12 17.2V21"/>
+        </g>
+      </symbol>
+      <symbol id="ic-api" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8.6 6.8L3.4 12l5.2 5.2"/><path d="M15.4 6.8L20.6 12l-5.2 5.2"/><path d="M13.4 4.8l-2.8 14.4"/>
+        </g>
+      </symbol>
+      <symbol id="ic-cog" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3.3"/>
+          <path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8"/>
+        </g>
+      </symbol>
+      <symbol id="ic-db" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="12" cy="5.8" rx="7.6" ry="3.2"/>
+          <path d="M4.4 5.8v12.4c0 1.8 3.4 3.2 7.6 3.2s7.6-1.4 7.6-3.2V5.8"/>
+          <path d="M4.4 12c0 1.8 3.4 3.2 7.6 3.2s7.6-1.4 7.6-3.2"/>
+        </g>
+      </symbol>
+      <symbol id="ic-doc" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13.6 2.6H7.4a2.4 2.4 0 00-2.4 2.4v14a2.4 2.4 0 002.4 2.4h9.2a2.4 2.4 0 002.4-2.4V8z"/>
+          <path d="M13.4 2.6V8h5.6"/><path d="M8.6 13h6.8M8.6 16.6h4.6"/>
+        </g>
+      </symbol>
+      <symbol id="ic-queue" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3.4 6.6h11M3.4 12h11M3.4 17.4h11"/><path d="M17.6 9.2L20.8 12l-3.2 2.8"/>
+        </g>
+      </symbol>
+      <symbol id="ic-bolt" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13.4 2.4L4.8 13.4h6.2l-1.4 8.2 8.6-11h-6.2z"/>
+        </g>
+      </symbol>
+      <symbol id="ic-identity" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3.2" y="3.6" width="17.6" height="16.8" rx="2.6"/>
+          <circle cx="12" cy="10" r="2.6"/><path d="M7.4 17.2c1.1-2.2 2.7-3.3 4.6-3.3s3.5 1.1 4.6 3.3"/>
+        </g>
+      </symbol>
+      <symbol id="ic-key" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="12" r="4.2"/><path d="M12.2 12h8.4"/><path d="M18 12v3.4M15.2 12v2.6"/>
+        </g>
+      </symbol>
+      <symbol id="ic-card" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.4" y="5.4" width="19.2" height="13.2" rx="2.4"/>
+          <circle cx="8.2" cy="12" r="2.4"/><path d="M13.4 10.2h5.4M13.4 13.8h3.6"/>
+        </g>
+      </symbol>
+      <symbol id="ic-chart" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 3.6v16.8h16.4"/><path d="M7.4 16l3.6-4.2 3 2.6 4.6-6.2"/>
+        </g>
+      </symbol>
+      <symbol id="ic-logs" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3.6" y="3" width="16.8" height="18" rx="2.4"/>
+          <path d="M7.6 8h8.8M7.6 12h8.8M7.6 16h5.4"/>
+        </g>
+      </symbol>
+      <symbol id="ic-bell" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a6.2 6.2 0 016.2 6.2v4.2l1.6 3H4.2l1.6-3V9.2A6.2 6.2 0 0112 3z"/>
+          <path d="M9.8 19.6a2.2 2.2 0 004.4 0"/>
+        </g>
+      </symbol>
+      <symbol id="ic-flow" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="6" cy="5.6" r="2.6"/><circle cx="18" cy="12" r="2.6"/><circle cx="6" cy="18.4" r="2.6"/>
+          <path d="M8.4 6.9l7.2 3.8M8.4 17.1l7.2-3.8"/>
+        </g>
+      </symbol>
+      <symbol id="ic-layers" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2.8l9.2 4.6L12 12 2.8 7.4z"/><path d="M2.8 12L12 16.6 21.2 12"/><path d="M2.8 16.6L12 21.2l9.2-4.6"/>
+        </g>
+      </symbol>
+      <symbol id="ic-archive" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.8" y="3.6" width="18.4" height="4.8" rx="1.4"/>
+          <path d="M4.8 8.4v10.4a2 2 0 002 2h10.4a2 2 0 002-2V8.4"/><path d="M9.8 12.6h4.4"/>
+        </g>
+      </symbol>
+    </defs>
+
+    <style>
+      .band  { fill: var(--surface-2); stroke: var(--line-2); stroke-width: 1; rx: 4; }
+      .bandl { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+               letter-spacing: .13em; text-transform: uppercase; fill: var(--ink-3); }
+      .box   { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; rx: 3; }
+      .boxd  { fill: var(--muted); stroke: var(--muted-line); stroke-width: 1.5; stroke-dasharray: 5 4; rx: 3; }
+      .boxc  { fill: var(--core-soft); stroke: var(--core-line); stroke-width: 2.5; rx: 3; }
+      .boxn  { fill: var(--surface); stroke: var(--line-2); stroke-width: 1.5; rx: 3; }
+      .t     { font-family: var(--font-body); font-size: 13.5px; font-weight: 650; fill: var(--ink); }
+      .ts    { font-family: var(--font-mono); font-size: 10.5px; fill: var(--ink-3); }
+      .tc    { font-family: var(--font-body); font-size: 14.5px; font-weight: 700; fill: var(--core); }
+      .tcs   { font-family: var(--font-mono); font-size: 10.5px; fill: var(--core); }
+      .td    { font-family: var(--font-body); font-size: 13px; font-weight: 600; fill: var(--ink-3); }
+      .flow  { stroke: var(--accent); stroke-width: 2; fill: none; }
+      .flowc { stroke: var(--core); stroke-width: 3; fill: none; }
+      .halo  { stroke: var(--surface); stroke-width: 8; fill: none; }
+      .fdash { stroke: var(--muted-line); stroke-width: 1.5; stroke-dasharray: 4 4; fill: none; }
+      .fnum  { font-family: var(--font-mono); font-size: 11px; font-weight: 700; fill: var(--surface); }
+      .fnumc { fill: var(--accent); }
+      .flab  { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; fill: var(--ink-2); }
+      /* color de los iconos — heredado por currentColor */
+      .i-a { color: var(--accent); }
+      .i-c { color: var(--core); }
+      .i-g { color: var(--ink-3); }
+      .i-d { color: var(--muted-line); }
+    </style>
+
+    <!-- ============ ZONA 0 · CLIENTES ============ -->
+    <!-- Sólo software cliente. Los actores (empleado, operador, admin) viven en el
+         diagrama de contexto C4-N1; aquí sus permisos se resuelven vía roles en Entra. -->
+    <rect class="band" x="32" y="44" width="846" height="104"/>
+    <text class="bandl" x="48" y="66">Z0 · Clientes — Internet no confiable</text>
+    <rect class="box" x="52" y="78" width="380" height="52"/>
+    <use href="#ic-browser" class="i-a" x="66" y="91" width="26" height="26"/>
+    <text class="t"  x="104" y="99">Navegador web</text>
+    <text class="ts" x="104" y="116">circuito SignalR contra Blazor Server</text>
+    <rect class="box" x="452" y="78" width="382" height="52"/>
+    <use href="#ic-mobile" class="i-a" x="466" y="91" width="26" height="26"/>
+    <text class="t"  x="504" y="99">App MAUI</text>
+    <text class="ts" x="504" y="116">Android · iOS · consume la API por HTTPS</text>
+
+    <!-- ============ ZONA 1 · BORDE ============ -->
+    <rect class="band" x="32" y="168" width="846" height="110"/>
+    <text class="bandl" x="48" y="190">Z1 · Borde — TLS y protección perimetral</text>
+    <rect class="box" x="52" y="200" width="782" height="36"/>
+    <use href="#ic-lock" class="i-a" x="64" y="206" width="24" height="24"/>
+    <text class="t"  x="98" y="223">Azure DNS + certificado TLS gestionado</text>
+    <text class="ts" x="404" y="223">TLS 1.2+ · renovación automática · protección DDoS de plataforma incluida</text>
+    <rect class="boxd" x="52" y="244" width="782" height="26"/>
+    <use href="#ic-shield" class="i-d" x="64" y="248" width="18" height="18"/>
+    <text class="td" x="92" y="262">Front Door + WAF</text>
+    <text class="ts" x="214" y="262">OWASP · CDN · rate limiting — diferido a Fase 3</text>
+
+    <!-- ============ ZONA 2 · APLICACIÓN ============ -->
+    <rect class="band" x="32" y="298" width="846" height="148"/>
+    <text class="bandl" x="48" y="320">Z2 · Aplicación — App Service Plan B1/B2 Linux · HTTPS-only</text>
+    <rect class="box" x="52" y="338" width="228" height="88"/>
+    <use href="#ic-monitor" class="i-a" x="66" y="350" width="24" height="24"/>
+    <text class="t"  x="98" y="366">Blazor Server</text>
+    <text class="ts" x="68" y="390">App Service · web</text>
+    <text class="ts" x="68" y="405">consume Application</text>
+    <text class="ts" x="68" y="420">en proceso</text>
+    <rect class="box" x="296" y="338" width="228" height="88"/>
+    <use href="#ic-api" class="i-a" x="310" y="350" width="24" height="24"/>
+    <text class="t"  x="342" y="366">Minimal API</text>
+    <text class="ts" x="312" y="390">App Service · Native AOT</text>
+    <text class="ts" x="312" y="405">frontera del cliente móvil</text>
+    <text class="ts" x="312" y="420">valida JWT en cada llamada</text>
+    <rect class="box" x="540" y="338" width="228" height="88"/>
+    <use href="#ic-cog" class="i-a" x="554" y="350" width="24" height="24"/>
+    <text class="t"  x="586" y="366">BackgroundService</text>
+    <text class="ts" x="556" y="390">in-process</text>
+    <text class="ts" x="556" y="405">envío de notificaciones</text>
+    <text class="ts" x="556" y="420">sin worker dedicado</text>
+
+    <!-- ============ ZONA 3 · DATOS ============ -->
+    <rect class="band" x="32" y="466" width="846" height="216"/>
+    <text class="bandl" x="48" y="488">Z3 · Datos — acceso sólo por Managed Identity</text>
+
+    <rect class="box" x="52" y="506" width="380" height="76"/>
+    <use href="#ic-db" class="i-a" x="68" y="522" width="28" height="28"/>
+    <text class="t"  x="108" y="530">Azure SQL Database</text>
+    <text class="ts" x="108" y="547">Serverless GP · auto-pause · TDE</text>
+    <text class="ts" x="68" y="568">metadatos · estados · bitácora de auditoría</text>
+
+    <rect class="boxc" x="452" y="506" width="382" height="76"/>
+    <use href="#ic-doc" class="i-c" x="468" y="522" width="28" height="28"/>
+    <text class="tc"  x="508" y="530">Blob Storage — núcleo del sistema</text>
+    <text class="tcs" x="508" y="547">Hot LRS · versionado · soft delete · SSE</text>
+    <text class="tcs" x="468" y="568">documentos de incidencias, empleados y resultados</text>
+
+    <rect class="box" x="52" y="598" width="250" height="68"/>
+    <use href="#ic-shield-check" class="i-a" x="66" y="610" width="22" height="22"/>
+    <text class="t"  x="96" y="621">Defender for Storage</text>
+    <text class="ts" x="96" y="638">escaneo de malware</text>
+    <text class="ts" x="68" y="656">cuarentena automática</text>
+
+    <rect class="box" x="318" y="598" width="250" height="68"/>
+    <use href="#ic-queue" class="i-a" x="332" y="610" width="22" height="22"/>
+    <text class="t"  x="362" y="621">Storage Queue</text>
+    <text class="ts" x="362" y="638">cola de avisos</text>
+    <text class="ts" x="334" y="656">desacopla el envío de correo</text>
+
+    <rect class="boxd" x="584" y="598" width="250" height="68"/>
+    <use href="#ic-bolt" class="i-d" x="598" y="610" width="22" height="22"/>
+    <text class="td"  x="628" y="621">Azure Cache for Redis</text>
+    <text class="ts" x="628" y="638">backplane SignalR</text>
+    <text class="ts" x="600" y="656">diferido a Fase 2</text>
+
+    <!-- ============ RAIL DERECHO ============ -->
+    <rect class="band" x="920" y="44" width="288" height="196"/>
+    <text class="bandl" x="936" y="66">Identidad y secretos</text>
+    <rect class="boxn" x="936" y="80" width="256" height="58"/>
+    <use href="#ic-identity" class="i-a" x="948" y="92" width="24" height="24"/>
+    <text class="t"  x="980" y="100">Microsoft Entra</text>
+    <text class="ts" x="980" y="116">OIDC · JWT · MFA</text>
+    <text class="ts" x="980" y="131">roles: cliente · operador · admin</text>
+    <rect class="boxn" x="936" y="146" width="256" height="42"/>
+    <use href="#ic-key" class="i-a" x="948" y="156" width="22" height="22"/>
+    <text class="t"  x="978" y="165">Azure Key Vault</text>
+    <text class="ts" x="978" y="180">secretos · claves · rotación</text>
+    <rect class="boxn" x="936" y="196" width="256" height="42"/>
+    <use href="#ic-card" class="i-a" x="948" y="206" width="22" height="22"/>
+    <text class="t"  x="978" y="215">Managed Identity</text>
+    <text class="ts" x="978" y="230">sin contraseñas en conexión</text>
+
+    <rect class="band" x="920" y="260" width="288" height="176"/>
+    <text class="bandl" x="936" y="282">Observabilidad</text>
+    <rect class="boxn" x="936" y="300" width="256" height="40"/>
+    <use href="#ic-chart" class="i-a" x="948" y="309" width="21" height="21"/>
+    <text class="t"  x="976" y="318">Application Insights</text>
+    <text class="ts" x="976" y="333">trazas · métricas · dependencias</text>
+    <rect class="boxn" x="936" y="348" width="256" height="40"/>
+    <use href="#ic-logs" class="i-a" x="948" y="357" width="21" height="21"/>
+    <text class="t"  x="976" y="366">Log Analytics</text>
+    <text class="ts" x="976" y="381">retención y consulta de logs</text>
+    <rect class="boxn" x="936" y="396" width="256" height="36"/>
+    <use href="#ic-bell" class="i-a" x="948" y="404" width="20" height="20"/>
+    <text class="t"  x="975" y="414">Azure Monitor</text>
+    <text class="ts" x="975" y="428">alertas · presupuesto · malware</text>
+
+    <rect class="band" x="920" y="456" width="288" height="226"/>
+    <text class="bandl" x="936" y="478">Entrega y gobierno</text>
+    <rect class="boxn" x="936" y="496" width="256" height="36"/>
+    <use href="#ic-flow" class="i-a" x="948" y="504" width="20" height="20"/>
+    <text class="t"  x="975" y="514">GitHub Actions</text>
+    <text class="ts" x="975" y="528">CI/CD · OIDC federado</text>
+    <rect class="boxn" x="936" y="540" width="256" height="36"/>
+    <use href="#ic-layers" class="i-a" x="948" y="548" width="20" height="20"/>
+    <text class="t"  x="975" y="558">Bicep — IaC</text>
+    <text class="ts" x="975" y="572">dev · test · prod</text>
+    <rect class="boxn" x="936" y="584" width="256" height="36"/>
+    <use href="#ic-shield" class="i-a" x="948" y="592" width="20" height="20"/>
+    <text class="t"  x="975" y="602">Policy · RBAC · Locks</text>
+    <text class="ts" x="975" y="616">tags · budgets · CSPM</text>
+    <rect class="boxn" x="936" y="628" width="256" height="36"/>
+    <use href="#ic-archive" class="i-a" x="948" y="636" width="20" height="20"/>
+    <text class="t"  x="975" y="646">Backups PITR / LTR</text>
+    <text class="ts" x="975" y="660">retención legal de documentos</text>
+
+    <!-- ============ FLUJOS ============ -->
+    <!-- 1 clientes -> borde -->
+    <path class="flow" d="M242,130 L242,196" marker-end="url(#ah)"/>
+    <path class="flow" d="M643,130 L643,196" marker-end="url(#ah)"/>
+    <circle cx="272" cy="163" r="11" fill="var(--accent)"/>
+    <text class="fnum" x="272" y="167" text-anchor="middle">1</text>
+
+    <!-- 2 borde -> app -->
+    <path class="flow" d="M166,270 L166,334" marker-end="url(#ah)"/>
+    <path class="flow" d="M410,270 L410,334" marker-end="url(#ah)"/>
+    <circle cx="196" cy="302" r="11" fill="var(--accent)"/>
+    <text class="fnum" x="196" y="306" text-anchor="middle">2</text>
+
+    <!-- 3 app -> sql -->
+    <path class="flow" d="M166,426 L166,502" marker-end="url(#ah)"/>
+    <circle cx="196" cy="464" r="11" fill="var(--accent)"/>
+    <text class="fnum" x="196" y="468" text-anchor="middle">3</text>
+    <text class="flab" x="214" y="468">metadatos · bitácora</text>
+
+    <!-- 4 CARGA DIRECTA A BLOB (firma de la arquitectura) -->
+    <!-- Nace del borde de la zona de clientes (aplica a ambos clientes, no a uno solo)
+         y baja por el canal libre x≈858, entre las cajas (834/768) y el borde de banda (878). -->
+    <circle cx="856" cy="148" r="4" fill="var(--core)"/>
+    <path class="halo" d="M856,148 C 868,260 868,400 798,500"/>
+    <path class="flowc" d="M856,148 C 868,260 868,400 798,500"
+          marker-end="url(#ahc)" stroke-dasharray="7 4"/>
+    <circle cx="862" cy="248" r="12" fill="var(--core)"/>
+    <text class="fnum" x="862" y="252" text-anchor="middle">4</text>
+    <text class="flab" x="846" y="372" text-anchor="end" fill="var(--core)">carga directa</text>
+    <text class="flab" x="846" y="388" text-anchor="end" fill="var(--core)">con URL SAS</text>
+
+    <!-- 5 blob -> defender -->
+    <path class="flow" d="M520,582 L230,594" marker-end="url(#ah)"/>
+    <circle cx="372" cy="576" r="11" fill="var(--accent)"/>
+    <text class="fnum" x="372" y="580" text-anchor="middle">5</text>
+
+    <!-- 6 app -> queue (pasa por el hueco entre SQL y Blob) -->
+    <path class="flow" d="M442,426 L442,594" marker-end="url(#ah)"/>
+    <circle cx="442" cy="466" r="11" fill="var(--accent)"/>
+    <text class="fnum" x="442" y="470" text-anchor="middle">6</text>
+
+    <!-- managed identity: app -> rail -->
+    <path class="fdash" d="M878,382 C 898,382 900,222 932,218" marker-end="url(#ahm)"/>
+    <text class="flab" x="884" y="300" fill="var(--ink-3)">MI</text>
+
+    <!-- zona de datos -> log analytics (auditoría SQL) -->
+    <path class="fdash" d="M878,632 C 902,632 908,420 932,372" marker-end="url(#ahm)"/>
+    <text class="flab" x="884" y="600" fill="var(--ink-3)">auditoría</text>
+  </svg>
+  </div>
+
+  <div class="legend">
+    <span><i class="swatch sw-f1"></i> Fase 1 — se aprovisiona el día 1</span>
+    <span><i class="swatch sw-core"></i> Núcleo del sistema</span>
+    <span><i class="swatch sw-def"></i> Diferido — Fase 2/3</span>
+    <span><i class="swatch sw-flow"></i> Flujo de datos numerado</span>
+  </div>
+
+  <div class="note">
+    <b>Sobre los iconos.</b> Son glifos originales dibujados para este documento, en su mismo lenguaje visual, y heredan el color del contenedor para funcionar en tema claro y oscuro. <b>No son los iconos oficiales de Azure Architecture Icons.</b> Si esta lámina va a presentarse en un contexto donde se espere la iconografía corporativa de Microsoft, exporta el diagrama a draw.io y sustituye los glifos por el set oficial, que la herramienta trae integrado en <span class="mono">Más formas → Redes → Azure</span>.
+  </div>
+
+  <h3>Los seis flujos</h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>#</th><th>Interacción</th><th>Protocolo y control</th></tr></thead>
+    <tbody>
+      <tr><td class="id">1</td><td>Cliente → Borde</td><td>HTTPS 443 con TLS 1.2+. Todo lo demás se rechaza.</td></tr>
+      <tr><td class="id">2</td><td>Borde → Aplicación</td><td>App Service HTTPS-only. La API exige JWT válido de Entra con el rol correcto.</td></tr>
+      <tr><td class="id">3</td><td>Aplicación → SQL</td><td>ADO.NET vía Managed Identity. Toda consulta filtra por la empresa del token.</td></tr>
+      <tr><td class="id">4</td><td>Clientes → Blob <em>directo</em><span class="sub">Aplica por igual a la web y a la app móvil</span></td><td><strong>Decisión central.</strong> URL SAS de minutos, un solo blob, un solo permiso. El archivo nunca pasa por el servidor.</td></tr>
+      <tr><td class="id">5</td><td>Blob → Defender</td><td>Escaneo automático al subir. El documento no es descargable hasta declararse limpio.</td></tr>
+      <tr><td class="id">6</td><td>Aplicación → Cola → Correo</td><td>Aviso asíncrono; el envío de correo no bloquea la petición del usuario.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <b>Qué no aparece aquí, y por qué.</b> Este es un diagrama de despliegue: cada bloque es un recurso que se aprovisiona, se opera y se factura. Los <b>actores</b> —empleado, analista de RRHH, operador de nómina, administrador— no son elementos de arquitectura y por eso no tienen caja propia; pertenecen al diagrama de contexto C4 nivel 1, en <span class="mono">ARQUITECTURA.md</span>. Lo que sí es arquitectura de sus permisos son los <b>roles</b>, que se resuelven en Microsoft Entra y viajan dentro del JWT. Del mismo modo, el procesamiento manual de la nómina ocurre fuera del sistema y no consume ningún recurso de esta infraestructura.
+  </div>
+
+  <div class="note warn">
+    <b>Por qué el flujo 4 define esta arquitectura.</b> Que el archivo suba y baje directo a Blob Storage con una URL SAS de vigencia mínima evita tres problemas a la vez: el servidor deja de ser cuello de botella de ancho de banda, desaparecen los límites de tamaño de petición de App Service, y la superficie expuesta se reduce a un permiso sobre un único blob durante unos minutos. Es lo que permite sostener 9 000 usuarios con el mismo plan de cómputo.
+  </div>
+</section>
+
+<!-- ══════════ 2. INVENTARIO ══════════ -->
+<section id="inventario">
+  <h2><span class="num">02</span> Inventario de componentes</h2>
+  <p class="lede">Recursos a aprovisionar en el grupo de producción. La columna de zona corresponde a las bandas del diagrama.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead>
+      <tr><th>Zona</th><th>Componente</th><th>Servicio Azure</th><th>SKU / configuración</th><th>Estado</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="id">Z2</td><td><strong>Web Blazor Server</strong><span class="sub">Interfaz de empresas cliente y operador</span></td><td>App Service</td><td class="mono">B1 o B2 · Linux</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Z2</td><td><strong>Minimal API</strong><span class="sub">Backend de la app móvil</span></td><td>App Service</td><td class="mono">mismo plan · Native AOT</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Z2</td><td><strong>Notificador</strong><span class="sub">Envío de avisos por correo</span></td><td>BackgroundService</td><td class="mono">in-process</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Z3</td><td><strong>Almacén de documentos</strong><span class="sub">Núcleo: incidencias, datos, resultados</span></td><td>Blob Storage</td><td class="mono">Hot LRS · versionado · soft delete</td><td><span class="chip c-core">Núcleo</span></td></tr>
+      <tr><td class="id">Z3</td><td><strong>Escaneo de malware</strong><span class="sub">Cuarentena de archivos maliciosos</span></td><td>Defender for Storage</td><td class="mono">1 cuenta de almacenamiento</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Z3</td><td><strong>Metadatos y bitácora</strong><span class="sub">Empresas, usuarios, documentos, estados</span></td><td>Azure SQL Database</td><td class="mono">Serverless GP · auto-pause</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Z3</td><td><strong>Cola de avisos</strong></td><td>Storage Queue</td><td class="mono">misma cuenta</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Z1</td><td><strong>DNS y certificado</strong></td><td>Azure DNS + Managed Certificate</td><td class="mono">1 zona · TLS automático</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Rail</td><td><strong>Identidad</strong><span class="sub">Autenticación, roles y aislamiento</span></td><td>Microsoft Entra</td><td class="mono">OIDC · JWT · MFA</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Rail</td><td><strong>Secretos</strong></td><td>Key Vault</td><td class="mono">estándar</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Rail</td><td><strong>Identidad de servicio</strong></td><td>Managed Identity</td><td class="mono">asignada por sistema</td><td><span class="chip c-free">Gratis</span></td></tr>
+      <tr><td class="id">Rail</td><td><strong>Telemetría</strong></td><td>App Insights + Log Analytics</td><td class="mono">pago por ingesta</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Rail</td><td><strong>Alertas</strong></td><td>Azure Monitor</td><td class="mono">incluido</td><td><span class="chip c-free">Gratis</span></td></tr>
+      <tr><td class="id">—</td><td><strong>Correo transaccional</strong></td><td>Communication Services</td><td class="mono">pago por envío</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Rail</td><td><strong>CI/CD e IaC</strong></td><td>GitHub Actions + Bicep</td><td class="mono">3 entornos</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Rail</td><td><strong>Gobierno</strong><span class="sub">Policy, RBAC, locks, tags, budgets, CSPM</span></td><td>Azure Governance</td><td class="mono">a nivel suscripción</td><td><span class="chip c-free">Gratis</span></td></tr>
+      <tr><td class="id">Z1</td><td>Front Door + WAF</td><td>Azure Front Door</td><td class="mono">Standard</td><td><span class="chip c-def">Fase 3</span></td></tr>
+      <tr><td class="id">Z3</td><td>Caché y backplane SignalR</td><td>Azure Cache for Redis</td><td class="mono">Basic C0</td><td><span class="chip c-def">Fase 2</span></td></tr>
+      <tr><td class="id">Z3</td><td>Aislamiento de red</td><td>VNet + Private Endpoints</td><td class="mono">3 endpoints</td><td><span class="chip c-def">Fase 3</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ══════════ 3. COSTOS ══════════ -->
+<section id="costos">
+  <h2><span class="num">03</span> Modelo de costos</h2>
+  <p class="lede">Estimación mensual del entorno de producción en dólares. Los rangos reflejan uso bajo y uso alto dentro del alcance de 500 usuarios.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead>
+      <tr><th>Componente</th><th>Base de cobro</th><th class="num">Mín.</th><th class="num">Máx.</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>App Service Plan</strong><span class="sub">B1 → B2, aloja web y API</span></td><td>fijo por instancia</td><td class="num">13</td><td class="num">26</td></tr>
+      <tr><td><strong>Azure SQL Serverless</strong><span class="sub">auto-pause reduce el costo en inactividad</span></td><td>vCore-segundo + storage</td><td class="num">15</td><td class="num">40</td></tr>
+      <tr><td><strong>Blob Storage</strong><span class="sub">≈ 50 GB Hot + transacciones</span></td><td>GB-mes + operaciones</td><td class="num">2</td><td class="num">5</td></tr>
+      <tr><td><strong>Defender for Storage</strong><span class="sub">escaneo de malware</span></td><td>por cuenta + GB escaneado</td><td class="num">10</td><td class="num">15</td></tr>
+      <tr><td><strong>Application Insights</strong><span class="sub">primeros 5 GB de ingesta sin costo</span></td><td>GB ingerido</td><td class="num">0</td><td class="num">8</td></tr>
+      <tr><td><strong>Egreso de datos</strong><span class="sub">primeros 100 GB/mes sin costo</span></td><td>GB salientes</td><td class="num">0</td><td class="num">5</td></tr>
+      <tr><td><strong>Key Vault</strong></td><td>por 10 000 operaciones</td><td class="num">1</td><td class="num">1</td></tr>
+      <tr><td><strong>Azure DNS</strong></td><td>zona + consultas</td><td class="num">1</td><td class="num">1</td></tr>
+      <tr><td><strong>Communication Services</strong><span class="sub">correo transaccional</span></td><td>por mensaje</td><td class="num">1</td><td class="num">2</td></tr>
+      <tr><td><strong>Storage Queue</strong></td><td>por operación</td><td class="num">0</td><td class="num">1</td></tr>
+      <tr><td><strong>Microsoft Entra</strong><span class="sub">bajo el umbral gratuito de usuarios activos</span></td><td>por usuario activo</td><td class="num">0</td><td class="num">0</td></tr>
+      <tr><td><strong>Certificado TLS gestionado</strong></td><td>—</td><td class="num">0</td><td class="num">0</td></tr>
+      <tr><td><strong>Managed Identity</strong></td><td>—</td><td class="num">0</td><td class="num">0</td></tr>
+      <tr><td><strong>Gobierno</strong><span class="sub">Policy, RBAC, locks, tags, budgets, CSPM gratuito</span></td><td>—</td><td class="num">0</td><td class="num">0</td></tr>
+      <tr><td><strong>Backups SQL PITR</strong><span class="sub">incluidos en el servicio</span></td><td>—</td><td class="num">0</td><td class="num">0</td></tr>
+      <tr><td><strong>CI/CD</strong><span class="sub">minutos incluidos en el plan</span></td><td>—</td><td class="num">0</td><td class="num">0</td></tr>
+      <tr class="total"><td>Producción — total mensual</td><td>USD</td><td class="num">43</td><td class="num">104</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Entornos no productivos y crecimiento</h3>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Concepto</th><th>Detalle</th><th class="num">USD / mes</th></tr></thead>
+    <tbody>
+      <tr><td>Entorno <span class="mono">dev</span> reducido</td><td>App Service B1 compartido + SQL serverless mínimo, apagable fuera de horario</td><td class="num">15 – 25</td></tr>
+      <tr><td>Entorno <span class="mono">test</span></td><td>Se levanta bajo demanda desde Bicep y se destruye tras validar</td><td class="num">0 – 20</td></tr>
+      <tr><td>Redis Basic C0</td><td>Se activa al escalar Blazor a más de una instancia</td><td class="num">+16</td></tr>
+      <tr><td>Front Door Standard</td><td>Entra con exposición pública real</td><td class="num">+35</td></tr>
+      <tr><td>Private Endpoints (×3)</td><td>SQL, Blob y Key Vault, si lo exige cumplimiento</td><td class="num">+22</td></tr>
+      <tr><td>App Service P1v3</td><td>Salto de plan hacia el rango de 9 000 usuarios</td><td class="num">+95</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <b>Cómo leer estas cifras.</b> Son estimaciones de orden de magnitud basadas en precios de lista para una región de Norteamérica, sin descuentos por reserva ni compromiso. Sirven para decidir arquitectura, no para presupuestar contablemente: antes de aprobar, valida el escenario exacto en la calculadora de precios de Azure con la región, el volumen de documentos y la retención definitivos. Las tres variables que más mueven el total son el <b>tiempo activo de SQL</b>, los <b>GB almacenados y escaneados</b> y la <b>ingesta de telemetría</b>.
+  </div>
+</section>
+
+<!-- ══════════ 4. ATRIBUTOS ══════════ -->
+<section id="atributos">
+  <h2><span class="num">04</span> Atributos de calidad del sistema</h2>
+  <p class="lede">Objetivos verificables que la arquitectura debe sostener. Sin estos números el diagrama es sólo un dibujo.</p>
+
+  <div class="grid">
+    <div class="cell"><div class="k">Disponibilidad</div><div class="v">99,8 %</div><div class="d">Compuesta de los SLA de App Service, SQL y Storage. Equivale a unos 90 minutos al mes.</div></div>
+    <div class="cell"><div class="k">RPO — base de datos</div><div class="v">≤ 10 min</div><div class="d">Respaldo continuo del log de transacciones con restauración a un punto en el tiempo.</div></div>
+    <div class="cell"><div class="k">RTO — base de datos</div><div class="v">≤ 2 h</div><div class="d">Restauración PITR sobre el servidor lógico existente.</div></div>
+    <div class="cell"><div class="k">RPO — documentos</div><div class="v">≈ 0</div><div class="d">Versionado y soft delete en Blob: ninguna carga se pierde por error humano.</div></div>
+    <div class="cell"><div class="k">RTO — aplicación</div><div class="v">≤ 1 h</div><div class="d">Redespliegue completo desde las plantillas Bicep mediante CI/CD.</div></div>
+    <div class="cell"><div class="k">Escalabilidad</div><div class="v">18×</div><div class="d">De 500 a 9 000+ usuarios cambiando SKU y réplicas, sin rediseño ni migración.</div></div>
+  </div>
+
+  <h3>Atributos cualitativos</h3>
+  <ul class="clean">
+    <li><b>Seguridad.</b> Cero secretos en cadenas de conexión gracias a Managed Identity; acceso a documentos sólo por SAS de mínimo privilegio; escaneo de malware obligatorio antes de habilitar una descarga; cifrado en reposo y en tránsito activo por defecto.</li>
+    <li><b>Aislamiento entre empresas.</b> Toda consulta de documentos filtra por la empresa contenida en el token. Es el riesgo número uno de un portal multiempresa y se controla en la capa de aplicación, nunca confiando en un identificador enviado por el cliente.</li>
+    <li><b>Trazabilidad.</b> Bitácora de quién cargó y <b>quién descargó</b> cada documento, más auditoría de SQL enviada a Log Analytics. En datos laborales, el registro de descarga pesa tanto como el de carga.</li>
+    <li><b>Mantenibilidad.</b> Clean Architecture: el motor de cálculo de nómina previsto para la V2 entra como nuevos casos de uso sobre el mismo dominio documental, sin reescribir el portal.</li>
+    <li><b>Rendimiento.</b> La API compilada con Native AOT arranca en frío en milisegundos y consume poca memoria; las transferencias de archivos no tocan el plano de cómputo.</li>
+    <li><b>Observabilidad.</b> Trazas distribuidas y métricas en Application Insights, con alertas sobre errores, latencia, detección de malware y desviación de presupuesto.</li>
+    <li><b>Eficiencia de costo.</b> Auto-pause en SQL, escalado manual por fases y ausencia deliberada de servicios que no aportan valor a esta escala. Todo el gobierno es gratuito.</li>
+  </ul>
+
+  <div class="note">
+    <b>Continuidad ante desastre regional.</b> No está cubierta en la Fase 1 y es una decisión informada, no un olvido: para 500 usuarios el costo de una región secundaria no se justifica frente a un RTO de horas mediante redespliegue desde Bicep y restauración PITR. Se reevalúa en Fase 3 con geo-réplica de SQL y almacenamiento GRS.
+  </div>
+</section>
+
+<!-- ══════════ 5. DECISIONES ══════════ -->
+<section id="decisiones">
+  <h2><span class="num">05</span> Decisiones abiertas</h2>
+  <p class="lede">Puntos que condicionan el modelo de datos y el costo, pendientes de definición de negocio.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Decisión</th><th>Por qué importa</th><th>Impacto</th></tr></thead>
+    <tbody>
+      <tr><td><strong>¿Multiempresa?</strong><span class="sub">¿El operador atiende a varias empresas en la misma instancia?</span></td><td>Define el particionamiento de contenedores y el filtrado obligatorio en cada consulta.</td><td>Alto</td></tr>
+      <tr><td><strong>Modelo de identidad</strong><span class="sub">Entra External ID frente a Entra ID corporativo</span></td><td>Con empresas cliente externas, External ID es lo más probable; cambia el registro y la gestión de usuarios.</td><td>Alto</td></tr>
+      <tr><td><strong>Retención legal</strong><span class="sub">Años de conservación de documentos laborales</span></td><td>Determina la política de Blob, el nivel de acceso y el costo de almacenamiento acumulado.</td><td>Medio</td></tr>
+      <tr><td><strong>Tipos y tamaño de archivo</strong><span class="sub">Extensiones permitidas y tope por documento</span></td><td>Define la validación previa a emitir el SAS y el volumen mensual escaneado.</td><td>Medio</td></tr>
+      <tr><td><strong>Región de despliegue</strong></td><td>Afecta precios de lista, latencia y requisitos de residencia de datos.</td><td>Medio</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<footer>
+  HuimanNet · Documento de arquitectura V1 — portal de intercambio de documentos de nómina. Acompaña a <span class="mono">ARQUITECTURA.md</span> y <span class="mono">ESPECIFICACION.md</span>. Documento vivo: se actualiza conforme evolucionen el alcance y la carga real del sistema.
+</footer>
+
+</div>

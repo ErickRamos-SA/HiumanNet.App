@@ -1,0 +1,100 @@
+@page "/bandeja"
+@inherits ComponenteDelPortal
+
+<PageTitle>@T["bandeja.titulo"] · HuimanNet</PageTitle>
+
+<div class="encabezado-pagina">
+    <div>
+        <h1>@T["bandeja.titulo"]</h1>
+        <p class="subtitulo">@T["bandeja.subtitulo"]</p>
+    </div>
+    <button type="button" class="boton" disabled="@EstaCargando" @onclick="() => EjecutarAsync(CargarDatosAsync)">
+        <Icono Nombre="actualizar" /> @T["comun.actualizar"]
+    </button>
+</div>
+
+<Mensajes Error="@MensajeDeError" Exito="@MensajeDeExito" />
+
+<section class="tarjeta tarjeta-tabla">
+    @if (_periodos.Count == 0)
+    {
+        <div class="vacio">
+            <Icono Nombre="bandeja" Tamano="36" />
+            <p>@T["bandeja.vacia"]</p>
+        </div>
+    }
+    else
+    {
+        <div class="tabla-contenedor">
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th>@T["comun.empresa"]</th>
+                        <th>@T["comun.periodo"]</th>
+                        <th>@T["comun.estado"]</th>
+                        <th class="numero">@T["periodos.documentosCliente"]</th>
+                        <th class="numero">@T["periodos.documentosResultado"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (PeriodoDto periodo in _periodos)
+                    {
+                        <tr>
+                            <td>@periodo.EmpresaRazonSocial</td>
+                            <td>
+                                <div class="celda-principal">
+                                    <strong>@periodo.Clave</strong>
+                                    <span class="tenue">@periodo.Descripcion</span>
+                                </div>
+                            </td>
+                            <td><EtiquetaDePeriodo Estado="periodo.Estado" /></td>
+                            <td class="numero">@periodo.DocumentosDelCliente</td>
+                            <td class="numero">@periodo.DocumentosDeResultado</td>
+                            <td class="acciones-fila">
+                                <div class="acciones" style="justify-content:flex-end">
+                                    <a class="boton boton-pequeno" href="@($"periodos/{periodo.Id}/documentos?empresaId={periodo.EmpresaId}")">
+                                        <Icono Nombre="documentos" Tamano="16" /> @T["periodos.documentos"]
+                                    </a>
+                                    <a class="boton boton-pequeno" href="@($"nomina?periodoId={periodo.Id}&empresaId={periodo.EmpresaId}")">
+                                        <Icono Nombre="nomina" Tamano="16" /> @T["nav.nomina"]
+                                    </a>
+                                    @if (periodo.Estado == EstadoPeriodo.Recibido)
+                                    {
+                                        <button type="button" class="boton boton-pequeno" disabled="@EstaCargando"
+                                                @onclick="() => AvanzarAsync(periodo, EstadoPeriodo.EnProceso)">
+                                            @T["periodos.accion.EnProceso"]
+                                        </button>
+                                    }
+                                    else if (periodo.Estado == EstadoPeriodo.EnProceso)
+                                    {
+                                        <button type="button" class="boton boton-pequeno boton-primario" disabled="@EstaCargando"
+                                                @onclick="() => AvanzarAsync(periodo, EstadoPeriodo.ResultadosDisponibles)">
+                                            @T["periodos.accion.ResultadosDisponibles"]
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@code {
+    private IReadOnlyList<PeriodoDto> _periodos = [];
+
+    /// <inheritdoc/>
+    protected override async Task CargarDatosAsync()
+        => _periodos = await Casos.ConsultarAsync<ListarBandejaOperadorQuery, IReadOnlyList<PeriodoDto>>(new ListarBandejaOperadorQuery());
+
+    private Task AvanzarAsync(PeriodoDto periodo, EstadoPeriodo nuevoEstado) => EjecutarAsync(async () =>
+    {
+        MensajeDeExito = null;
+        await Casos.EjecutarAsync(new CambiarEstadoPeriodoCommand(periodo.Id, nuevoEstado, null, periodo.EmpresaId));
+        MensajeDeExito = T.Formato("periodos.estadoCambiado", periodo.Clave, T.Enumerado(nuevoEstado));
+        await CargarDatosAsync();
+    });
+}

@@ -1,0 +1,65 @@
+@* Selector de la empresa de trabajo. Nómina y administración eligen entre
+   todas las empresas; la empresa cliente con varias empresas, sólo entre las
+   suyas. La elección se comparte con todas las páginas del circuito mediante
+   EstadoDelPortal. *@
+@implements IDisposable
+@inject EjecutorDeCasosDeUso Casos
+@inject EstadoDelPortal Estado
+@inject ContextoDeUsuarioDelCircuito Contexto
+@inject Traductor T
+
+<label class="selector-empresa" title="@T["comun.empresaDeTrabajo"]">
+    <Icono Nombre="empresas" />
+    <select value="@(Estado.EmpresaId?.ToString() ?? string.Empty)" @onchange="CambiarAsync" aria-label="@T["comun.empresaDeTrabajo"]">
+        <option value="">@T["comun.seleccioneEmpresa"]</option>
+        @foreach (EmpresaDto empresa in _empresas)
+        {
+            <option value="@empresa.Id">@empresa.RazonSocial</option>
+        }
+    </select>
+</label>
+
+@code {
+    private IReadOnlyList<EmpresaDto> _empresas = [];
+
+    /// <inheritdoc/>
+    protected override async Task OnInitializedAsync()
+    {
+        Estado.EmpresasModificadas += RecargarAsync;
+        Estado.EmpresaCambiada += RefrescarAsync;
+        await CargarAsync();
+
+        // La empresa cliente entra con su empresa principal; nómina, sólo si hay una empresa.
+        if (Estado.EmpresaId is null && _empresas.Count > 0 && (_empresas.Count == 1 || !Contexto.EsTransversal))
+        {
+            await Estado.SeleccionarEmpresaAsync(_empresas[0].Id, _empresas[0].RazonSocial);
+        }
+    }
+
+    private async Task CargarAsync()
+        => _empresas = Contexto.EsTransversal
+            ? await Casos.UsarAsync<IConsultasEmpresas, IReadOnlyList<EmpresaDto>>(c => c.ListarAsync(soloActivas: true))
+            : Contexto.EmpresasDelUsuario;
+
+    private Task RecargarAsync() => InvokeAsync(async () =>
+    {
+        await CargarAsync();
+        StateHasChanged();
+    });
+
+    private Task CambiarAsync(ChangeEventArgs argumentos)
+    {
+        Guid? empresaId = Guid.TryParse(argumentos.Value?.ToString(), out Guid id) ? id : null;
+        string? nombre = _empresas.FirstOrDefault(e => e.Id == empresaId)?.RazonSocial;
+        return Estado.SeleccionarEmpresaAsync(empresaId, nombre);
+    }
+
+    private Task RefrescarAsync() => InvokeAsync(StateHasChanged);
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Estado.EmpresasModificadas -= RecargarAsync;
+        Estado.EmpresaCambiada -= RefrescarAsync;
+    }
+}

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HuimanNet.App.ViewModels"
+             xmlns:loc="clr-namespace:HuimanNet.App.Localizacion"
+             xmlns:emp="clr-namespace:HuimanNet.Contracts.Empleados;assembly=HuimanNet.Contracts"
+             x:Class="HuimanNet.App.Views.EmpleadoPage"
+             x:DataType="vm:EmpleadoViewModel"
+             Title="{Binding Titulo}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+
+            <Border Style="{StaticResource Tarjeta}" IsVisible="{Binding TieneError}">
+                <Label Text="{Binding MensajeDeError}" TextColor="{StaticResource Error}" />
+            </Border>
+
+            <Border Style="{StaticResource Tarjeta}">
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="6">
+                    <Label Grid.Row="0" Text="{loc:T Clave=empleados.clave}" Style="{StaticResource Tenue}" />
+                    <Label Grid.Row="0" Grid.Column="1" Text="{Binding Empleado.Clave}" />
+                    <Label Grid.Row="1" Text="{loc:T Clave=empleados.rfc}" Style="{StaticResource Tenue}" />
+                    <Label Grid.Row="1" Grid.Column="1" Text="{Binding Empleado.Rfc}" />
+                    <Label Grid.Row="2" Text="{loc:T Clave=empleados.curp}" Style="{StaticResource Tenue}" />
+                    <Label Grid.Row="2" Grid.Column="1" Text="{Binding Empleado.Curp}" />
+                    <Label Grid.Row="3" Text="{loc:T Clave=empleados.nss}" Style="{StaticResource Tenue}" />
+                    <Label Grid.Row="3" Grid.Column="1" Text="{Binding Empleado.Nss}" />
+                    <Label Grid.Row="4" Text="{loc:T Clave=comun.correo}" Style="{StaticResource Tenue}" />
+                    <Label Grid.Row="4" Grid.Column="1" Text="{Binding Empleado.Correo}" />
+                </Grid>
+            </Border>
+
+            <Label Text="{loc:T Clave=contratos.titulo}" Style="{StaticResource Subtitulo}" />
+            <Label Text="{loc:T Clave=contratos.ayudaMixto}" Style="{StaticResource Tenue}" FontSize="12" />
+
+            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Empleado.Contratos}" Spacing="10">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="emp:ContratoDto">
+                        <Border Style="{StaticResource Tarjeta}">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
+                                <Label Grid.Row="0" Text="{Binding RazonSocialNombre}" FontAttributes="Bold" />
+                                <Label Grid.Row="0" Grid.Column="1" Text="{Binding Esquema, Converter={StaticResource Enumerado}}"
+                                       TextColor="{StaticResource Primario}" />
+                                <Label Grid.Row="1" Text="{loc:T Clave=contratos.sueldoPeriodoReal}" Style="{StaticResource Tenue}" />
+                                <Label Grid.Row="1" Grid.Column="1" Text="{Binding SueldoPeriodoReal, Converter={StaticResource Moneda}}" />
+                                <Label Grid.Row="2" Text="{loc:T Clave=contratos.sdFiscal}" Style="{StaticResource Tenue}" />
+                                <Label Grid.Row="2" Grid.Column="1" Text="{Binding SalarioDiarioFiscal, Converter={StaticResource Moneda}}" />
+                                <Label Grid.Row="3" Text="{loc:T Clave=contratos.sdi}" Style="{StaticResource Tenue}" />
+                                <Label Grid.Row="3" Grid.Column="1" Text="{Binding SalarioDiarioIntegrado, Converter={StaticResource Moneda}}" />
+                                <Label Grid.Row="4" Text="{loc:T Clave=contratos.pagaComplemento}" Style="{StaticResource Tenue}" FontSize="12" />
+                                <CheckBox Grid.Row="4" Grid.Column="1" IsChecked="{Binding PagaComplementoSindical, Mode=OneWay}" IsEnabled="False" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

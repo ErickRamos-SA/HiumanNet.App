@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      Alcance de la V1: Android e iOS (ESPECIFICACION.md §1.2).
+
+      Android se compila siempre. iOS se añade sólo en macOS, porque el enlazado
+      nativo necesita las herramientas de Xcode: dejarlo activo en Windows haría
+      fallar cualquier compilación de la solución sin aportar nada.
+
+      Para compilar iOS desde Windows con un Mac emparejado en Visual Studio,
+      fuerce la inclusión:  dotnet build -p:IncluirIos=true
+    -->
+    <TargetFrameworks>net10.0-android</TargetFrameworks>
+    <TargetFrameworks Condition="'$(IncluirIos)' == 'true' Or $([MSBuild]::IsOSPlatform('osx'))">$(TargetFrameworks);net10.0-ios</TargetFrameworks>
+
+    <OutputType>Exe</OutputType>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <RootNamespace>HuimanNet.App</RootNamespace>
+
+    <ApplicationTitle>HuimanNet</ApplicationTitle>
+    <ApplicationId>com.huimannet.portal</ApplicationId>
+    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+
+    <!--
+      Las clases parciales que genera el compilador de XAML no llevan
+      documentación XML; exigir CS1591 aquí sólo produciría ruido.
+    -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <!-- Recorte completo en publicación: reduce el tamaño del paquete móvil. -->
+    <PublishTrimmed Condition="'$(Configuration)' == 'Release'">true</PublishTrimmed>
+    <TrimMode Condition="'$(Configuration)' == 'Release'">full</TrimMode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HuimanNet.Domain\HuimanNet.Domain.csproj" />
+    <ProjectReference Include="..\HuimanNet.Contracts\HuimanNet.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      La app móvil NO referencia Application ni Infrastructure: consume la API
+      por HTTPS. Sólo comparte el contrato y el dominio (enumeraciones y objetos
+      de valor), que no tienen dependencias.
+    -->
+    <PackageReference Include="Microsoft.Maui.Controls" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Identity.Client" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Condition="'$(Configuration)' == 'Debug'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Iconos y pantalla de arranque generados por el SDK a partir de SVG. -->
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#10243A" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#10243A" BaseSize="128,128" />
+    <MauiImage Include="Resources\Images\*" />
+    <MauiXaml Update="**\*.xaml" Generator="MSBuild:Compile" />
+  </ItemGroup>
+
+</Project>

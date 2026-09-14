@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>HuimanNet.Contracts</RootNamespace>
+    <!--
+      Contrato HTTP compartido por la API (AOT), la web Blazor y la app MAUI.
+      Debe permanecer libre de reflexión: la serialización se genera en compilación.
+    -->
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HuimanNet.Domain\HuimanNet.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Textos de la interfaz (es/en). Nombre lógico explícito: sin él, MSBuild
+      interpretaría el sufijo de idioma como cultura y los mandaría a un
+      ensamblado satélite.
+    -->
+    <EmbeddedResource Include="Localizacion\textos_*.json" LogicalName="HuimanNet.Textos.%(Filename)%(Extension)" WithCulture="false" />
+  </ItemGroup>
+
+</Project>

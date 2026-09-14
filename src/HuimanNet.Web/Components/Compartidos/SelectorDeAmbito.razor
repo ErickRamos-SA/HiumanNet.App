@@ -1,0 +1,40 @@
+@* Casilla que decide si un elemento del catálogo de cálculo es global o sólo
+   de la empresa de trabajo. Se enlaza con @bind-EmpresaId. Sólo aparece si
+   hay empresa de trabajo o si el elemento ya pertenece a una empresa. *@
+@inject EstadoDelPortal Estado
+@inject Traductor T
+
+@if (Estado.EmpresaId is not null || EmpresaId is not null)
+{
+    <div class="campo campo-ancho">
+        <label class="casilla">
+            <input type="checkbox" checked="@(EmpresaId is not null)" @onchange="CambiarAsync" />
+            @if (EmpresaId is null || EmpresaId == Estado.EmpresaId)
+            {
+                @T.Formato("catalogos.soloEmpresa", Estado.EmpresaNombre ?? string.Empty)
+            }
+            else
+            {
+                @T["catalogos.propioDeEmpresa"]
+            }
+        </label>
+        <span class="ayuda">@T["catalogos.soloEmpresaAyuda"]</span>
+    </div>
+}
+
+@code {
+    /// <summary>Empresa propietaria, o <c>null</c> para el catálogo global.</summary>
+    [Parameter]
+    public Guid? EmpresaId { get; set; }
+
+    /// <summary>Notificación de cambio para el enlace bidireccional.</summary>
+    [Parameter]
+    public EventCallback<Guid?> EmpresaIdChanged { get; set; }
+
+    private Task CambiarAsync(ChangeEventArgs argumentos)
+    {
+        Guid? nuevo = argumentos.Value is true ? EmpresaId ?? Estado.EmpresaId : null;
+        EmpresaId = nuevo;
+        return EmpresaIdChanged.InvokeAsync(nuevo);
+    }
+}

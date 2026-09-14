@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HuimanNet.App.ViewModels"
+             xmlns:loc="clr-namespace:HuimanNet.App.Localizacion"
+             xmlns:nom="clr-namespace:HuimanNet.Contracts.Nomina;assembly=HuimanNet.Contracts"
+             x:Class="HuimanNet.App.Views.ResultadoPage"
+             x:DataType="vm:ResultadoViewModel"
+             Title="{Binding Titulo}">
+
+    <CollectionView ItemsSource="{Binding Grupos}" IsGrouped="True" SelectionMode="None" Margin="12,0">
+
+        <CollectionView.Header>
+            <VerticalStackLayout Spacing="8" Padding="0,12,0,4">
+                <Border Style="{StaticResource Tarjeta}" IsVisible="{Binding TieneError}">
+                    <Label Text="{Binding MensajeDeError}" TextColor="{StaticResource Error}" />
+                </Border>
+                <Border Style="{StaticResource Tarjeta}">
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
+                        <Label Grid.Row="0" Text="{Binding Resultado.RazonSocialNombre}" Style="{StaticResource Tenue}" />
+                        <Label Grid.Row="0" Grid.Column="1" Text="{Binding Resultado.Esquema, Converter={StaticResource Enumerado}}"
+                               TextColor="{StaticResource Primario}" />
+                        <Label Grid.Row="1" Text="{loc:T Clave=nomina.bruto}" />
+                        <Label Grid.Row="1" Grid.Column="1" Text="{Binding Resultado.Bruto, Converter={StaticResource Moneda}}" />
+                        <Label Grid.Row="2" Text="{loc:T Clave=nomina.neto}" />
+                        <Label Grid.Row="2" Grid.Column="1" Text="{Binding Resultado.Neto, Converter={StaticResource Moneda}}" />
+                        <Label Grid.Row="3" Text="{loc:T Clave=nomina.costoTotal}" FontAttributes="Bold" />
+                        <Label Grid.Row="3" Grid.Column="1" Text="{Binding Resultado.CostoTotal, Converter={StaticResource Moneda}}" FontAttributes="Bold" />
+                    </Grid>
+                </Border>
+                <Label Text="{loc:T Clave=explicacion.conceptosAyuda}" Style="{StaticResource Tenue}" FontSize="12" />
+            </VerticalStackLayout>
+        </CollectionView.Header>
+
+        <CollectionView.GroupHeaderTemplate>
+            <DataTemplate x:DataType="vm:GrupoDeConceptos">
+                <Label Text="{Binding Nombre}" Style="{StaticResource Subtitulo}" Margin="0,14,0,4" />
+            </DataTemplate>
+        </CollectionView.GroupHeaderTemplate>
+
+        <CollectionView.ItemTemplate>
+            <DataTemplate x:DataType="nom:ConceptoCalculadoDto">
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Padding="0,6" ColumnSpacing="8">
+                    <Label Grid.Row="0" Text="{Binding Nombre}" />
+                    <Label Grid.Row="0" Grid.Column="1" Text="{Binding Importe, Converter={StaticResource Moneda}}" FontAttributes="Bold" />
+                    <Label Grid.Row="1" Grid.ColumnSpan="2" FontFamily="monospace" FontSize="11" Style="{StaticResource Tenue}"
+                           LineBreakMode="WordWrap">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="{Binding Clave}" />
+                                <Span Text=" = " />
+                                <Span Text="{Binding Formula}" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                </Grid>
+            </DataTemplate>
+        </CollectionView.ItemTemplate>
+
+    </CollectionView>
+
+</ContentPage>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>HuimanNet.Infrastructure.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Aporta el contenedor de dependencias, la configuración en memoria y el
+      registro de eventos que usan los anfitriones, sin paquetes adicionales.
+    -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\..\src\HuimanNet.Infrastructure\HuimanNet.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

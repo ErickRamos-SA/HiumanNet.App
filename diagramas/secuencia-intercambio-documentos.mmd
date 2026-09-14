@@ -1,0 +1,35 @@
+%% HuimanNet V1 — Vista dinámica: ciclo completo de intercambio de documentos
+%% El procesamiento de nómina ocurre MANUALMENTE fuera del sistema.
+sequenceDiagram
+    actor C as Usuario empresa cliente
+    participant A as App (Blazor / API)
+    participant S as Azure SQL
+    participant B as Blob Storage
+    participant D as Defender for Storage
+    participant N as Notificador + Email
+    actor O as Operador de nómina
+
+    C->>A: Solicita subir documento (período, tipo)
+    A->>A: Valida rol, empresa, tipo y tamaño
+    A->>S: Registra documento (estado: pendiente)
+    A-->>C: URL SAS de escritura (minutos)
+    C->>B: Sube el archivo DIRECTO (HTTPS)
+    B->>D: Escaneo de malware
+    D-->>S: Resultado del escaneo
+    Note over S: limpio → disponible<br/>malicioso → cuarentena + alerta
+    S->>N: Encola aviso
+    N->>O: Correo "nuevos documentos disponibles"
+
+    O->>A: Consulta pendientes del período
+    A-->>O: URL SAS de lectura
+    O->>B: Descarga los archivos
+    A->>S: Bitácora de descarga + estado "en proceso"
+
+    Note over O: Procesa la nómina MANUALMENTE<br/>fuera del sistema
+
+    O->>A: Sube archivos de resultado / ajustes
+    A->>S: Estado "resultados disponibles"
+    S->>N: Encola aviso
+    N->>C: Correo "resultados listos"
+    C->>B: Descarga resultados (SAS de lectura)
+    A->>S: Bitácora de descarga

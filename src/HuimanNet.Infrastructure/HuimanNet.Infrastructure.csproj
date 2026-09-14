@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>HuimanNet.Infrastructure</RootNamespace>
+    <!--
+      La consume la API publicada con Native AOT: cualquier advertencia IL2xxx /
+      IL3xxx que aparezca aquí hay que resolverla, no silenciarla.
+    -->
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <!--
+      Genera en compilación el enlace de configuración a las clases de opciones.
+      Sin esto, Configure<TOptions>(IConfiguration) usaría reflexión y emitiría
+      advertencias IL2026 / IL3050 al publicar la API con Native AOT.
+    -->
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HuimanNet.Domain\HuimanNet.Domain.csproj" />
+    <ProjectReference Include="..\HuimanNet.Contracts\HuimanNet.Contracts.csproj" />
+    <ProjectReference Include="..\HuimanNet.Application\HuimanNet.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Azure.Storage.Blobs" />
+    <PackageReference Include="Azure.Storage.Queues" />
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Esquema y migraciones como scripts SQL versionados (sin migraciones de ORM). -->
+    <EmbeddedResource Include="Persistence\Scripts\*.sql" />
+    <!-- Catalogo de calculo inicial: unica fuente para el sembrador y las pruebas. -->
+    <EmbeddedResource Include="Persistence\Semillas\*.json" />
+  </ItemGroup>
+
+</Project>

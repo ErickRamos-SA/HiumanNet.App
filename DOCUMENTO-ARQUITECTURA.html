@@ -1,0 +1,1646 @@
+<title>HuimanNet — Documento de Arquitectura de Software</title>
+<style>
+  :root{
+    --ground:#f4f6f8; --surface:#ffffff; --surface-2:#edeff2; --surface-3:#e2e5ea;
+    --ink:#1c222b; --ink-2:#414a56; --ink-3:#6b7480;
+    --line:#d4d8de; --line-2:#b6bcc5;
+    --accent:#14396b; --accent-2:#1f5c8b; --accent-soft:#e4eaf3;
+    --net:#404b66; --net-soft:#e7e9ef; --net-line:#6b7591;
+    --core:#8a6520; --core-soft:#f4eede; --core-line:#a88238;
+    --ok:#1f5b3a; --ok-soft:#e3ede7;
+    --danger:#8c2a2a; --danger-soft:#f1e5e5;
+    --muted:#eef0f3; --muted-line:#a7adb6;
+    --font-display: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    --font-body: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    --font-mono: "Courier New", Courier, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ground:#0b1016; --surface:#141c25; --surface-2:#1b242f; --surface-3:#222d3a;
+      --ink:#e6ecf2; --ink-2:#a3b4c6; --ink-3:#7b8da2;
+      --line:#26323f; --line-2:#354557;
+      --accent:#7fa3d4; --accent-2:#9dbbe4; --accent-soft:#1a2740;
+      --net:#9aa4c4; --net-soft:#22262f; --net-line:#5b6480;
+      --core:#c9a866; --core-soft:#2e2617; --core-line:#8a7440;
+      --ok:#7fb094; --ok-soft:#1a2a20; --danger:#c78585; --danger-soft:#2e1c1c;
+      --muted:#1b242f; --muted-line:#3d4c5e;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0b1016; --surface:#141c25; --surface-2:#1b242f; --surface-3:#222d3a;
+    --ink:#e6ecf2; --ink-2:#a3b4c6; --ink-3:#7b8da2;
+    --line:#26323f; --line-2:#354557;
+    --accent:#7fa3d4; --accent-2:#9dbbe4; --accent-soft:#1a2740;
+    --net:#9aa4c4; --net-soft:#22262f; --net-line:#5b6480;
+    --core:#c9a866; --core-soft:#2e2617; --core-line:#8a7440;
+    --ok:#7fb094; --ok-soft:#1a2a20; --danger:#c78585; --danger-soft:#2e1c1c;
+    --muted:#1b242f; --muted-line:#3d4c5e;
+  }
+  :root[data-theme="light"]{
+    --ground:#f4f6f8; --surface:#ffffff; --surface-2:#edeff2; --surface-3:#e2e5ea;
+    --ink:#1c222b; --ink-2:#414a56; --ink-3:#6b7480;
+    --line:#d4d8de; --line-2:#b6bcc5;
+    --accent:#14396b; --accent-2:#1f5c8b; --accent-soft:#e4eaf3;
+    --net:#404b66; --net-soft:#e7e9ef; --net-line:#6b7591;
+    --core:#8a6520; --core-soft:#f4eede; --core-line:#a88238;
+    --ok:#1f5b3a; --ok-soft:#e3ede7; --danger:#8c2a2a; --danger-soft:#f1e5e5;
+    --muted:#eef0f3; --muted-line:#a7adb6;
+  }
+
+  body{background:var(--ground);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.62;-webkit-font-smoothing:antialiased;}
+
+  /* ── layout ── */
+  .shell{max-width:1320px;margin:0 auto;padding:0 24px 100px;display:grid;grid-template-columns:236px minmax(0,1fr);gap:56px;align-items:start;}
+  nav.toc{position:sticky;top:20px;max-height:calc(100vh - 40px);overflow-y:auto;padding:24px 0;font-size:13px;border-right:1px solid var(--line);}
+  nav.toc .tt{font-family:var(--font-mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin-bottom:14px;}
+  nav.toc a{display:block;color:var(--ink-2);text-decoration:none;padding:4px 12px 4px 0;border-left:2px solid transparent;padding-left:10px;line-height:1.4;}
+  nav.toc a:hover{color:var(--accent);border-left-color:var(--accent);}
+  nav.toc a .n{font-family:var(--font-mono);font-size:11px;color:var(--ink-3);margin-right:7px;}
+  nav.toc a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  main{min-width:0;padding-top:24px;}
+  @media (max-width:1000px){
+    .shell{grid-template-columns:1fr;gap:0;}
+    nav.toc{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--line);margin-bottom:24px;
+            display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0 18px;}
+    nav.toc .tt{grid-column:1/-1;}
+  }
+
+  /* ── masthead ── */
+  header.mast{border-bottom:2px solid var(--ink);padding:48px 0 22px;margin-bottom:34px;}
+  .eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;}
+  h1{font-family:var(--font-display);font-size:clamp(30px,4.6vw,44px);font-weight:700;letter-spacing:-.022em;line-height:1.07;text-wrap:balance;margin-bottom:14px;}
+  .standfirst{font-size:17px;color:var(--ink-2);max-width:66ch;}
+
+  /* ── sections ── */
+  section{margin-top:60px;scroll-margin-top:24px;}
+  h2{font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:-.014em;display:flex;align-items:baseline;gap:13px;padding-bottom:11px;margin-bottom:8px;border-bottom:1px solid var(--line);text-wrap:balance;}
+  h2 .num{font-family:var(--font-mono);font-size:12.5px;font-weight:500;color:var(--accent);letter-spacing:.05em;flex:none;}
+  h3{font-family:var(--font-display);font-size:17px;font-weight:650;letter-spacing:-.008em;margin:32px 0 8px;}
+  h4{font-family:var(--font-mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin:22px 0 6px;font-weight:600;}
+  .lede{color:var(--ink-2);max-width:72ch;margin-bottom:18px;}
+  p{max-width:74ch;} p+p{margin-top:11px;}
+
+  /* ── tables ── */
+  .tw{overflow-x:auto;margin-top:16px;border:1px solid var(--line);border-radius:4px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--surface);min-width:600px;}
+  thead th{background:var(--surface-2);font-family:var(--font-mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;color:var(--ink-2);text-align:left;padding:10px 13px;border-bottom:1px solid var(--line-2);white-space:nowrap;}
+  tbody td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr.total td{background:var(--accent-soft);font-weight:650;border-top:2px solid var(--accent);}
+  td.num,th.num{text-align:right;font-family:var(--font-mono);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  td.id{font-family:var(--font-mono);font-size:12px;color:var(--accent);font-weight:600;white-space:nowrap;}
+  td.mono,th.mono{font-family:var(--font-mono);font-size:12px;white-space:nowrap;}
+  td strong{font-weight:650;}
+  .sub{display:block;color:var(--ink-3);font-size:12px;margin-top:2px;line-height:1.45;}
+  code,.mono{font-family:var(--font-mono);font-size:.88em;}
+  code{background:var(--surface-2);padding:1px 5px;border-radius:3px;}
+
+  /* ── chips ── */
+  .chip{display:inline-block;font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:2px 7px;border-radius:3px;white-space:nowrap;}
+  .c-f1{background:var(--ok-soft);color:var(--ok);}
+  .c-def{background:var(--muted);color:var(--ink-3);}
+  .c-core{background:var(--core-soft);color:var(--core);}
+  .c-free{background:var(--accent-soft);color:var(--accent);}
+  .c-net{background:var(--net-soft);color:var(--net);}
+  .c-hi{background:var(--danger-soft);color:var(--danger);}
+
+  /* ── diagram canvas ── */
+  .canvas{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:18px;overflow-x:auto;margin-top:16px;}
+  .canvas svg{display:block;min-width:900px;width:100%;height:auto;}
+  .canvas pre.mermaid{min-width:0;background:transparent;}
+  .cap{font-family:var(--font-mono);font-size:11px;color:var(--ink-3);margin-top:9px;letter-spacing:.03em;}
+  .legend{display:flex;flex-wrap:wrap;gap:9px 24px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-2);}
+  .legend span{display:inline-flex;align-items:center;gap:7px;}
+  .sw{width:21px;height:11px;border-radius:2px;flex:none;}
+  .sw-f1{background:var(--accent-soft);border:1.5px solid var(--accent);}
+  .sw-core{background:var(--core-soft);border:2px solid var(--core-line);}
+  .sw-def{background:var(--muted);border:1.5px dashed var(--muted-line);}
+  .sw-net{background:var(--net-soft);border:1.5px solid var(--net-line);}
+  .sw-rg{background:var(--surface-2);border:1.5px dashed var(--line-2);}
+
+  /* ── ADR ── */
+  .adr{border:1px solid var(--line);border-radius:4px;background:var(--surface);margin-top:16px;overflow:hidden;}
+  .adr>.hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;padding:13px 18px;background:var(--surface-2);border-bottom:1px solid var(--line);}
+  .adr>.hd .k{font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--accent);}
+  .adr>.hd .ti{font-family:var(--font-display);font-size:15.5px;font-weight:650;flex:1;min-width:200px;}
+  .adr>.bd{padding:15px 18px;display:grid;gap:11px;font-size:14px;color:var(--ink-2);}
+  .adr>.bd>div>b{display:block;font-family:var(--font-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px;font-weight:600;}
+  .adr>.bd p{max-width:none;margin:0;}
+
+  /* ── cards ── */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(224px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-top:16px;}
+  .cell{background:var(--surface);padding:17px 19px;}
+  .cell .k{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:7px;}
+  .cell .v{font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-bottom:5px;}
+  .cell .d{font-size:12.5px;color:var(--ink-2);line-height:1.5;}
+
+  /* ── notes ── */
+  .note{border-left:3px solid var(--accent);background:var(--surface);padding:15px 19px;margin-top:20px;border-radius:0 4px 4px 0;font-size:14px;color:var(--ink-2);}
+  .note b{color:var(--ink);}
+  .note.warn{border-left-color:var(--core);}
+  .note.net{border-left-color:var(--net);}
+  .note.risk{border-left-color:var(--danger);}
+
+  ul.clean{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+  ul.clean li{position:relative;padding-left:19px;font-size:14px;color:var(--ink-2);max-width:76ch;}
+  ul.clean li::before{content:"";position:absolute;left:2px;top:.63em;width:6px;height:2px;background:var(--accent);}
+  ul.clean li b{color:var(--ink);font-weight:650;}
+
+  footer{margin-top:76px;padding-top:20px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-3);}
+
+  /* iconos de los diagramas — color heredado por currentColor */
+  .i-a{color:var(--accent);} .i-c{color:var(--core);}
+  .i-g{color:var(--ink-3);}  .i-d{color:var(--muted-line);} .i-n{color:var(--net);}
+
+  /* ── CSS del diagrama de arquitectura (scoped) ── */
+  #svg-arq .band{fill:var(--surface-2);stroke:var(--line-2);stroke-width:1;rx:4;}
+  #svg-arq .bandl{font-family:var(--font-mono);font-size:9.8px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;fill:var(--ink-3);}
+  #svg-arq .box{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5;rx:3;}
+  #svg-arq .boxd{fill:var(--muted);stroke:var(--muted-line);stroke-width:1.5;stroke-dasharray:5 4;rx:3;}
+  #svg-arq .boxc{fill:var(--core-soft);stroke:var(--core-line);stroke-width:2.5;rx:3;}
+  #svg-arq .boxn{fill:var(--surface);stroke:var(--line-2);stroke-width:1.5;rx:3;}
+  #svg-arq .t{font-family:var(--font-body);font-size:13.5px;font-weight:650;fill:var(--ink);}
+  #svg-arq .ts{font-family:var(--font-mono);font-size:9.8px;fill:var(--ink-3);}
+  #svg-arq .tc{font-family:var(--font-body);font-size:14.5px;font-weight:700;fill:var(--core);}
+  #svg-arq .tcs{font-family:var(--font-mono);font-size:9.8px;fill:var(--core);}
+  #svg-arq .td{font-family:var(--font-body);font-size:13px;font-weight:600;fill:var(--ink-3);}
+  #svg-arq .flow{stroke:var(--accent);stroke-width:2;fill:none;}
+  #svg-arq .flowc{stroke:var(--core);stroke-width:3;fill:none;}
+  #svg-arq .halo{stroke:var(--surface);stroke-width:8;fill:none;}
+  #svg-arq .fdash{stroke:var(--muted-line);stroke-width:1.5;stroke-dasharray:4 4;fill:none;}
+  #svg-arq .fnum{font-family:var(--font-mono);font-size:11px;font-weight:700;fill:var(--surface);}
+  #svg-arq .flab{font-family:var(--font-mono);font-size:9.8px;font-weight:600;fill:var(--ink-2);}
+
+  /* ── CSS de la topología Fase 1 (scoped) ── */
+  #svg-t1 .sub1{fill:none;stroke:var(--ink-3);stroke-width:1.5;stroke-dasharray:7 5;rx:5;}
+  #svg-t1 .reg1{fill:none;stroke:var(--line-2);stroke-width:1.5;rx:5;}
+  #svg-t1 .rg1{fill:var(--surface-2);stroke:var(--line-2);stroke-width:1.5;stroke-dasharray:5 4;rx:4;}
+  #svg-t1 .svc{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5;rx:3;}
+  #svg-t1 .svcc{fill:var(--core-soft);stroke:var(--core-line);stroke-width:2.5;rx:3;}
+  #svg-t1 .grp{fill:var(--surface-3);stroke:var(--line-2);stroke-width:1.5;rx:4;}
+  #svg-t1 .ext{fill:var(--surface);stroke:var(--ink-3);stroke-width:1.5;rx:3;}
+  #svg-t1 .bl{font-family:var(--font-mono);font-size:9.8px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;fill:var(--ink-3);}
+  #svg-t1 .t{font-family:var(--font-body);font-size:13.5px;font-weight:650;fill:var(--ink);}
+  #svg-t1 .tc{font-family:var(--font-body);font-size:13.5px;font-weight:700;fill:var(--core);}
+  #svg-t1 .ts{font-family:var(--font-mono);font-size:9.8px;fill:var(--ink-3);}
+  #svg-t1 .tsc{font-family:var(--font-mono);font-size:9.8px;fill:var(--core);}
+  #svg-t1 .fl{stroke:var(--accent);stroke-width:2;fill:none;}
+  #svg-t1 .lab{font-family:var(--font-mono);font-size:9.8px;font-weight:600;fill:var(--ink-2);}
+
+  /* ── CSS de la topología Fase 3 (scoped) ── */
+  #svg-t3 .vnet{fill:var(--net-soft);stroke:var(--net-line);stroke-width:2;rx:5;}
+  #svg-t3 .snet{fill:var(--surface);stroke:var(--net-line);stroke-width:1.5;stroke-dasharray:6 4;rx:4;}
+  #svg-t3 .pe{fill:var(--net-soft);stroke:var(--net);stroke-width:1.5;rx:3;}
+  #svg-t3 .svc2{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5;rx:3;}
+  #svg-t3 .svcc2{fill:var(--core-soft);stroke:var(--core-line);stroke-width:2.5;rx:3;}
+  #svg-t3 .grp2{fill:var(--surface-3);stroke:var(--line-2);stroke-width:1.5;rx:4;}
+  #svg-t3 .ext2{fill:var(--surface);stroke:var(--ink-3);stroke-width:1.5;rx:3;}
+  #svg-t3 .dns{fill:var(--surface);stroke:var(--net-line);stroke-width:1.5;rx:4;}
+  #svg-t3 .bl2{font-family:var(--font-mono);font-size:9.8px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;fill:var(--net);}
+  #svg-t3 .blg{font-family:var(--font-mono);font-size:9.8px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;fill:var(--ink-3);}
+  #svg-t3 .t2{font-family:var(--font-body);font-size:13.5px;font-weight:650;fill:var(--ink);}
+  #svg-t3 .tc2{font-family:var(--font-body);font-size:13.5px;font-weight:700;fill:var(--core);}
+  #svg-t3 .ts2{font-family:var(--font-mono);font-size:9.8px;fill:var(--ink-3);}
+  #svg-t3 .tsn{font-family:var(--font-mono);font-size:9.8px;fill:var(--net);}
+  #svg-t3 .tsc2{font-family:var(--font-mono);font-size:9.8px;fill:var(--core);}
+  #svg-t3 .fl2{stroke:var(--net);stroke-width:2;fill:none;}
+  #svg-t3 .fd2{stroke:var(--muted-line);stroke-width:1.5;stroke-dasharray:4 4;fill:none;}
+  #svg-t3 .lab2{font-family:var(--font-mono);font-size:9.8px;font-weight:600;fill:var(--net);}
+  #svg-t3 .labg{font-family:var(--font-mono);font-size:9.8px;font-weight:600;fill:var(--ink-3);}
+  #svg-t3 .nsg{font-family:var(--font-mono);font-size:9.5px;font-weight:700;letter-spacing:.08em;fill:var(--net);}
+
+  @media (max-width:640px){
+    header.mast{padding-top:32px;}
+    .canvas{padding:11px;}
+    section{margin-top:46px;}
+  }
+</style>
+
+<!-- ═══ Biblioteca compartida de marcadores e iconos ═══ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+      </marker>
+      <marker id="ahc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--core)"/>
+      </marker>
+      <marker id="ahm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--muted-line)"/>
+      </marker>
+      <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+      </marker>
+      <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--net)"/>
+      </marker>
+      <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--muted-line)"/>
+      </marker>
+      <symbol id="ic-browser" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.5" y="4" width="19" height="16" rx="2.5"/><path d="M2.5 9.5h19"/>
+          <circle cx="6" cy="6.8" r=".85" fill="currentColor" stroke="none"/>
+          <circle cx="8.8" cy="6.8" r=".85" fill="currentColor" stroke="none"/>
+        </g>
+      </symbol>
+      <symbol id="ic-mobile" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.6h3"/>
+        </g>
+      </symbol>
+      <symbol id="ic-lock" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4.5" y="10.5" width="15" height="10.5" rx="2.2"/>
+          <path d="M8 10.5V7.2a4 4 0 018 0v3.3"/><path d="M12 14.8v2.4"/>
+        </g>
+      </symbol>
+      <symbol id="ic-shield" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2.6l7.6 3v6.2c0 4.4-3.1 7.9-7.6 9.6-4.5-1.7-7.6-5.2-7.6-9.6V5.6z"/>
+        </g>
+      </symbol>
+      <symbol id="ic-shield-check" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2.6l7.6 3v6.2c0 4.4-3.1 7.9-7.6 9.6-4.5-1.7-7.6-5.2-7.6-9.6V5.6z"/>
+          <path d="M8.8 11.8l2.3 2.3 4.1-4.4"/>
+        </g>
+      </symbol>
+      <symbol id="ic-monitor" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.5" y="3.8" width="19" height="13.4" rx="2.2"/>
+          <path d="M8.5 21h7M12 17.2V21"/>
+        </g>
+      </symbol>
+      <symbol id="ic-api" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8.6 6.8L3.4 12l5.2 5.2"/><path d="M15.4 6.8L20.6 12l-5.2 5.2"/><path d="M13.4 4.8l-2.8 14.4"/>
+        </g>
+      </symbol>
+      <symbol id="ic-cog" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3.3"/>
+          <path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8"/>
+        </g>
+      </symbol>
+      <symbol id="ic-db" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="12" cy="5.8" rx="7.6" ry="3.2"/>
+          <path d="M4.4 5.8v12.4c0 1.8 3.4 3.2 7.6 3.2s7.6-1.4 7.6-3.2V5.8"/>
+          <path d="M4.4 12c0 1.8 3.4 3.2 7.6 3.2s7.6-1.4 7.6-3.2"/>
+        </g>
+      </symbol>
+      <symbol id="ic-doc" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13.6 2.6H7.4a2.4 2.4 0 00-2.4 2.4v14a2.4 2.4 0 002.4 2.4h9.2a2.4 2.4 0 002.4-2.4V8z"/>
+          <path d="M13.4 2.6V8h5.6"/><path d="M8.6 13h6.8M8.6 16.6h4.6"/>
+        </g>
+      </symbol>
+      <symbol id="ic-queue" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3.4 6.6h11M3.4 12h11M3.4 17.4h11"/><path d="M17.6 9.2L20.8 12l-3.2 2.8"/>
+        </g>
+      </symbol>
+      <symbol id="ic-bolt" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13.4 2.4L4.8 13.4h6.2l-1.4 8.2 8.6-11h-6.2z"/>
+        </g>
+      </symbol>
+      <symbol id="ic-identity" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3.2" y="3.6" width="17.6" height="16.8" rx="2.6"/>
+          <circle cx="12" cy="10" r="2.6"/><path d="M7.4 17.2c1.1-2.2 2.7-3.3 4.6-3.3s3.5 1.1 4.6 3.3"/>
+        </g>
+      </symbol>
+      <symbol id="ic-key" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="12" r="4.2"/><path d="M12.2 12h8.4"/><path d="M18 12v3.4M15.2 12v2.6"/>
+        </g>
+      </symbol>
+      <symbol id="ic-card" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.4" y="5.4" width="19.2" height="13.2" rx="2.4"/>
+          <circle cx="8.2" cy="12" r="2.4"/><path d="M13.4 10.2h5.4M13.4 13.8h3.6"/>
+        </g>
+      </symbol>
+      <symbol id="ic-chart" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 3.6v16.8h16.4"/><path d="M7.4 16l3.6-4.2 3 2.6 4.6-6.2"/>
+        </g>
+      </symbol>
+      <symbol id="ic-logs" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3.6" y="3" width="16.8" height="18" rx="2.4"/>
+          <path d="M7.6 8h8.8M7.6 12h8.8M7.6 16h5.4"/>
+        </g>
+      </symbol>
+      <symbol id="ic-bell" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a6.2 6.2 0 016.2 6.2v4.2l1.6 3H4.2l1.6-3V9.2A6.2 6.2 0 0112 3z"/>
+          <path d="M9.8 19.6a2.2 2.2 0 004.4 0"/>
+        </g>
+      </symbol>
+      <symbol id="ic-flow" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="6" cy="5.6" r="2.6"/><circle cx="18" cy="12" r="2.6"/><circle cx="6" cy="18.4" r="2.6"/>
+          <path d="M8.4 6.9l7.2 3.8M8.4 17.1l7.2-3.8"/>
+        </g>
+      </symbol>
+      <symbol id="ic-layers" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2.8l9.2 4.6L12 12 2.8 7.4z"/><path d="M2.8 12L12 16.6 21.2 12"/><path d="M2.8 16.6L12 21.2l9.2-4.6"/>
+        </g>
+      </symbol>
+      <symbol id="ic-archive" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.8" y="3.6" width="18.4" height="4.8" rx="1.4"/>
+          <path d="M4.8 8.4v10.4a2 2 0 002 2h10.4a2 2 0 002-2V8.4"/><path d="M9.8 12.6h4.4"/>
+        </g>
+      </symbol>
+      <symbol id="ic-globe" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9.2"/><path d="M2.8 12h18.4"/>
+          <path d="M12 2.8c2.6 3.1 2.6 15.1 0 18.4-2.6-3.3-2.6-15.3 0-18.4z"/>
+        </g>
+      </symbol>
+      <symbol id="ic-net" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="4.8" r="2.6"/><circle cx="5" cy="19.2" r="2.6"/><circle cx="19" cy="19.2" r="2.6"/>
+          <path d="M12 7.4v5.2M12 12.6l-5.6 4.2M12 12.6l5.6 4.2"/>
+        </g>
+      </symbol>
+      <symbol id="ic-subnet" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.8" y="5" width="18.4" height="14" rx="2.4" stroke-dasharray="3.4 2.4"/>
+          <circle cx="8.4" cy="12" r="1.9"/><circle cx="15.6" cy="12" r="1.9"/><path d="M10.3 12h3.4"/>
+        </g>
+      </symbol>
+      <symbol id="ic-link" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.2 14.4l-2.8 2.8a3.8 3.8 0 01-5.4-5.4l2.8-2.8"/>
+          <path d="M13.8 9.6l2.8-2.8a3.8 3.8 0 015.4 5.4l-2.8 2.8"/>
+          <path d="M9 15l6-6"/>
+        </g>
+      </symbol>
+      <symbol id="ic-dnszone" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9.4" cy="9.4" r="6.6"/><path d="M2.8 9.4h13.2"/>
+          <path d="M9.4 2.8c1.9 2.3 1.9 10.9 0 13.2-1.9-2.3-1.9-10.9 0-13.2z"/>
+          <path d="M13.4 19h7.8M13.4 22h5"/>
+        </g>
+      </symbol>
+</defs></svg>
+
+<div class="shell">
+
+<nav class="toc">
+  <div class="tt">Contenido</div>
+  <a href="#control"><span class="n">00</span>Control del documento</a>
+  <a href="#resumen"><span class="n">01</span>Resumen ejecutivo</a>
+  <a href="#intro"><span class="n">02</span>Introducción</a>
+  <a href="#negocio"><span class="n">03</span>Contexto y alcance</a>
+  <a href="#ras"><span class="n">04</span>Requisitos significativos</a>
+  <a href="#restricciones"><span class="n">05</span>Restricciones y supuestos</a>
+  <a href="#adr"><span class="n">06</span>Decisiones de arquitectura</a>
+  <a href="#vistas"><span class="n">07</span>Vistas arquitectónicas</a>
+  <a href="#datos"><span class="n">08</span>Modelo de datos</a>
+  <a href="#inventario"><span class="n">09</span>Inventario de infraestructura</a>
+  <a href="#costos"><span class="n">10</span>Modelo de costos</a>
+  <a href="#seguridad"><span class="n">11</span>Seguridad</a>
+  <a href="#operacion"><span class="n">12</span>Operación y continuidad</a>
+  <a href="#entrega"><span class="n">13</span>Entrega y entornos</a>
+  <a href="#evolucion"><span class="n">14</span>Plan de evolución</a>
+  <a href="#riesgos"><span class="n">15</span>Riesgos y pendientes</a>
+  <a href="#glosario"><span class="n">16</span>Glosario</a>
+</nav>
+
+<main>
+
+<header class="mast">
+  <div class="eyebrow">HuimanNet · Documento de Arquitectura de Software · V1</div>
+  <h1>Portal de intercambio de documentos de nómina</h1>
+  <p class="standfirst">Arquitectura de referencia sobre Microsoft Azure para la primera versión del sistema: un portal seguro donde las empresas cliente cargan documentos de incidencias y datos de empleados, y el operador de nómina devuelve los archivos de resultado. Este documento es el punto de partida para construir, presupuestar y operar el sistema.</p>
+</header>
+
+<!-- ══════════ 00 CONTROL ══════════ -->
+<section id="control">
+  <h2><span class="num">00</span> Control del documento</h2>
+
+  <div class="tw"><table>
+    <tbody>
+      <tr><td style="width:200px"><strong>Documento</strong></td><td>Documento de Arquitectura de Software (SAD) — HuimanNet V1</td></tr>
+      <tr><td><strong>Versión</strong></td><td class="mono">1.0</td></tr>
+      <tr><td><strong>Estado</strong></td><td><span class="chip c-core">Borrador para revisión</span> — requiere cierre de las decisiones abiertas de la sección 15</td></tr>
+      <tr><td><strong>Fecha</strong></td><td class="mono">2026-07-28</td></tr>
+      <tr><td><strong>Ámbito</strong></td><td>Alcance funcional V1 (sección 03). El motor de cálculo de nómina queda explícitamente fuera.</td></tr>
+      <tr><td><strong>Autor</strong></td><td>Por definir</td></tr>
+      <tr><td><strong>Revisores</strong></td><td>Por definir — se sugiere responsable técnico, responsable de seguridad y responsable de operación de nómina</td></tr>
+      <tr><td><strong>Aprobación</strong></td><td>Pendiente</td></tr>
+      <tr><td><strong>Documentos relacionados</strong></td><td class="mono">ESPECIFICACION.md · ARQUITECTURA.md · diagramas/</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Historial de versiones</h4>
+  <div class="tw"><table>
+    <thead><tr><th class="mono">Ver.</th><th class="mono">Fecha</th><th>Cambio</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">1.0</td><td class="mono">2026-07-28</td><td>Versión inicial. Consolida el alcance V1 como portal documental, las vistas de arquitectura y topología, el inventario, el modelo de costos y las decisiones de arquitectura.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note warn">
+    <b>Cómo usar este documento.</b> Las secciones 03 a 07 fijan <em>qué</em> se construye y <em>por qué</em>; las secciones 09 a 13 son operativas y sirven para aprovisionar y presupuestar. La sección 15 lista lo que aún no está decidido: <b>tres de esos puntos bloquean el diseño del modelo de datos</b> y conviene cerrarlos antes de escribir código.
+  </div>
+</section>
+
+<!-- ══════════ 01 RESUMEN ══════════ -->
+<section id="resumen">
+  <h2><span class="num">01</span> Resumen ejecutivo</h2>
+
+  <p class="lede">HuimanNet V1 no calcula nómina: la intercambia. Es un portal donde las empresas cliente suben documentos y descargan resultados, mientras el operador de nómina procesa manualmente fuera del sistema. Esa definición de alcance es la que determina toda la arquitectura.</p>
+
+  <div class="grid">
+    <div class="cell"><div class="k">Usuarios iniciales</div><div class="v">≤ 500</div><div class="d">Con proyección a 9 000+ en unos dos años, sin rediseño de por medio.</div></div>
+    <div class="cell"><div class="k">Costo mensual</div><div class="v">USD 43–104</div><div class="d">Entorno de producción a precio de lista, sin descuentos por reserva.</div></div>
+    <div class="cell"><div class="k">Recursos a aprovisionar</div><div class="v">14</div><div class="d">Más el gobierno de suscripción, que es gratuito en su totalidad.</div></div>
+    <div class="cell"><div class="k">Disponibilidad objetivo</div><div class="v">99,8 %</div><div class="d">Compuesta de los acuerdos de servicio de App Service, SQL y Storage.</div></div>
+  </div>
+
+  <h3>Las cinco decisiones que definen el sistema</h3>
+  <ul class="clean">
+    <li><b>El archivo no pasa por el servidor.</b> Cargas y descargas van directo a Blob Storage con una URL SAS de minutos. Elimina el cuello de botella de ancho de banda y los límites de tamaño de petición, y es lo que permite crecer a 9 000 usuarios sin cambiar el plan de cómputo.</li>
+    <li><b>Sin contraseñas de base de datos.</b> Todo acceso a datos usa Managed Identity. No hay secretos que robar ni rotar, y es lo que hace barata la migración futura a red privada.</li>
+    <li><b>Todo archivo subido es sospechoso hasta escanearse.</b> Defender for Storage revisa cada carga; el documento no es descargable hasta declararse limpio.</li>
+    <li><b>Acceso a datos sin ORM.</b> ADO.NET directo sobre SQL Server, porque la API se compila con Native AOT y Entity Framework Core no lo soporta de forma completa.</li>
+    <li><b>Sin red virtual en la primera fase.</b> Decisión deliberada de costo, con los firewalls de servicio cubriendo el riesgo y una ruta de migración documentada que no toca código.</li>
+  </ul>
+
+  <div class="note">
+    <b>El principio de dimensionamiento.</b> Se incluye únicamente lo que aporta valor a 500 usuarios, y cada servicio diferido lleva documentado el disparador exacto que justifica activarlo. Nada se compra «por si acaso». Lo que sí se decide desde el día 1 son las opciones estructurales —aplicación sin estado, colas tras una interfaz, identidad administrada, infraestructura como código— porque son gratuitas hoy y son las que convierten el crecimiento en un cambio de configuración en lugar de un proyecto de migración.
+  </div>
+</section>
+
+<!-- ══════════ 02 INTRODUCCIÓN ══════════ -->
+<section id="intro">
+  <h2><span class="num">02</span> Introducción</h2>
+
+  <h3>Propósito</h3>
+  <p>Este documento describe la arquitectura del sistema HuimanNet en su primera versión. Sirve como referencia única para tres audiencias con necesidades distintas y establece la línea base contra la cual se evaluará cualquier cambio de diseño posterior.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Audiencia</th><th>Qué busca aquí</th><th>Secciones</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Dirección y patrocinio</strong></td><td>Alcance, costo y riesgos para autorizar la construcción</td><td class="mono">01 · 10 · 15</td></tr>
+      <tr><td><strong>Equipo de desarrollo</strong></td><td>Estructura, decisiones vinculantes y modelo de datos</td><td class="mono">04 · 06 · 07 · 08</td></tr>
+      <tr><td><strong>Infraestructura y operación</strong></td><td>Qué aprovisionar, cómo asegurarlo y cómo operarlo</td><td class="mono">07 · 09 · 11 · 12 · 13</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Alcance del documento</h3>
+  <p>Cubre la arquitectura de la V1 completa: vistas estáticas y dinámicas, topología de red, inventario de infraestructura, costos, seguridad y operación. <strong>No</strong> incluye especificación funcional detallada, diseño de interfaz de usuario, ni el plan de proyecto. La especificación técnica de código y convenciones vive en el documento complementario <code>ESPECIFICACION.md</code>.</p>
+
+  <h3>Método</h3>
+  <p>Las vistas siguen el modelo C4 para el nivel de contexto y contenedores, complementadas con una vista de despliegue por zonas de confianza y una vista dinámica. Las decisiones se registran como <em>Architecture Decision Records</em> (sección 06), cada una con su contexto, alternativas descartadas y consecuencias aceptadas.</p>
+</section>
+
+<!-- ══════════ 03 CONTEXTO Y ALCANCE ══════════ -->
+<section id="negocio">
+  <h2><span class="num">03</span> Contexto de negocio y alcance</h2>
+
+  <h3>El problema</h3>
+  <p>Las empresas cliente necesitan entregar periódicamente al operador de nómina la información para procesar los pagos: incidencias del período y datos de empleados. Hoy ese intercambio ocurre por canales no controlados —correo, mensajería, unidades compartidas— sin trazabilidad de quién entregó qué, sin control sobre quién descarga información salarial y sin un estado compartido del avance.</p>
+
+  <h3>La solución en una línea</h3>
+  <p>Un portal con autenticación, roles y bitácora, donde el archivo viaja cifrado y su acceso queda registrado. El cálculo sigue siendo manual: <strong>el sistema no procesa nómina, la transporta de forma segura y auditable.</strong></p>
+
+  <h3>Ciclo funcional</h3>
+  <div class="tw"><table>
+    <thead><tr><th class="mono">Paso</th><th>Actor</th><th>Acción</th><th>Estado resultante</th></tr></thead>
+    <tbody>
+      <tr><td class="id">1</td><td>Usuario de empresa cliente</td><td>Carga documentos de incidencias y datos de empleados del período</td><td class="mono">Recibido</td></tr>
+      <tr><td class="id">2</td><td>Sistema</td><td>Escanea, valida y notifica al operador</td><td class="mono">Recibido</td></tr>
+      <tr><td class="id">3</td><td>Operador de nómina</td><td>Descarga los documentos</td><td class="mono">En proceso</td></tr>
+      <tr><td class="id">4</td><td>Operador de nómina</td><td><em>Procesa la nómina manualmente, fuera del sistema</em></td><td class="mono">En proceso</td></tr>
+      <tr><td class="id">5</td><td>Operador de nómina</td><td>Carga los archivos de resultado o ajustes</td><td class="mono">Resultados disponibles</td></tr>
+      <tr><td class="id">6</td><td>Usuario de empresa cliente</td><td>Descarga los resultados</td><td class="mono">Cerrado</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Alcance de la V1</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Dentro del alcance</th><th>Fuera del alcance — versiones futuras</th></tr></thead>
+    <tbody>
+      <tr><td>Carga de documentos por la empresa cliente</td><td>Motor de cálculo de nómina</td></tr>
+      <tr><td>Organización por período y tipo de documento</td><td>Reglas impositivas y motor tributario</td></tr>
+      <tr><td>Descarga y carga de resultados por el operador</td><td>Generación automática de recibos en PDF</td></tr>
+      <tr><td>Estados del ciclo y seguimiento</td><td>Integración bancaria para dispersión de pagos</td></tr>
+      <tr><td>Notificaciones por correo</td><td>Integración fiscal y de seguridad social</td></tr>
+      <tr><td>Autenticación, roles y aislamiento entre empresas</td><td>Reportes de costos laborales</td></tr>
+      <tr><td>Bitácora de auditoría de cargas y descargas</td><td>Procesamiento masivo automatizado</td></tr>
+      <tr><td>Paridad funcional entre web y aplicación móvil</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note">
+    <b>Consecuencia arquitectónica del alcance.</b> Al ser un dominio de gestión documental y no de cálculo, la complejidad se desplaza del motor de reglas hacia tres frentes: <b>seguridad de los archivos, aislamiento entre empresas y trazabilidad</b>. Esto explica por qué el escaneo de malware es obligatorio desde el primer día mientras que servicios habituales como una cola empresarial o un worker dedicado se difieren: no hay procesamiento pesado que orquestar.
+  </div>
+</section>
+
+<!-- ══════════ 04 RAS ══════════ -->
+<section id="ras">
+  <h2><span class="num">04</span> Requisitos arquitectónicamente significativos</h2>
+  <p class="lede">Requisitos que condicionan la estructura del sistema. Los atributos de calidad se expresan como escenarios medibles, no como adjetivos.</p>
+
+  <h3>Funcionales con impacto estructural</h3>
+  <div class="tw"><table>
+    <thead><tr><th class="mono">ID</th><th>Requisito</th><th>Impacto en la arquitectura</th></tr></thead>
+    <tbody>
+      <tr><td class="id">RF-01</td><td>Una empresa nunca debe acceder a documentos de otra</td><td>Filtrado obligatorio por empresa del token en toda consulta; particionamiento de contenedores</td></tr>
+      <tr><td class="id">RF-02</td><td>Los archivos pueden ser grandes y numerosos</td><td>Carga y descarga directa a almacenamiento de objetos, sin pasar por el plano de cómputo</td></tr>
+      <tr><td class="id">RF-03</td><td>Debe registrarse quién descarga cada documento</td><td>Bitácora de acceso en base de datos, además de la auditoría nativa del motor</td></tr>
+      <tr><td class="id">RF-04</td><td>Misma funcionalidad en web y móvil</td><td>Lógica de negocio única en la capa de aplicación; la API es la frontera del cliente móvil</td></tr>
+      <tr><td class="id">RF-05</td><td>El operador trabaja fuera del sistema</td><td>No hay orquestación de procesamiento; el estado lo avanza una acción humana</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Escenarios de atributos de calidad</h3>
+  <div class="tw"><table>
+    <thead><tr><th class="mono">ID</th><th>Atributo</th><th>Escenario</th><th>Medida de respuesta</th></tr></thead>
+    <tbody>
+      <tr><td class="id">AC-01</td><td><strong>Seguridad</strong></td><td>Un usuario autenticado de la empresa A solicita, manipulando el identificador, un documento de la empresa B</td><td>El sistema rechaza la petición y registra el intento. Cero fugas admisibles.</td></tr>
+      <tr><td class="id">AC-02</td><td><strong>Seguridad</strong></td><td>Un usuario carga un archivo con contenido malicioso</td><td>El documento queda en cuarentena, nunca es descargable y se emite alerta.</td></tr>
+      <tr><td class="id">AC-03</td><td><strong>Rendimiento</strong></td><td>Cincuenta usuarios cargan archivos de forma simultánea al cierre de período</td><td>El tiempo de respuesta de la aplicación no se degrada: las transferencias no tocan el cómputo.</td></tr>
+      <tr><td class="id">AC-04</td><td><strong>Escalabilidad</strong></td><td>La base de usuarios pasa de 500 a 9 000 en dos años</td><td>Se absorbe cambiando SKU y número de réplicas, sin modificar código de negocio.</td></tr>
+      <tr><td class="id">AC-05</td><td><strong>Disponibilidad</strong></td><td>Operación normal durante un mes calendario</td><td>99,8 % de disponibilidad compuesta, unos 90 minutos de indisponibilidad.</td></tr>
+      <tr><td class="id">AC-06</td><td><strong>Recuperabilidad</strong></td><td>Un error de operación corrompe datos en la base</td><td>Restauración a un punto en el tiempo con pérdida máxima de 10 minutos.</td></tr>
+      <tr><td class="id">AC-07</td><td><strong>Auditabilidad</strong></td><td>Auditoría externa solicita quién descargó un recibo concreto</td><td>La consulta se resuelve desde la bitácora, con retención mínima de un año.</td></tr>
+      <tr><td class="id">AC-08</td><td><strong>Modificabilidad</strong></td><td>El negocio decide automatizar el cálculo de nómina</td><td>Entra como nuevos casos de uso sobre el dominio existente, sin reescribir el portal.</td></tr>
+      <tr><td class="id">AC-09</td><td><strong>Eficiencia de costo</strong></td><td>Operación en horario laboral con inactividad nocturna</td><td>La base de datos se suspende automáticamente; no se factura cómputo en inactividad.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ══════════ 05 RESTRICCIONES ══════════ -->
+<section id="restricciones">
+  <h2><span class="num">05</span> Restricciones y supuestos</h2>
+
+  <h3>Restricciones impuestas</h3>
+  <div class="tw"><table>
+    <thead><tr><th class="mono">ID</th><th>Restricción</th><th>Origen</th><th>Consecuencia</th></tr></thead>
+    <tbody>
+      <tr><td class="id">RE-01</td><td>Plataforma .NET 10</td><td>Decisión de tecnología</td><td>Base común para web, móvil y servicios</td></tr>
+      <tr><td class="id">RE-02</td><td>Aplicación web en Blazor Server</td><td>Decisión de tecnología</td><td>Requiere WebSockets y afinidad de sesión; obliga a un backplane al escalar</td></tr>
+      <tr><td class="id">RE-03</td><td>Aplicación móvil en .NET MAUI para Android e iOS</td><td>Decisión de tecnología</td><td>Necesita una API como frontera; distribución por tiendas</td></tr>
+      <tr><td class="id">RE-04</td><td>Servicios en Minimal API compilados con Native AOT</td><td>Decisión de tecnología</td><td><strong>Excluye Entity Framework Core y Dapper clásico</strong>; obliga a serialización generada en compilación</td></tr>
+      <tr><td class="id">RE-05</td><td>Base de datos SQL Server</td><td>Decisión de tecnología</td><td>Azure SQL Database como servicio administrado</td></tr>
+      <tr><td class="id">RE-06</td><td>Nube Microsoft Azure</td><td>Decisión de plataforma</td><td>Catálogo de servicios y modelo de identidad</td></tr>
+      <tr><td class="id">RE-07</td><td>Presupuesto contenido en la fase inicial</td><td>Restricción de negocio</td><td>Se difiere todo servicio sin retorno a 500 usuarios</td></tr>
+      <tr><td class="id">RE-08</td><td>Documentación XML obligatoria en clases, métodos y propiedades</td><td>Estándar de calidad</td><td>Advertencia de compilación activa en integración continua</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Supuestos</h3>
+  <p>Los siguientes supuestos sostienen el dimensionamiento. <strong>Si alguno resulta falso, el modelo de costos y la capacidad deben recalcularse.</strong></p>
+  <ul class="clean">
+    <li><b>Concurrencia baja y con picos previsibles.</b> El uso se concentra en los cierres de período —quincenas y fin de mes—, no es tráfico continuo.</li>
+    <li><b>Volumen documental moderado.</b> Del orden de decenas de gigabytes acumulados en el primer año, no cientos.</li>
+    <li><b>Los archivos son ofimáticos.</b> Hojas de cálculo, CSV y PDF de tamaño convencional; no video ni imágenes masivas.</li>
+    <li><b>Una sola región geográfica.</b> Sin requisitos de residencia de datos en varios países.</li>
+    <li><b>El operador de nómina procesa fuera del sistema.</b> No se requiere integración con su herramienta de cálculo en la V1.</li>
+  </ul>
+</section>
+
+<!-- ══════════ 06 ADR ══════════ -->
+<section id="adr">
+  <h2><span class="num">06</span> Decisiones de arquitectura</h2>
+  <p class="lede">Decisiones vinculantes con su justificación y las consecuencias que se aceptan. Revertir cualquiera de ellas exige una nueva versión de este documento.</p>
+
+  <div class="adr">
+    <div class="hd"><span class="k">ADR-01</span><span class="ti">Acceso a datos con ADO.NET, sin ORM</span><span class="chip c-f1">Aceptada</span></div>
+    <div class="bd">
+      <div><b>Contexto</b><p>La API se compila con Native AOT (RE-04), que impide reflexión y emisión de código en tiempo de ejecución.</p></div>
+      <div><b>Decisión</b><p>Acceso a SQL Server mediante ADO.NET directo con <code>Microsoft.Data.SqlClient</code>, comandos parametrizados y mapeadores escritos a mano.</p></div>
+      <div><b>Alternativas descartadas</b><p><strong>Entity Framework Core 10</strong>: sin soporte completo de Native AOT; los modelos y consultas precompiladas siguen siendo limitados y arrastran reflexión que rompe el recorte. <strong>Dapper clásico</strong>: emite código intermedio en ejecución, incompatible con AOT.</p></div>
+      <div><b>Consecuencias</b><p>Se gana arranque instantáneo, huella mínima y control total del SQL. Se acepta más código de mapeo manual y la gestión del esquema mediante scripts versionados en lugar de migraciones de ORM.</p></div>
+    </div>
+  </div>
+
+  <div class="adr">
+    <div class="hd"><span class="k">ADR-02</span><span class="ti">Carga y descarga directa a Blob Storage con URL SAS</span><span class="chip c-f1">Aceptada</span></div>
+    <div class="bd">
+      <div><b>Contexto</b><p>El sistema mueve archivos como función principal (RF-02). Canalizarlos por el servidor lo convertiría en cuello de botella y chocaría con los límites de tamaño de petición.</p></div>
+      <div><b>Decisión</b><p>La aplicación valida identidad, rol, tipo y tamaño, y entonces emite una <strong>URL SAS de vigencia en minutos, alcance de un único blob y un solo permiso</strong>. El cliente transfiere directo contra el almacenamiento.</p></div>
+      <div><b>Alternativas descartadas</b><p><strong>Proxy por la aplicación</strong>: simple de implementar, pero consume ancho de banda y memoria del plan de cómputo y limita el tamaño de archivo.</p></div>
+      <div><b>Consecuencias</b><p>El plano de cómputo se mantiene pequeño incluso a 9 000 usuarios (AC-03, AC-04). Se acepta la responsabilidad de acotar rigurosamente la vigencia y el alcance de cada SAS, y de no confiar nunca en datos enviados por el cliente al emitirla.</p></div>
+    </div>
+  </div>
+
+  <div class="adr">
+    <div class="hd"><span class="k">ADR-03</span><span class="ti">Managed Identity como único mecanismo de acceso a datos</span><span class="chip c-f1">Aceptada</span></div>
+    <div class="bd">
+      <div><b>Contexto</b><p>El sistema maneja información salarial. Las credenciales en cadenas de conexión son un vector recurrente de fuga y una carga operativa por su rotación.</p></div>
+      <div><b>Decisión</b><p>El cómputo accede a base de datos, almacenamiento y bóveda de secretos mediante identidad administrada. No existen contraseñas de servicio.</p></div>
+      <div><b>Consecuencias</b><p>Elimina toda una clase de incidentes y no tiene costo. <strong>Además es lo que abarata la migración futura a red privada</strong> (ADR-05): al no haber credenciales, el cambio de topología no obliga a rotaciones ni a modificar código.</p></div>
+    </div>
+  </div>
+
+  <div class="adr">
+    <div class="hd"><span class="k">ADR-04</span><span class="ti">Escaneo de malware obligatorio en las cargas</span><span class="chip c-f1">Aceptada</span></div>
+    <div class="bd">
+      <div><b>Contexto</b><p>Usuarios externos suben archivos arbitrarios que después descargan otros usuarios. Es el riesgo más directo de un portal de carga.</p></div>
+      <div><b>Decisión</b><p>Defender for Storage activo sobre la cuenta de almacenamiento. Todo documento nace en estado <em>pendiente</em> y sólo pasa a <em>disponible</em> tras un escaneo limpio; si resulta malicioso va a cuarentena y se emite alerta.</p></div>
+      <div><b>Consecuencias</b><p>Añade un costo modesto que <strong>no se difiere pese al criterio general de austeridad</strong>: distribuir un archivo infectado entre empresas cliente sería un incidente de otra magnitud. Introduce un estado intermedio en el modelo de datos y una latencia de segundos entre carga y disponibilidad.</p></div>
+    </div>
+  </div>
+
+  <div class="adr">
+    <div class="hd"><span class="k">ADR-05</span><span class="ti">Sin red virtual en la Fase 1</span><span class="chip c-core">Aceptada con riesgo residual</span></div>
+    <div class="bd">
+      <div><b>Contexto</b><p>Los endpoints privados y la red virtual tienen costo por hora y exigen gestionar direccionamiento y DNS. A 500 usuarios ese gasto no tiene retorno frente al riesgo real.</p></div>
+      <div><b>Decisión</b><p>Arquitectura íntegramente PaaS con endpoints públicos <strong>cerrados por el firewall de cada servicio</strong> y acceso exclusivo por identidad administrada. La topología con red privada queda diseñada (sección 07.4) y se activa por disparador.</p></div>
+      <div><b>Consecuencias</b><p>Ahorro de unos 22 dólares mensuales y de complejidad operativa. <strong>Riesgo residual aceptado</strong>: una regla de firewall mal configurada podría exponer un servicio. Se mitiga con Azure Policy y con la evaluación continua de postura de Defender for Cloud, ambas gratuitas.</p></div>
+    </div>
+  </div>
+
+  <div class="adr">
+    <div class="hd"><span class="k">ADR-06</span><span class="ti">Web y móvil comparten la capa de aplicación</span><span class="chip c-f1">Aceptada</span></div>
+    <div class="bd">
+      <div><b>Contexto</b><p>Se exige paridad funcional entre web y móvil (RF-04). Duplicar reglas en dos clientes garantiza divergencia con el tiempo.</p></div>
+      <div><b>Decisión</b><p>La lógica vive una sola vez en las capas de aplicación y dominio. <strong>Blazor Server las consume en proceso</strong>; la aplicación móvil las consume a través de la API. La API no es un salto intermedio obligatorio para la web.</p></div>
+      <div><b>Consecuencias</b><p>Sin duplicación de reglas y sin latencia añadida en la web. Se acepta que web y API compartan ciclo de despliegue al residir en el mismo plan; separarlos es un cambio de infraestructura previsto para la Fase 2.</p></div>
+    </div>
+  </div>
+
+  <div class="adr">
+    <div class="hd"><span class="k">ADR-07</span><span class="ti">Colas de almacenamiento en lugar de mensajería empresarial</span><span class="chip c-f1">Aceptada</span></div>
+    <div class="bd">
+      <div><b>Contexto</b><p>El único proceso asíncrono de la V1 es el envío de avisos por correo. El volumen es mínimo.</p></div>
+      <div><b>Decisión</b><p>Storage Queue sobre la cuenta ya existente, consumida por un <code>BackgroundService</code> alojado en el mismo proceso. Sin worker dedicado.</p></div>
+      <div><b>Alternativas descartadas</b><p><strong>Azure Service Bus</strong>: aporta temas, sesiones y gestión avanzada de mensajes fallidos que aquí no se usarían, con costo fijo.</p></div>
+      <div><b>Consecuencias</b><p>Costo marginal y menos piezas. La cola queda <strong>detrás de una interfaz de la capa de aplicación</strong>, de modo que migrar a Service Bus sea sustituir una implementación de infraestructura.</p></div>
+    </div>
+  </div>
+
+  <div class="adr">
+    <div class="hd"><span class="k">ADR-08</span><span class="ti">Bicep como infraestructura como código</span><span class="chip c-f1">Aceptada</span></div>
+    <div class="bd">
+      <div><b>Contexto</b><p>Se requieren tres entornos reproducibles y una vía de escalado que no dependa de configuración manual.</p></div>
+      <div><b>Decisión</b><p>Plantillas Bicep parametrizadas por entorno, desplegadas desde GitHub Actions con credenciales federadas.</p></div>
+      <div><b>Alternativas descartadas</b><p><strong>Terraform</strong>: exige gestionar estado remoto y proveedores, complejidad injustificada en un entorno cien por ciento Azure de este tamaño.</p></div>
+      <div><b>Consecuencias</b><p>Sin estado que administrar. La activación de la topología de Fase 3 se vuelve un cambio de parámetro, no una reescritura de plantillas.</p></div>
+    </div>
+  </div>
+
+  <div class="adr">
+    <div class="hd"><span class="k">ADR-09</span><span class="ti">Una sola región, sin recuperación geográfica en Fase 1</span><span class="chip c-core">Aceptada con riesgo residual</span></div>
+    <div class="bd">
+      <div><b>Contexto</b><p>Una región secundaria implica réplica geográfica de base de datos, almacenamiento redundante y un plan de conmutación por error probado.</p></div>
+      <div><b>Decisión</b><p>Despliegue en una única región. La recuperación se apoya en respaldos con restauración a un punto en el tiempo y en el redespliegue desde las plantillas de infraestructura.</p></div>
+      <div><b>Consecuencias</b><p>Ante una caída regional completa, el sistema queda indisponible hasta que el proveedor restablezca el servicio. <strong>Es una decisión informada, no una omisión</strong>: a esta escala el costo permanente no se justifica frente a un objetivo de recuperación de horas. Se reevalúa en la Fase 3.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 07 VISTAS ══════════ -->
+<section id="vistas">
+  <h2><span class="num">07</span> Vistas arquitectónicas</h2>
+  <p class="lede">Cinco vistas complementarias. Cada una responde una pregunta distinta: ninguna por sí sola describe el sistema.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th class="mono">Vista</th><th>Pregunta que responde</th><th>Audiencia principal</th></tr></thead>
+    <tbody>
+      <tr><td class="id">07.1</td><td>¿Quién usa el sistema y con qué se relaciona?</td><td>Todas</td></tr>
+      <tr><td class="id">07.2</td><td>¿Qué componentes lo forman y cómo interactúan?</td><td>Desarrollo e infraestructura</td></tr>
+      <tr><td class="id">07.3</td><td>¿Dónde vive cada recurso hoy?</td><td>Infraestructura</td></tr>
+      <tr><td class="id">07.4</td><td>¿Cómo se aísla la red cuando lo exija cumplimiento?</td><td>Infraestructura y seguridad</td></tr>
+      <tr><td class="id">07.5</td><td>¿Cómo se comporta el sistema en su ciclo principal?</td><td>Desarrollo y negocio</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>07.1 · Vista de contexto</h3>
+  <p>Actores y sistemas externos. El procesamiento de nómina aparece explícitamente como actividad externa: ocurre fuera del sistema y no consume ningún recurso de esta infraestructura.</p>
+  <div class="canvas">
+<pre class="mermaid">
+flowchart LR
+    RH["Usuario empresa cliente<br/>carga incidencias y<br/>datos de empleados"]
+    OP["Operador de nomina<br/>descarga, procesa manual,<br/>carga resultados"]
+    ADM["Administrador<br/>usuarios, empresas, auditoria"]
+
+    subgraph HN["HuimanNet — Portal de documentos"]
+        direction TB
+        WebC["Web — Blazor Server"]
+        MauiC["App MAUI — Android e iOS"]
+        ApiC["Minimal API — Native AOT"]
+    end
+
+    IDP["Microsoft Entra<br/>identidad OIDC / JWT"]
+    MAIL["Communication Services<br/>correo transaccional"]
+    STORE["App Store · Google Play<br/>distribucion movil"]
+    EXT["Proceso de nomina MANUAL<br/>fuera del sistema"]
+
+    RH --> WebC
+    RH --> MauiC
+    OP --> WebC
+    ADM --> WebC
+    HN -.-> IDP
+    HN --> MAIL
+    STORE -.-> MauiC
+    OP -.-> EXT
+</pre>
+  </div>
+  <div class="cap">Figura 1 — Vista de contexto (C4 nivel 1). Sin integraciones bancarias ni fiscales en la V1.</div>
+
+  <h3>07.2 · Vista de componentes y zonas de confianza</h3>
+  <p>Despliegue lógico agrupado por zona de confianza. Cada bloque indica servicio y configuración; los números marcan los flujos descritos bajo la figura.</p>
+  <div class="canvas">
+<svg id="svg-arq" viewBox="0 0 1240 706" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vista de componentes por zonas de confianza">
+
+    <!-- ============ ZONA 0 · CLIENTES ============ -->
+    <!-- Sólo software cliente. Los actores (empleado, operador, admin) viven en el
+         diagrama de contexto C4-N1; aquí sus permisos se resuelven vía roles en Entra. -->
+    <rect class="band" x="32" y="44" width="846" height="104"/>
+    <text class="bandl" x="48" y="66">Z0 · Clientes — Internet no confiable</text>
+    <rect class="box" x="52" y="78" width="380" height="52"/>
+    <use href="#ic-browser" class="i-a" x="66" y="91" width="26" height="26"/>
+    <text class="t"  x="104" y="99">Navegador web</text>
+    <text class="ts" x="104" y="116">circuito SignalR contra Blazor Server</text>
+    <rect class="box" x="452" y="78" width="382" height="52"/>
+    <use href="#ic-mobile" class="i-a" x="466" y="91" width="26" height="26"/>
+    <text class="t"  x="504" y="99">App MAUI</text>
+    <text class="ts" x="504" y="116">Android · iOS · consume la API por HTTPS</text>
+
+    <!-- ============ ZONA 1 · BORDE ============ -->
+    <rect class="band" x="32" y="168" width="846" height="110"/>
+    <text class="bandl" x="48" y="190">Z1 · Borde — TLS y protección perimetral</text>
+    <rect class="box" x="52" y="200" width="782" height="36"/>
+    <use href="#ic-lock" class="i-a" x="64" y="206" width="24" height="24"/>
+    <text class="t"  x="98" y="223">Azure DNS + certificado TLS gestionado</text>
+    <text class="ts" x="404" y="223">TLS 1.2+ · renovación automática · DDoS de plataforma</text>
+    <rect class="boxd" x="52" y="244" width="782" height="26"/>
+    <use href="#ic-shield" class="i-d" x="64" y="248" width="18" height="18"/>
+    <text class="td" x="92" y="262">Front Door + WAF</text>
+    <text class="ts" x="214" y="262">OWASP · CDN · diferido a Fase 3</text>
+
+    <!-- ============ ZONA 2 · APLICACIÓN ============ -->
+    <rect class="band" x="32" y="298" width="846" height="148"/>
+    <text class="bandl" x="48" y="320">Z2 · Aplicación — App Service Plan B1/B2 Linux · HTTPS-only</text>
+    <rect class="box" x="52" y="338" width="228" height="88"/>
+    <use href="#ic-monitor" class="i-a" x="66" y="350" width="24" height="24"/>
+    <text class="t"  x="98" y="366">Blazor Server</text>
+    <text class="ts" x="68" y="390">App Service · web</text>
+    <text class="ts" x="68" y="405">consume Application</text>
+    <text class="ts" x="68" y="420">en proceso</text>
+    <rect class="box" x="296" y="338" width="228" height="88"/>
+    <use href="#ic-api" class="i-a" x="310" y="350" width="24" height="24"/>
+    <text class="t"  x="342" y="366">Minimal API</text>
+    <text class="ts" x="312" y="390">App Service · Native AOT</text>
+    <text class="ts" x="312" y="405">frontera del cliente móvil</text>
+    <text class="ts" x="312" y="420">valida JWT en cada llamada</text>
+    <rect class="box" x="540" y="338" width="228" height="88"/>
+    <use href="#ic-cog" class="i-a" x="554" y="350" width="24" height="24"/>
+    <text class="t"  x="586" y="366">BackgroundService</text>
+    <text class="ts" x="556" y="390">in-process</text>
+    <text class="ts" x="556" y="405">envío de notificaciones</text>
+    <text class="ts" x="556" y="420">sin worker dedicado</text>
+
+    <!-- ============ ZONA 3 · DATOS ============ -->
+    <rect class="band" x="32" y="466" width="846" height="216"/>
+    <text class="bandl" x="48" y="488">Z3 · Datos — acceso sólo por Managed Identity</text>
+
+    <rect class="box" x="52" y="506" width="380" height="76"/>
+    <use href="#ic-db" class="i-a" x="68" y="522" width="28" height="28"/>
+    <text class="t"  x="108" y="530">Azure SQL Database</text>
+    <text class="ts" x="108" y="547">Serverless GP · auto-pause · TDE</text>
+    <text class="ts" x="68" y="568">metadatos · estados · bitácora de auditoría</text>
+
+    <rect class="boxc" x="452" y="506" width="382" height="76"/>
+    <use href="#ic-doc" class="i-c" x="468" y="522" width="28" height="28"/>
+    <text class="tc"  x="508" y="530">Blob Storage — núcleo del sistema</text>
+    <text class="tcs" x="508" y="547">Hot LRS · versionado · soft delete · SSE</text>
+    <text class="tcs" x="468" y="568">documentos de incidencias, empleados y resultados</text>
+
+    <rect class="box" x="52" y="598" width="250" height="68"/>
+    <use href="#ic-shield-check" class="i-a" x="66" y="610" width="22" height="22"/>
+    <text class="t"  x="96" y="621">Defender for Storage</text>
+    <text class="ts" x="96" y="638">escaneo de malware</text>
+    <text class="ts" x="68" y="656">cuarentena automática</text>
+
+    <rect class="box" x="318" y="598" width="250" height="68"/>
+    <use href="#ic-queue" class="i-a" x="332" y="610" width="22" height="22"/>
+    <text class="t"  x="362" y="621">Storage Queue</text>
+    <text class="ts" x="362" y="638">cola de avisos</text>
+    <text class="ts" x="334" y="656">desacopla el envío de correo</text>
+
+    <rect class="boxd" x="584" y="598" width="250" height="68"/>
+    <use href="#ic-bolt" class="i-d" x="598" y="610" width="22" height="22"/>
+    <text class="td"  x="628" y="621">Azure Cache for Redis</text>
+    <text class="ts" x="628" y="638">backplane SignalR</text>
+    <text class="ts" x="600" y="656">diferido a Fase 2</text>
+
+    <!-- ============ RAIL DERECHO ============ -->
+    <rect class="band" x="920" y="44" width="288" height="196"/>
+    <text class="bandl" x="936" y="66">Identidad y secretos</text>
+    <rect class="boxn" x="936" y="80" width="256" height="58"/>
+    <use href="#ic-identity" class="i-a" x="948" y="92" width="24" height="24"/>
+    <text class="t"  x="980" y="100">Microsoft Entra</text>
+    <text class="ts" x="980" y="116">OIDC · JWT · MFA</text>
+    <text class="ts" x="980" y="131">roles: cliente · operador · admin</text>
+    <rect class="boxn" x="936" y="146" width="256" height="42"/>
+    <use href="#ic-key" class="i-a" x="948" y="156" width="22" height="22"/>
+    <text class="t"  x="978" y="165">Azure Key Vault</text>
+    <text class="ts" x="978" y="180">secretos · claves · rotación</text>
+    <rect class="boxn" x="936" y="196" width="256" height="42"/>
+    <use href="#ic-card" class="i-a" x="948" y="206" width="22" height="22"/>
+    <text class="t"  x="978" y="215">Managed Identity</text>
+    <text class="ts" x="978" y="230">sin contraseñas en conexión</text>
+
+    <rect class="band" x="920" y="260" width="288" height="176"/>
+    <text class="bandl" x="936" y="282">Observabilidad</text>
+    <rect class="boxn" x="936" y="300" width="256" height="40"/>
+    <use href="#ic-chart" class="i-a" x="948" y="309" width="21" height="21"/>
+    <text class="t"  x="976" y="318">Application Insights</text>
+    <text class="ts" x="976" y="333">trazas · métricas · dependencias</text>
+    <rect class="boxn" x="936" y="348" width="256" height="40"/>
+    <use href="#ic-logs" class="i-a" x="948" y="357" width="21" height="21"/>
+    <text class="t"  x="976" y="366">Log Analytics</text>
+    <text class="ts" x="976" y="381">retención y consulta de logs</text>
+    <rect class="boxn" x="936" y="396" width="256" height="36"/>
+    <use href="#ic-bell" class="i-a" x="948" y="404" width="20" height="20"/>
+    <text class="t"  x="975" y="414">Azure Monitor</text>
+    <text class="ts" x="975" y="428">alertas · presupuesto · malware</text>
+
+    <rect class="band" x="920" y="456" width="288" height="226"/>
+    <text class="bandl" x="936" y="478">Entrega y gobierno</text>
+    <rect class="boxn" x="936" y="496" width="256" height="36"/>
+    <use href="#ic-flow" class="i-a" x="948" y="504" width="20" height="20"/>
+    <text class="t"  x="975" y="514">GitHub Actions</text>
+    <text class="ts" x="975" y="528">CI/CD · OIDC federado</text>
+    <rect class="boxn" x="936" y="540" width="256" height="36"/>
+    <use href="#ic-layers" class="i-a" x="948" y="548" width="20" height="20"/>
+    <text class="t"  x="975" y="558">Bicep — IaC</text>
+    <text class="ts" x="975" y="572">dev · test · prod</text>
+    <rect class="boxn" x="936" y="584" width="256" height="36"/>
+    <use href="#ic-shield" class="i-a" x="948" y="592" width="20" height="20"/>
+    <text class="t"  x="975" y="602">Policy · RBAC · Locks</text>
+    <text class="ts" x="975" y="616">tags · budgets · CSPM</text>
+    <rect class="boxn" x="936" y="628" width="256" height="36"/>
+    <use href="#ic-archive" class="i-a" x="948" y="636" width="20" height="20"/>
+    <text class="t"  x="975" y="646">Backups PITR / LTR</text>
+    <text class="ts" x="975" y="660">retención legal de documentos</text>
+
+    <!-- ============ FLUJOS ============ -->
+    <!-- 1 clientes -> borde -->
+    <path class="flow" d="M242,130 L242,196" marker-end="url(#ah)"/>
+    <path class="flow" d="M643,130 L643,196" marker-end="url(#ah)"/>
+    <circle cx="272" cy="163" r="11" fill="var(--accent)"/>
+    <text class="fnum" x="272" y="167" text-anchor="middle">1</text>
+
+    <!-- 2 borde -> app -->
+    <path class="flow" d="M166,270 L166,334" marker-end="url(#ah)"/>
+    <path class="flow" d="M410,270 L410,334" marker-end="url(#ah)"/>
+    <circle cx="196" cy="302" r="11" fill="var(--accent)"/>
+    <text class="fnum" x="196" y="306" text-anchor="middle">2</text>
+
+    <!-- 3 app -> sql -->
+    <path class="flow" d="M166,426 L166,502" marker-end="url(#ah)"/>
+    <circle cx="196" cy="464" r="11" fill="var(--accent)"/>
+    <text class="fnum" x="196" y="468" text-anchor="middle">3</text>
+    <text class="flab" x="214" y="468">metadatos · bitácora</text>
+
+    <!-- 4 CARGA DIRECTA A BLOB (firma de la arquitectura) -->
+    <!-- Nace del borde de la zona de clientes (aplica a ambos clientes, no a uno solo)
+         y baja por el canal libre x≈858, entre las cajas (834/768) y el borde de banda (878). -->
+    <circle cx="856" cy="148" r="4" fill="var(--core)"/>
+    <path class="halo" d="M856,148 C 868,260 868,400 798,500"/>
+    <path class="flowc" d="M856,148 C 868,260 868,400 798,500"
+          marker-end="url(#ahc)" stroke-dasharray="7 4"/>
+    <circle cx="862" cy="248" r="12" fill="var(--core)"/>
+    <text class="fnum" x="862" y="252" text-anchor="middle">4</text>
+    <text class="flab" x="846" y="372" text-anchor="end" fill="var(--core)">carga SAS</text>
+    <text class="flab" x="846" y="388" text-anchor="end" fill="var(--core)">directa</text>
+
+    <!-- 5 blob -> defender -->
+    <path class="flow" d="M520,582 L230,594" marker-end="url(#ah)"/>
+    <circle cx="372" cy="576" r="11" fill="var(--accent)"/>
+    <text class="fnum" x="372" y="580" text-anchor="middle">5</text>
+
+    <!-- 6 app -> queue (pasa por el hueco entre SQL y Blob) -->
+    <path class="flow" d="M442,426 L442,594" marker-end="url(#ah)"/>
+    <circle cx="442" cy="466" r="11" fill="var(--accent)"/>
+    <text class="fnum" x="442" y="470" text-anchor="middle">6</text>
+
+    <!-- managed identity: app -> rail -->
+    <path class="fdash" d="M878,382 C 898,382 900,222 932,218" marker-end="url(#ahm)"/>
+    <text class="flab" x="884" y="300" fill="var(--ink-3)">MI</text>
+
+    <!-- zona de datos -> log analytics (auditoría SQL) -->
+    <path class="fdash" d="M878,632 C 902,632 908,420 932,372" marker-end="url(#ahm)"/>
+    <text class="flab" x="884" y="600" fill="var(--ink-3)">auditoría</text>
+</svg>
+  </div>
+  <div class="cap">Figura 2 — Vista de componentes por zonas de confianza.</div>
+  <div class="legend">
+    <span><i class="sw sw-f1"></i> Fase 1 — se aprovisiona el día 1</span>
+    <span><i class="sw sw-core"></i> Núcleo del sistema</span>
+    <span><i class="sw sw-def"></i> Diferido — Fase 2/3</span>
+  </div>
+
+  <h4>Flujos</h4>
+  <div class="tw"><table>
+    <thead><tr><th class="mono">#</th><th>Interacción</th><th>Protocolo y control</th></tr></thead>
+    <tbody>
+      <tr><td class="id">1</td><td>Clientes → Borde</td><td>HTTPS 443 con TLS 1.2+. Todo lo demás se rechaza.</td></tr>
+      <tr><td class="id">2</td><td>Borde → Aplicación</td><td>App Service exclusivamente en HTTPS; la API exige JWT válido con el rol correcto.</td></tr>
+      <tr><td class="id">3</td><td>Aplicación → SQL</td><td>ADO.NET vía Managed Identity. Toda consulta filtra por la empresa del token.</td></tr>
+      <tr><td class="id">4</td><td>Clientes → Blob <em>directo</em></td><td><strong>Decisión ADR-02.</strong> URL SAS de minutos, un blob, un permiso. El archivo no atraviesa el servidor.</td></tr>
+      <tr><td class="id">5</td><td>Blob → Defender</td><td>Escaneo al cargar. El documento no es descargable hasta declararse limpio.</td></tr>
+      <tr><td class="id">6</td><td>Aplicación → Cola → Correo</td><td>Aviso asíncrono; el envío no bloquea la petición del usuario.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note">
+    <b>Qué no aparece en esta vista.</b> Es un diagrama de despliegue: cada bloque es un recurso que se aprovisiona, se opera y se factura. Los <b>actores</b> no son elementos de arquitectura y viven en la vista de contexto; lo que sí es arquitectura de sus permisos son los <b>roles</b>, resueltos en Microsoft Entra y transportados en el token.
+  </div>
+
+  <h3>07.3 · Vista de topología — Fase 1</h3>
+  <p>Fronteras de suscripción, región y grupos de recursos. Sin red virtual: los servicios de datos conservan endpoint público cerrado por firewall de servicio, conforme a ADR-05.</p>
+  <div class="canvas">
+<svg id="svg-t1" viewBox="0 0 1240 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Topologia Fase 1: suscripcion, region y grupos de recursos">
+
+    <!-- Internet -->
+    <rect class="ext" x="180" y="16" width="320" height="44"/>
+    <use href="#ic-globe" class="i-g" x="194" y="26" width="24" height="24"/>
+    <text class="t"  x="230" y="37">Internet</text>
+    <text class="ts" x="230" y="52">clientes web y móvil · HTTPS 443</text>
+
+    <!-- Suscripción -->
+    <rect class="sub1" x="20" y="82" width="1200" height="452"/>
+    <text class="bl" x="36" y="104">Suscripción de Azure</text>
+
+    <!-- Región -->
+    <rect class="reg1" x="40" y="118" width="1160" height="398"/>
+    <text class="bl" x="56" y="140">Región primaria — única</text>
+
+    <!-- rg-prod -->
+    <rect class="rg1" x="60" y="156" width="780" height="340"/>
+    <text class="bl" x="76" y="178">rg-huimannet-prod · bloqueo CanNotDelete</text>
+
+    <!-- App Service Plan -->
+    <rect class="grp" x="80" y="198" width="350" height="140"/>
+    <text class="bl" x="96" y="218">App Service Plan · B1/B2 Linux</text>
+    <rect class="svc" x="96" y="232" width="318" height="44"/>
+    <use href="#ic-monitor" class="i-a" x="108" y="243" width="22" height="22"/>
+    <text class="t"  x="138" y="251">app-huimannet-web</text>
+    <text class="ts" x="138" y="266">Blazor Server · HTTPS-only · TLS gestionado</text>
+    <rect class="svc" x="96" y="284" width="318" height="44"/>
+    <use href="#ic-api" class="i-a" x="108" y="295" width="22" height="22"/>
+    <text class="t"  x="138" y="303">app-huimannet-api</text>
+    <text class="ts" x="138" y="318">Minimal API AOT · JWT obligatorio</text>
+
+    <!-- SQL -->
+    <rect class="grp" x="450" y="198" width="370" height="94"/>
+    <text class="bl" x="466" y="218">Servidor lógico SQL</text>
+    <rect class="svc" x="466" y="230" width="338" height="48"/>
+    <use href="#ic-db" class="i-a" x="478" y="242" width="24" height="24"/>
+    <text class="t"  x="512" y="249">sqldb-huimannet</text>
+    <text class="ts" x="512" y="264">Serverless · firewall de servicio</text>
+
+    <!-- Storage -->
+    <rect class="grp" x="450" y="308" width="370" height="110"/>
+    <text class="bl" x="466" y="328">Cuenta de almacenamiento</text>
+    <rect class="svcc" x="466" y="340" width="164" height="36"/>
+    <use href="#ic-doc" class="i-c" x="476" y="349" width="19" height="19"/>
+    <text class="tc"  x="502" y="358">Blob · documentos</text>
+    <text class="tsc" x="502" y="371">por empresa</text>
+    <rect class="svc" x="644" y="340" width="160" height="36"/>
+    <use href="#ic-queue" class="i-a" x="654" y="349" width="19" height="19"/>
+    <text class="t"  x="680" y="358">Queue · avisos</text>
+    <text class="ts" x="680" y="371">notificaciones</text>
+    <text class="ts" x="466" y="400">firewall de servicio · versionado · soft delete · escaneo de malware</text>
+
+    <!-- Key Vault + App Insights -->
+    <rect class="svc" x="80" y="356" width="168" height="56"/>
+    <use href="#ic-key" class="i-a" x="94" y="370" width="22" height="22"/>
+    <text class="t"  x="124" y="378">Key Vault</text>
+    <text class="ts" x="124" y="393">firewall de servicio</text>
+    <rect class="svc" x="262" y="356" width="168" height="56"/>
+    <use href="#ic-chart" class="i-a" x="276" y="370" width="22" height="22"/>
+    <text class="t"  x="306" y="378">App Insights</text>
+    <text class="ts" x="306" y="393">telemetría</text>
+
+    <!-- nota fase 1 -->
+    <text class="lab" x="80" y="443">Sin red virtual. El control de acceso a datos son dos capas:</text>
+    <text class="lab" x="80" y="461">① firewall de cada servicio — sólo servicios de Azure de confianza e IP conocidas</text>
+    <text class="lab" x="80" y="479">② Managed Identity — no existen contraseñas en las cadenas de conexión</text>
+
+    <!-- rg-dev -->
+    <rect class="rg1" x="860" y="156" width="320" height="104"/>
+    <text class="bl" x="876" y="178">rg-huimannet-dev</text>
+    <text class="ts" x="876" y="200">réplica reducida · apagable fuera de horario</text>
+    <text class="ts" x="876" y="218">App Service B1 · SQL serverless mínimo</text>
+    <text class="ts" x="876" y="236">cuenta de almacenamiento propia</text>
+
+    <!-- rg-test -->
+    <rect class="rg1" x="860" y="280" width="320" height="104"/>
+    <text class="bl" x="876" y="302">rg-huimannet-test</text>
+    <text class="ts" x="876" y="324">efímero · se crea desde Bicep</text>
+    <text class="ts" x="876" y="342">se destruye al terminar la validación</text>
+    <text class="ts" x="876" y="360">costo cercano a cero</text>
+
+    <!-- rg-shared -->
+    <rect class="rg1" x="860" y="404" width="320" height="92"/>
+    <text class="bl" x="876" y="426">rg-huimannet-shared</text>
+    <text class="ts" x="876" y="448">Log Analytics Workspace</text>
+    <text class="ts" x="876" y="466">retención de logs y auditoría</text>
+    <text class="ts" x="876" y="484">compartido por los tres entornos</text>
+
+    <!-- flujos -->
+    <path class="fl" d="M340,60 L340,228" marker-end="url(#a1)"/>
+    <text class="lab" x="350" y="150">entrada pública</text>
+    <text class="lab" x="350" y="166">HTTPS 443</text>
+
+    <path class="fl" d="M430,254 L462,250" marker-end="url(#a1)"/>
+    <path class="fl" d="M430,300 L462,352" marker-end="url(#a1)"/>
+    <path class="fl" d="M214,338 L182,352" marker-end="url(#a1)"/>
+</svg>
+  </div>
+  <div class="cap">Figura 3 — Topología de despliegue de la Fase 1.</div>
+  <div class="legend">
+    <span><i class="sw sw-rg"></i> Grupo de recursos</span>
+    <span><i class="sw sw-f1"></i> Servicio PaaS</span>
+    <span><i class="sw sw-core"></i> Almacén de documentos</span>
+  </div>
+
+  <h3>07.4 · Vista de topología — Fase 3</h3>
+  <p>Topología objetivo con aislamiento de red. El cómputo se integra a una red virtual para su tráfico saliente y los servicios de datos sólo son alcanzables por dirección IP privada.</p>
+  <div class="canvas">
+<svg id="svg-t3" viewBox="0 0 1240 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Topologia Fase 3: VNet con subred delegada y endpoints privados">
+
+    <!-- Internet -->
+    <rect class="ext2" x="60" y="20" width="300" height="44"/>
+    <use href="#ic-globe" class="i-g" x="74" y="31" width="22" height="22"/>
+    <text class="t2" x="104" y="41">Internet</text>
+    <text class="ts2" x="104" y="56">clientes web y móvil</text>
+
+    <!-- Front Door -->
+    <rect class="svc2" x="60" y="96" width="300" height="52"/>
+    <use href="#ic-shield" class="i-a" x="74" y="110" width="24" height="24"/>
+    <text class="t2" x="106" y="118">Front Door + WAF</text>
+    <text class="ts2" x="106" y="134">TLS · OWASP · CDN · rate limiting</text>
+
+    <!-- App Service Plan -->
+    <rect class="grp2" x="60" y="186" width="300" height="128"/>
+    <text class="blg" x="76" y="206">App Service Plan · entrada pública</text>
+    <rect class="svc2" x="76" y="220" width="268" height="40"/>
+    <use href="#ic-monitor" class="i-a" x="88" y="229" width="21" height="21"/>
+    <text class="t2" x="116" y="238">app-huimannet-web</text>
+    <text class="ts2" x="116" y="252">Blazor Server</text>
+    <rect class="svc2" x="76" y="266" width="268" height="40"/>
+    <use href="#ic-api" class="i-a" x="88" y="275" width="21" height="21"/>
+    <text class="t2" x="116" y="284">app-huimannet-api</text>
+    <text class="ts2" x="116" y="298">Minimal API AOT</text>
+
+    <!-- Zonas DNS privadas -->
+    <rect class="dns" x="800" y="186" width="380" height="150"/>
+    <use href="#ic-dnszone" class="i-n" x="816" y="196" width="22" height="22"/>
+    <text class="bl2" x="846" y="208">Zonas DNS privadas · vinculadas a la VNet</text>
+    <text class="ts2" x="816" y="240">privatelink.database.windows.net</text>
+    <text class="ts2" x="816" y="260">privatelink.blob.core.windows.net</text>
+    <text class="ts2" x="816" y="280">privatelink.vaultcore.azure.net</text>
+    <text class="labg" x="816" y="306">Sin estas zonas, el nombre público del</text>
+    <text class="labg" x="816" y="322">servicio seguiría resolviendo a IP pública</text>
+
+    <!-- VNET -->
+    <rect class="vnet" x="60" y="360" width="700" height="330"/>
+    <use href="#ic-net" class="i-n" x="76" y="370" width="20" height="20"/>
+    <text class="bl2" x="104" y="384">Red virtual · vnet-huimannet · 10.0.0.0/16</text>
+
+    <!-- snet-app -->
+    <rect class="snet" x="80" y="400" width="660" height="86"/>
+    <use href="#ic-subnet" class="i-n" x="96" y="406" width="19" height="19"/>
+    <text class="bl2" x="122" y="420">snet-app · 10.0.1.0/24</text>
+    <text class="nsg" x="640" y="420">NSG</text>
+    <text class="ts2" x="96" y="442">Subred delegada a Microsoft.Web/serverFarms</text>
+    <text class="ts2" x="96" y="460">Recibe el tráfico saliente del App Service (VNet Integration)</text>
+    <text class="ts2" x="96" y="476">El App Service no vive en la subred: sólo inyecta su salida</text>
+
+    <!-- snet-pep -->
+    <rect class="snet" x="80" y="506" width="660" height="166"/>
+    <use href="#ic-subnet" class="i-n" x="96" y="512" width="19" height="19"/>
+    <text class="bl2" x="122" y="526">snet-pep · 10.0.2.0/24</text>
+    <text class="nsg" x="640" y="526">NSG</text>
+
+    <rect class="pe" x="150" y="530" width="280" height="40"/>
+    <use href="#ic-link" class="i-n" x="162" y="539" width="21" height="21"/>
+    <text class="t2" x="190" y="548">pep-sql</text>
+    <text class="tsn" x="190" y="562">10.0.2.4 · NIC privada</text>
+
+    <rect class="pe" x="150" y="578" width="280" height="40"/>
+    <use href="#ic-link" class="i-n" x="162" y="587" width="21" height="21"/>
+    <text class="t2" x="190" y="596">pep-blob</text>
+    <text class="tsn" x="190" y="610">10.0.2.5 · NIC privada</text>
+
+    <rect class="pe" x="150" y="626" width="280" height="40"/>
+    <use href="#ic-link" class="i-n" x="162" y="635" width="21" height="21"/>
+    <text class="t2" x="190" y="644">pep-kv</text>
+    <text class="tsn" x="190" y="658">10.0.2.6 · NIC privada</text>
+
+    <!-- Anotaciones colocadas en el hueco entre flechas (y=550/598/646) para no cruzarlas -->
+    <text class="labg" x="450" y="576">Directivas de red de private endpoint deshabilitadas</text>
+    <text class="labg" x="450" y="624">Una interfaz de red por servicio, con IP del rango</text>
+
+    <!-- Servicios PaaS destino -->
+    <rect class="grp2" x="800" y="506" width="380" height="166"/>
+    <text class="blg" x="816" y="526">Servicios PaaS · acceso público deshabilitado</text>
+
+    <rect class="svc2" x="816" y="530" width="348" height="40"/>
+    <use href="#ic-db" class="i-a" x="828" y="539" width="21" height="21"/>
+    <text class="t2" x="856" y="548">Azure SQL Database</text>
+    <text class="ts2" x="856" y="562">public network access: disabled</text>
+
+    <rect class="svcc2" x="816" y="578" width="348" height="40"/>
+    <use href="#ic-doc" class="i-c" x="828" y="587" width="21" height="21"/>
+    <text class="tc2" x="856" y="596">Blob Storage · documentos</text>
+    <text class="tsc2" x="856" y="610">public network access: disabled</text>
+
+    <rect class="svc2" x="816" y="626" width="348" height="40"/>
+    <use href="#ic-key" class="i-a" x="828" y="635" width="21" height="21"/>
+    <text class="t2" x="856" y="644">Key Vault</text>
+    <text class="ts2" x="856" y="658">public network access: disabled</text>
+
+    <!-- flujos -->
+    <path class="fl2" d="M210,64 L210,92" marker-end="url(#a2)"/>
+    <path class="fl2" d="M210,148 L210,182" marker-end="url(#a2)"/>
+    <path class="fl2" d="M210,314 L210,396" marker-end="url(#a2)"/>
+    <text class="lab2" x="222" y="342">VNet Integration</text>
+    <text class="lab2" x="222" y="358">tráfico saliente</text>
+
+    <!-- trunk snet-app -> peps -->
+    <path class="fl2" d="M120,486 L120,646"/>
+    <path class="fl2" d="M120,550 L146,550" marker-end="url(#a2)"/>
+    <path class="fl2" d="M120,598 L146,598" marker-end="url(#a2)"/>
+    <path class="fl2" d="M120,646 L146,646" marker-end="url(#a2)"/>
+
+    <!-- peps -> servicios -->
+    <path class="fl2" d="M434,550 L812,550" marker-end="url(#a2)"/>
+    <path class="fl2" d="M434,598 L812,598" marker-end="url(#a2)"/>
+    <path class="fl2" d="M434,646 L812,646" marker-end="url(#a2)"/>
+    <text class="lab2" x="560" y="542">Private Link · nunca sale a Internet</text>
+
+    <!-- dns -> vnet -->
+    <path class="fd2" d="M860,340 L784,392" marker-end="url(#a3)"/>
+    <text class="labg" x="856" y="356" text-anchor="end">resolución</text>
+</svg>
+  </div>
+  <div class="cap">Figura 4 — Topología objetivo con endpoints privados.</div>
+  <div class="legend">
+    <span><i class="sw sw-net"></i> Red virtual y subredes</span>
+    <span><i class="sw sw-f1"></i> Servicio PaaS</span>
+    <span><i class="sw sw-core"></i> Almacén de documentos</span>
+  </div>
+
+  <h4>Plan de direccionamiento</h4>
+  <div class="tw"><table>
+    <thead><tr><th>Recurso</th><th class="mono">CIDR</th><th>Propósito y restricciones</th></tr></thead>
+    <tbody>
+      <tr><td><strong>vnet-huimannet</strong></td><td class="mono">10.0.0.0/16</td><td>Espacio de direcciones de la red virtual regional.</td></tr>
+      <tr><td><strong>snet-app</strong></td><td class="mono">10.0.1.0/24</td><td>Delegada a <code>Microsoft.Web/serverFarms</code>. Uso exclusivo: no admite otros recursos. Cada instancia del plan consume una dirección.</td></tr>
+      <tr><td><strong>snet-pep</strong></td><td class="mono">10.0.2.0/24</td><td>Directivas de red de endpoint privado deshabilitadas. Una interfaz de red por servicio conectado.</td></tr>
+      <tr><td>Reserva de crecimiento</td><td class="mono">10.0.3.0/24 →</td><td>Sin asignar. Disponible para subredes futuras.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note net">
+    <b>Tres detalles que suelen fallar al implementar esta topología.</b> Primero, la subred de integración debe estar <b>delegada</b> y no puede alojar nada más. Segundo, un endpoint privado <b>sin su zona DNS privada vinculada a la red virtual no funciona</b>: el nombre público seguiría resolviendo a dirección pública y la conexión fallaría al estar el acceso público deshabilitado. Tercero, la integración de red del App Service afecta sólo al <b>tráfico saliente</b>; la entrada sigue llegando por el endpoint público del servicio, que es justamente lo que protege el firewall de aplicaciones web.
+  </div>
+
+  <h3>07.5 · Vista dinámica</h3>
+  <p>Ciclo completo de intercambio, con el patrón asíncrono de aceptación inmediata y notificación posterior.</p>
+  <div class="canvas">
+<pre class="mermaid">
+sequenceDiagram
+    actor C as Usuario empresa cliente
+    participant A as App (Blazor / API)
+    participant S as Azure SQL
+    participant B as Blob Storage
+    participant D as Defender for Storage
+    participant N as Notificador + Correo
+    actor O as Operador de nomina
+
+    C->>A: Solicita cargar documento (periodo, tipo)
+    A->>A: Valida rol, empresa, tipo y tamano
+    A->>S: Registra documento (estado pendiente)
+    A-->>C: URL SAS de escritura (minutos)
+    C->>B: Carga el archivo DIRECTO por HTTPS
+    B->>D: Escaneo de malware
+    D-->>S: Resultado del escaneo
+    Note over S: limpio disponible / malicioso cuarentena
+    S->>N: Encola aviso
+    N->>O: Correo nuevos documentos disponibles
+
+    O->>A: Consulta pendientes del periodo
+    A-->>O: URL SAS de lectura
+    O->>B: Descarga los archivos
+    A->>S: Bitacora de descarga y estado en proceso
+
+    Note over O: Procesa la nomina MANUALMENTE fuera del sistema
+
+    O->>A: Carga archivos de resultado
+    A->>S: Estado resultados disponibles
+    S->>N: Encola aviso
+    N->>C: Correo resultados listos
+    C->>B: Descarga resultados (SAS de lectura)
+    A->>S: Bitacora de descarga
+</pre>
+  </div>
+  <div class="cap">Figura 5 — Vista dinámica del ciclo de intercambio.</div>
+</section>
+
+<!-- ══════════ 08 DATOS ══════════ -->
+<section id="datos">
+  <h2><span class="num">08</span> Modelo de datos</h2>
+  <p class="lede">Modelo conceptual de la V1. El dominio es documental y de flujo de estados: no hay entidades de cálculo.</p>
+
+  <div class="canvas">
+<pre class="mermaid">
+erDiagram
+    EMPRESA ||--o{ USUARIO : "tiene"
+    EMPRESA ||--o{ PERIODO_CARGA : "abre"
+    PERIODO_CARGA ||--o{ DOCUMENTO : "agrupa"
+    USUARIO ||--o{ DOCUMENTO : "carga"
+    DOCUMENTO ||--o{ REGISTRO_AUDITORIA : "genera"
+    USUARIO ||--o{ REGISTRO_AUDITORIA : "ejecuta"
+
+    EMPRESA {
+        guid Id PK
+        string RazonSocial
+        string Identificador
+        bool Activa
+    }
+    USUARIO {
+        guid Id PK
+        guid EmpresaId FK
+        string ObjectIdEntra
+        string Rol
+    }
+    PERIODO_CARGA {
+        guid Id PK
+        guid EmpresaId FK
+        int Anio
+        int Mes
+        string Estado
+    }
+    DOCUMENTO {
+        guid Id PK
+        guid PeriodoId FK
+        guid EmpresaId FK
+        string TipoDocumento
+        string NombreOriginal
+        string RutaBlob
+        long TamanoBytes
+        string Estado
+        datetime FechaCarga
+    }
+    REGISTRO_AUDITORIA {
+        guid Id PK
+        guid DocumentoId FK
+        guid UsuarioId FK
+        string Accion
+        datetime Fecha
+        string DireccionIp
+    }
+</pre>
+  </div>
+  <div class="cap">Figura 6 — Modelo conceptual de datos.</div>
+
+  <h3>Reglas de integridad con impacto en seguridad</h3>
+  <ul class="clean">
+    <li><b><code>EmpresaId</code> se desnormaliza en <code>DOCUMENTO</code></b> aunque sea derivable del período. Es deliberado: permite filtrar por empresa en la propia cláusula de la consulta, sin depender de una unión, y reduce la probabilidad de una fuga por error de programación (RF-01, AC-01).</li>
+    <li><b><code>RutaBlob</code> se genera por el sistema</b> como identificador único, nunca a partir del nombre aportado por el usuario. Evita recorrido de rutas y colisiones. El nombre original se conserva sólo como metadato de presentación.</li>
+    <li><b><code>Estado</code> del documento</b> incluye el paso intermedio de escaneo: <em>pendiente</em> → <em>escaneando</em> → <em>disponible</em> o <em>en cuarentena</em>. Ninguna consulta de descarga devuelve documentos que no estén disponibles (ADR-04).</li>
+    <li><b><code>REGISTRO_AUDITORIA</code> es de sólo inserción.</b> No se actualiza ni se borra desde la aplicación; su retención se rige por la política legal, no por el ciclo de vida del documento (AC-07).</li>
+    <li><b>Los estados del período</b> avanzan por acción humana del operador, no por un proceso automático, porque el cálculo ocurre fuera del sistema (RF-05).</li>
+  </ul>
+
+  <h3>Gestión del esquema</h3>
+  <p>Al no usar un mapeador objeto-relacional (ADR-01), el esquema se gestiona con <strong>scripts SQL versionados</strong> almacenados junto al código, aplicados de forma idempotente y ordenada por la canalización de despliegue. Cada script es una unidad con número de versión, sin marcha atrás automática: los cambios destructivos requieren guion explícito de reversión.</p>
+</section>
+
+<!-- ══════════ 09 INVENTARIO ══════════ -->
+<section id="inventario">
+  <h2><span class="num">09</span> Inventario de infraestructura</h2>
+  <p class="lede">Recursos a aprovisionar. La columna de zona corresponde a las bandas de la Figura 2 y al grupo de recursos de la Figura 3.</p>
+
+  <h3>Recursos de producción</h3>
+  <div class="tw"><table>
+    <thead><tr><th class="mono">Zona</th><th>Componente</th><th>Servicio Azure</th><th>SKU / configuración</th><th>Estado</th></tr></thead>
+    <tbody>
+      <tr><td class="id">Z2</td><td><strong>Web Blazor Server</strong><span class="sub">Interfaz de empresas cliente y operador</span></td><td>App Service</td><td class="mono">B1 o B2 · Linux</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Z2</td><td><strong>Minimal API</strong><span class="sub">Frontera del cliente móvil</span></td><td>App Service</td><td class="mono">mismo plan · Native AOT</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Z2</td><td><strong>Notificador</strong><span class="sub">Envío de avisos por correo</span></td><td>BackgroundService</td><td class="mono">en proceso</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Z3</td><td><strong>Almacén de documentos</strong><span class="sub">Núcleo: incidencias, datos y resultados</span></td><td>Blob Storage</td><td class="mono">Hot LRS · versionado · soft delete</td><td><span class="chip c-core">Núcleo</span></td></tr>
+      <tr><td class="id">Z3</td><td><strong>Escaneo de malware</strong><span class="sub">Cuarentena de archivos maliciosos</span></td><td>Defender for Storage</td><td class="mono">1 cuenta de almacenamiento</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Z3</td><td><strong>Metadatos y bitácora</strong><span class="sub">Empresas, usuarios, documentos, estados</span></td><td>Azure SQL Database</td><td class="mono">Serverless GP · auto-pause</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Z3</td><td><strong>Cola de avisos</strong></td><td>Storage Queue</td><td class="mono">misma cuenta</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Z1</td><td><strong>DNS y certificado TLS</strong></td><td>Azure DNS + Managed Certificate</td><td class="mono">1 zona · renovación automática</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Rail</td><td><strong>Identidad</strong><span class="sub">Autenticación, roles y aislamiento</span></td><td>Microsoft Entra</td><td class="mono">OIDC · JWT · MFA</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Rail</td><td><strong>Secretos</strong></td><td>Key Vault</td><td class="mono">estándar</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Rail</td><td><strong>Identidad de servicio</strong></td><td>Managed Identity</td><td class="mono">asignada por sistema</td><td><span class="chip c-free">Gratis</span></td></tr>
+      <tr><td class="id">Rail</td><td><strong>Telemetría</strong></td><td>App Insights + Log Analytics</td><td class="mono">pago por ingesta</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+      <tr><td class="id">Rail</td><td><strong>Alertas</strong></td><td>Azure Monitor</td><td class="mono">incluido</td><td><span class="chip c-free">Gratis</span></td></tr>
+      <tr><td class="id">—</td><td><strong>Correo transaccional</strong></td><td>Communication Services</td><td class="mono">pago por envío</td><td><span class="chip c-f1">Fase 1</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Gobierno de suscripción — sin costo</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Elemento</th><th>Configuración</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Grupos de recursos</strong></td><td class="mono">rg-huimannet-dev · test · prod · shared</td></tr>
+      <tr><td><strong>Bloqueo de recursos</strong></td><td>CanNotDelete sobre el grupo de producción</td></tr>
+      <tr><td><strong>Azure Policy</strong></td><td>Exige HTTPS, TLS 1.2+ y etiquetas obligatorias en todo recurso nuevo</td></tr>
+      <tr><td><strong>RBAC</strong></td><td>Privilegio mínimo por grupo de recursos; nunca a nivel de suscripción</td></tr>
+      <tr><td><strong>Defender for Cloud</strong></td><td>Evaluación de postura en su capa gratuita</td></tr>
+      <tr><td><strong>Cost Management</strong></td><td>Presupuesto y alerta de gasto por entorno</td></tr>
+      <tr><td><strong>Etiquetas</strong></td><td>Entorno, propietario y centro de costo</td></tr>
+      <tr><td><strong>Respaldos</strong></td><td>Restauración a punto en el tiempo y retención de largo plazo en SQL; versionado en Blob</td></tr>
+      <tr><td><strong>Entrega</strong></td><td>Plantillas Bicep y GitHub Actions con credenciales federadas</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Recursos diferidos con su disparador</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Componente</th><th>Por qué no ahora</th><th>Disparador para activarlo</th><th>Fase</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Azure Cache for Redis</strong></td><td>Con una sola instancia de Blazor no hace falta backplane; 500 usuarios caben con holgura</td><td>Blazor escala a más de una instancia</td><td><span class="chip c-def">2</span></td></tr>
+      <tr><td><strong>Azure Functions</strong><span class="sub">Worker externo</span></td><td>No hay procesamiento pesado: el cálculo es manual y externo</td><td>Los procesos por lotes compiten con el tráfico web</td><td><span class="chip c-def">2</span></td></tr>
+      <tr><td><strong>Front Door + WAF</strong></td><td>Costo fijo relevante; el acceso ya exige autenticación</td><td>Exposición pública con tráfico real o requisito de cumplimiento</td><td><span class="chip c-def">3</span></td></tr>
+      <tr><td><strong>VNet + Private Endpoints</strong></td><td>Costo por hora y gestión de red; los firewalls de servicio cubren el riesgo a esta escala</td><td>Política de cumplimiento que exija aislamiento de red</td><td><span class="chip c-def">3</span></td></tr>
+      <tr><td><strong>Azure Service Bus</strong></td><td>Los avisos por correo son de volumen mínimo</td><td>Necesidad de temas, sesiones o gestión avanzada de mensajes fallidos</td><td><span class="chip c-def">3</span></td></tr>
+      <tr><td><strong>App Configuration</strong></td><td>Pocos servicios; añadiría una dependencia sin retorno</td><td>Varios servicios compartiendo configuración</td><td><span class="chip c-def">3</span></td></tr>
+      <tr><td><strong>Azure Firewall</strong></td><td>Arquitectura íntegramente PaaS, sin máquinas virtuales cuyo tráfico filtrar</td><td><strong>Probablemente nunca</strong> — documentado para que la omisión sea explícita</td><td><span class="chip c-def">—</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ══════════ 10 COSTOS ══════════ -->
+<section id="costos">
+  <h2><span class="num">10</span> Modelo de costos</h2>
+  <p class="lede">Estimación mensual del entorno de producción en dólares. Los rangos reflejan uso bajo y uso alto dentro del alcance de 500 usuarios.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Componente</th><th>Base de cobro</th><th class="num">Mín.</th><th class="num">Máx.</th></tr></thead>
+    <tbody>
+      <tr><td><strong>App Service Plan</strong><span class="sub">B1 → B2, aloja web y API</span></td><td>fijo por instancia</td><td class="num">13</td><td class="num">26</td></tr>
+      <tr><td><strong>Azure SQL Serverless</strong><span class="sub">la suspensión automática reduce el costo en inactividad</span></td><td>vCore-segundo + almacenamiento</td><td class="num">15</td><td class="num">40</td></tr>
+      <tr><td><strong>Blob Storage</strong><span class="sub">≈ 50 GB en nivel frecuente + transacciones</span></td><td>GB-mes + operaciones</td><td class="num">2</td><td class="num">5</td></tr>
+      <tr><td><strong>Defender for Storage</strong><span class="sub">escaneo de malware — ADR-04</span></td><td>por cuenta + GB escaneado</td><td class="num">10</td><td class="num">15</td></tr>
+      <tr><td><strong>Application Insights</strong><span class="sub">los primeros 5 GB de ingesta no se facturan</span></td><td>GB ingerido</td><td class="num">0</td><td class="num">8</td></tr>
+      <tr><td><strong>Salida de datos</strong><span class="sub">los primeros 100 GB mensuales no se facturan</span></td><td>GB salientes</td><td class="num">0</td><td class="num">5</td></tr>
+      <tr><td><strong>Key Vault</strong></td><td>por 10 000 operaciones</td><td class="num">1</td><td class="num">1</td></tr>
+      <tr><td><strong>Azure DNS</strong></td><td>zona + consultas</td><td class="num">1</td><td class="num">1</td></tr>
+      <tr><td><strong>Communication Services</strong><span class="sub">correo transaccional</span></td><td>por mensaje</td><td class="num">1</td><td class="num">2</td></tr>
+      <tr><td><strong>Storage Queue</strong></td><td>por operación</td><td class="num">0</td><td class="num">1</td></tr>
+      <tr><td><strong>Microsoft Entra</strong><span class="sub">bajo el umbral gratuito de usuarios activos</span></td><td>por usuario activo</td><td class="num">0</td><td class="num">0</td></tr>
+      <tr><td><strong>Certificado TLS gestionado</strong></td><td>—</td><td class="num">0</td><td class="num">0</td></tr>
+      <tr><td><strong>Managed Identity</strong></td><td>—</td><td class="num">0</td><td class="num">0</td></tr>
+      <tr><td><strong>Gobierno completo</strong><span class="sub">Policy, RBAC, bloqueos, etiquetas, presupuestos, postura</span></td><td>—</td><td class="num">0</td><td class="num">0</td></tr>
+      <tr><td><strong>Respaldos SQL</strong><span class="sub">incluidos en el servicio</span></td><td>—</td><td class="num">0</td><td class="num">0</td></tr>
+      <tr><td><strong>Integración continua</strong><span class="sub">minutos incluidos en el plan</span></td><td>—</td><td class="num">0</td><td class="num">0</td></tr>
+      <tr class="total"><td>Producción — total mensual</td><td>USD</td><td class="num">43</td><td class="num">104</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Entornos no productivos y crecimiento</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Concepto</th><th>Detalle</th><th class="num">USD / mes</th></tr></thead>
+    <tbody>
+      <tr><td>Entorno <span class="mono">dev</span></td><td>Réplica reducida, apagable fuera de horario</td><td class="num">15 – 25</td></tr>
+      <tr><td>Entorno <span class="mono">test</span></td><td>Se levanta bajo demanda desde Bicep y se destruye tras validar</td><td class="num">0 – 20</td></tr>
+      <tr><td>Redis Basic C0</td><td>Al escalar Blazor a más de una instancia</td><td class="num">+16</td></tr>
+      <tr><td>Front Door Standard</td><td>Con exposición pública real</td><td class="num">+35</td></tr>
+      <tr><td>Endpoints privados (×3)</td><td>SQL, Blob y Key Vault, si lo exige cumplimiento</td><td class="num">+22</td></tr>
+      <tr><td>App Service P1v3</td><td>Salto de plan hacia el rango de 9 000 usuarios</td><td class="num">+95</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note warn">
+    <b>Cómo leer estas cifras.</b> Son estimaciones de orden de magnitud a precio de lista para una región de Norteamérica, sin descuentos por reserva ni compromiso de consumo. Sirven para decidir arquitectura, <b>no para presupuestar contablemente</b>: antes de aprobar, valida el escenario exacto en la calculadora de precios de Azure con la región, el volumen documental y la retención definitivos. Las tres variables que más mueven el total son el <b>tiempo activo de la base de datos</b>, los <b>gigabytes almacenados y escaneados</b> y la <b>ingesta de telemetría</b>.
+  </div>
+</section>
+
+<!-- ══════════ 11 SEGURIDAD ══════════ -->
+<section id="seguridad">
+  <h2><span class="num">11</span> Seguridad</h2>
+  <p class="lede">El sistema custodia información salarial y datos personales de empleados. La seguridad no se difiere por costo: los controles esenciales son gratuitos o marginales.</p>
+
+  <h3>Amenazas principales y mitigación</h3>
+  <div class="tw"><table>
+    <thead><tr><th class="mono">ID</th><th>Amenaza</th><th>Impacto</th><th>Mitigación</th></tr></thead>
+    <tbody>
+      <tr><td class="id">AM-01</td><td><strong>Una empresa accede a documentos de otra</strong><span class="sub">Divulgación de información</span></td><td><span class="chip c-hi">Crítico</span></td><td>Filtrado obligatorio por la empresa del token en toda consulta; <code>EmpresaId</code> desnormalizado; autorización verificada en el servidor antes de emitir cualquier SAS</td></tr>
+      <tr><td class="id">AM-02</td><td><strong>Distribución de archivo malicioso</strong><span class="sub">Un usuario carga malware que otro descarga</span></td><td><span class="chip c-hi">Crítico</span></td><td>Defender for Storage; el documento no es descargable hasta declararse limpio; cuarentena y alerta automáticas</td></tr>
+      <tr><td class="id">AM-03</td><td><strong>Fuga de una URL SAS</strong><span class="sub">Se comparte o intercepta el enlace</span></td><td>Medio</td><td>Vigencia de minutos, alcance de un único blob y un solo permiso; el contenedor nunca es público</td></tr>
+      <tr><td class="id">AM-04</td><td><strong>Robo de credenciales de base de datos</strong></td><td>Alto</td><td><strong>No aplica:</strong> no existen credenciales. Todo acceso es por Managed Identity (ADR-03)</td></tr>
+      <tr><td class="id">AM-05</td><td><strong>Borrado accidental o malicioso de documentos</strong></td><td>Alto</td><td>Versionado y borrado temporal en Blob; bloqueo de recursos en producción; respaldos con restauración a punto en el tiempo</td></tr>
+      <tr><td class="id">AM-06</td><td><strong>Repudio de una descarga</strong><span class="sub">Se niega haber accedido a información salarial</span></td><td>Medio</td><td>Bitácora de acceso de sólo inserción; auditoría de SQL enviada a Log Analytics</td></tr>
+      <tr><td class="id">AM-07</td><td><strong>Exposición por regla de firewall mal configurada</strong></td><td>Alto</td><td>Riesgo residual aceptado en ADR-05. Azure Policy y evaluación continua de postura; se elimina al activar la Fase 3</td></tr>
+      <tr><td class="id">AM-08</td><td><strong>Carga de archivo con nombre malicioso</strong><span class="sub">Recorrido de rutas</span></td><td>Medio</td><td>La ruta del blob se genera por el sistema; el nombre del usuario se conserva sólo como metadato</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Controles transversales</h3>
+  <ul class="clean">
+    <li><b>Identidad.</b> Microsoft Entra con tokens de vida corta, renovación gestionada y autenticación multifactor obligatoria para operadores y administradores.</li>
+    <li><b>Autorización.</b> Tres roles —cliente, operador y administrador— con permisos distintos por operación, verificados en el servidor en cada petición.</li>
+    <li><b>Cifrado.</b> TLS 1.2 o superior de extremo a extremo con certificado gestionado; cifrado en reposo activo por defecto en base de datos y almacenamiento.</li>
+    <li><b>Validación de entrada.</b> Lista blanca de extensiones y tipos permitidos, y límite de tamaño, comprobados <em>antes</em> de emitir la URL de carga.</li>
+    <li><b>Registro.</b> Nunca se escriben datos personales ni identificadores fiscales legibles en los registros de aplicación.</li>
+    <li><b>Cadena de entrega.</b> Integración continua con credenciales federadas: no se almacenan secretos de despliegue en el repositorio ni en el sistema de integración.</li>
+    <li><b>Gobierno.</b> Azure Policy obliga HTTPS y TLS mínimo en todo recurso nuevo; los bloqueos impiden borrados accidentales en producción.</li>
+  </ul>
+</section>
+
+<!-- ══════════ 12 OPERACIÓN ══════════ -->
+<section id="operacion">
+  <h2><span class="num">12</span> Operación y continuidad</h2>
+
+  <h3>Objetivos de servicio</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Métrica</th><th class="mono">Objetivo</th><th>Cómo se sustenta</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Disponibilidad compuesta</strong></td><td class="mono">99,8 % mensual</td><td>Composición de los acuerdos de App Service, Azure SQL y Storage — unos 90 minutos al mes</td></tr>
+      <tr><td><strong>RPO — metadatos</strong></td><td class="mono">≤ 10 min</td><td>Respaldo continuo del registro de transacciones</td></tr>
+      <tr><td><strong>RTO — base de datos</strong></td><td class="mono">≤ 2 h</td><td>Restauración a un punto en el tiempo</td></tr>
+      <tr><td><strong>RPO — documentos</strong></td><td class="mono">≈ 0</td><td>Versionado y borrado temporal en Blob</td></tr>
+      <tr><td><strong>RTO — aplicación</strong></td><td class="mono">≤ 1 h</td><td>Redespliegue completo desde Bicep mediante la canalización</td></tr>
+      <tr><td><strong>Retención de auditoría</strong></td><td class="mono">≥ 1 año</td><td>Auditoría de SQL hacia Log Analytics y retención de largo plazo — ajustar a norma local</td></tr>
+      <tr><td><strong>Retención documental</strong></td><td class="mono">Por definir</td><td>Política de retención en Blob según normativa laboral aplicable</td></tr>
+      <tr><td><strong>Recuperación regional</strong></td><td class="mono">No cubierta</td><td>Decisión informada — ADR-09. Se reevalúa en Fase 3</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Observabilidad</h3>
+  <p>Application Insights recoge trazas distribuidas, métricas y el mapa de dependencias de ambas aplicaciones; Log Analytics centraliza los registros y la auditoría del motor de base de datos. Las alertas mínimas a configurar desde el primer despliegue son:</p>
+  <div class="tw"><table>
+    <thead><tr><th>Alerta</th><th>Condición</th><th>Severidad</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Malware detectado</strong></td><td>Defender for Storage marca un documento en cuarentena</td><td><span class="chip c-hi">Crítica</span></td></tr>
+      <tr><td><strong>Fallo de autorización recurrente</strong></td><td>Intentos repetidos de acceder a documentos de otra empresa</td><td><span class="chip c-hi">Crítica</span></td></tr>
+      <tr><td><strong>Tasa de error del servidor</strong></td><td>Respuestas 5xx por encima del umbral en cinco minutos</td><td>Alta</td></tr>
+      <tr><td><strong>Latencia degradada</strong></td><td>Percentil 95 de respuesta por encima del objetivo</td><td>Media</td></tr>
+      <tr><td><strong>Saturación del plan</strong></td><td>CPU o memoria sostenidas por encima del 70 %</td><td>Media — <em>disparador de Fase 2</em></td></tr>
+      <tr><td><strong>Desviación de presupuesto</strong></td><td>Gasto proyectado sobre el presupuesto del entorno</td><td>Media</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note">
+    <b>Ventana de mantenimiento.</b> El sistema tiene un calendario de criticidad conocido: la carga se concentra en los cierres de período —quincenas y fin de mes—. Toda operación de cambio debe programarse fuera de esas ventanas, y ese criterio forma parte del contrato operativo, no de la buena voluntad del equipo.
+  </div>
+</section>
+
+<!-- ══════════ 13 ENTREGA ══════════ -->
+<section id="entrega">
+  <h2><span class="num">13</span> Entrega y entornos</h2>
+
+  <div class="tw"><table>
+    <thead><tr><th class="mono">Entorno</th><th>Propósito</th><th>Configuración</th><th>Ciclo de vida</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">dev</td><td>Desarrollo e integración continua</td><td>Réplica reducida del plan y la base</td><td>Permanente, apagable fuera de horario</td></tr>
+      <tr><td class="mono">test</td><td>Validación previa a producción</td><td>Equivalente a producción en configuración, menor en tamaño</td><td>Efímero: se crea y destruye desde Bicep</td></tr>
+      <tr><td class="mono">prod</td><td>Operación</td><td>Inventario de la sección 09</td><td>Permanente, con bloqueo de borrado</td></tr>
+      <tr><td class="mono">shared</td><td>Observabilidad transversal</td><td>Workspace de Log Analytics</td><td>Permanente, compartido por los tres</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Canalización</h3>
+  <ul class="clean">
+    <li><b>Compilación y pruebas.</b> Restauración, compilación en configuración de publicación y ejecución de la batería de pruebas. Los analizadores tratan las advertencias como errores, incluida la falta de documentación XML (RE-08).</li>
+    <li><b>Validación de compatibilidad AOT.</b> La publicación de la API debe revisarse en busca de advertencias de recorte y compilación anticipada. Es un paso obligatorio: una dependencia incompatible sólo se manifiesta aquí, no en depuración.</li>
+    <li><b>Infraestructura primero.</b> Las plantillas Bicep se aplican antes que la aplicación, de modo que el entorno sea siempre resultado del código y no de ajustes manuales.</li>
+    <li><b>Esquema de base de datos.</b> Los scripts versionados se aplican de forma ordenada e idempotente como paso previo al despliegue de la aplicación.</li>
+    <li><b>Autenticación sin secretos.</b> El despliegue usa credenciales federadas entre el sistema de integración y Entra: no hay secretos de publicación almacenados.</li>
+    <li><b>Promoción.</b> El mismo artefacto se promueve entre entornos; sólo cambian los parámetros. Nunca se recompila para producción.</li>
+  </ul>
+</section>
+
+<!-- ══════════ 14 EVOLUCIÓN ══════════ -->
+<section id="evolucion">
+  <h2><span class="num">14</span> Plan de evolución</h2>
+  <p class="lede">El escalado se ejecuta por señales observadas en la telemetría, no por calendario. Los rangos de usuarios son orientativos.</p>
+
+  <h3>Fase 1 — Lanzamiento · 0 a 500 usuarios</h3>
+  <p>La arquitectura descrita en este documento. Plan B1 o B2 con una instancia, base de datos con suspensión automática, procesamiento asíncrono en proceso.</p>
+
+  <h3>Fase 2 — Crecimiento · 500 a 3 000 usuarios</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Señal observada</th><th>Acción</th></tr></thead>
+    <tbody>
+      <tr><td>CPU o memoria sostenidas por encima del 70 %</td><td>Elevar el plan a S1 o P0v3; opcionalmente separar la API a su propio plan</td></tr>
+      <tr><td>Blazor requiere más de una instancia</td><td><strong>Añadir Redis como backplane</strong> — es el primer disparador que suele activarse</td></tr>
+      <tr><td>Los procesos por lotes compiten con el tráfico web</td><td>Externalizar el notificador a Azure Functions</td></tr>
+      <tr><td>Volumen documental elevado</td><td>Aplicar niveles de acceso esporádico o de archivo a documentos antiguos</td></tr>
+      <tr><td>Suspensiones de base de datos molestas</td><td>Pasar a serverless sin suspensión o a un plan aprovisionado pequeño</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Fase 3 — Escala objetivo · 3 000 a 9 000+ usuarios</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Señal observada</th><th>Acción</th></tr></thead>
+    <tbody>
+      <tr><td>Tráfico público relevante o exigencia de seguridad perimetral</td><td>Front Door con firewall de aplicaciones web y red de distribución</td></tr>
+      <tr><td>Requisito de cumplimiento sobre aislamiento de red</td><td>Activar la topología de la Figura 4 — <strong>sin cambios de código</strong></td></tr>
+      <tr><td>La base de datos se vuelve cuello de botella de lectura</td><td>Réplicas de lectura; revisión de índices con el almacén de consultas</td></tr>
+      <tr><td>Mensajería con necesidades avanzadas</td><td>Migrar de colas de almacenamiento a Service Bus</td></tr>
+      <tr><td>Criticidad que justifique continuidad geográfica</td><td>Reevaluar ADR-09: réplica geográfica y almacenamiento redundante entre regiones</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Evolución funcional — más allá del portal</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Capacidad nueva</th><th>Infraestructura que requiere</th></tr></thead>
+    <tbody>
+      <tr><td>Motor de cálculo de nómina</td><td>Worker dedicado en Functions o Container Apps; la lógica entra en el dominio existente</td></tr>
+      <tr><td>Generación automática de recibos</td><td>Worker y mayor consumo de almacenamiento</td></tr>
+      <tr><td>Integración bancaria para dispersión</td><td>Conectores en la capa de infraestructura y, probablemente, red privada</td></tr>
+      <tr><td>Integración fiscal y de seguridad social</td><td>Adaptadores específicos por país y retención con valor probatorio</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note">
+    <b>Por qué esta evolución es barata.</b> Las decisiones estructurales tomadas en la Fase 1 —aplicación sin estado, arquitectura por capas, colas tras una interfaz, identidad administrada, infraestructura como código— no cuestan nada hoy y son exactamente las que convierten cada salto de fase en un cambio de configuración. La única excepción reconocida es el motor de cálculo, que es desarrollo nuevo por definición; pero incluso ese entra como casos de uso adicionales sobre el dominio documental ya construido.
+  </div>
+</section>
+
+<!-- ══════════ 15 RIESGOS ══════════ -->
+<section id="riesgos">
+  <h2><span class="num">15</span> Riesgos y decisiones pendientes</h2>
+
+  <h3>Decisiones abiertas</h3>
+  <p>Las tres primeras <strong>bloquean el diseño del modelo de datos</strong> y conviene resolverlas antes de escribir código.</p>
+  <div class="tw"><table>
+    <thead><tr><th class="mono">ID</th><th>Decisión</th><th>Por qué importa</th><th>Impacto</th></tr></thead>
+    <tbody>
+      <tr><td class="id">DA-01</td><td><strong>¿El sistema es multiempresa?</strong><span class="sub">¿El operador atiende a varias empresas cliente en la misma instancia?</span></td><td>Define el particionamiento de contenedores y si el filtrado por empresa es una condición estructural en cada consulta</td><td><span class="chip c-hi">Bloqueante</span></td></tr>
+      <tr><td class="id">DA-02</td><td><strong>Modelo de identidad</strong><span class="sub">Entra External ID frente a Entra ID corporativo</span></td><td>Con empresas cliente externas, External ID es lo más probable; cambia el registro, la invitación y la gestión del ciclo de vida de los usuarios</td><td><span class="chip c-hi">Bloqueante</span></td></tr>
+      <tr><td class="id">DA-03</td><td><strong>Retención legal de documentos</strong></td><td>Determina la política de Blob, el nivel de acceso y el costo acumulado a varios años</td><td><span class="chip c-hi">Bloqueante</span></td></tr>
+      <tr><td class="id">DA-04</td><td><strong>Tipos y tamaño máximo de archivo</strong></td><td>Define la validación previa a emitir la URL de carga y el volumen mensual escaneado</td><td>Medio</td></tr>
+      <tr><td class="id">DA-05</td><td><strong>Región de despliegue</strong></td><td>Afecta precios de lista, latencia y residencia de datos</td><td>Medio</td></tr>
+      <tr><td class="id">DA-06</td><td><strong>Nomenclatura definitiva de recursos</strong></td><td>Los nombres de este documento son propuestas; conviene fijar convención antes del primer aprovisionamiento</td><td>Bajo</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Riesgos</h3>
+  <div class="tw"><table>
+    <thead><tr><th class="mono">ID</th><th>Riesgo</th><th>Probabilidad</th><th>Impacto</th><th>Respuesta</th></tr></thead>
+    <tbody>
+      <tr><td class="id">R-01</td><td><strong>Una dependencia resulta incompatible con Native AOT</strong><span class="sub">Se manifiesta sólo al publicar, no en desarrollo</span></td><td>Media</td><td>Alto</td><td>Validar la publicación AOT desde la primera semana, no al final; mantener la validación como paso obligatorio de la canalización</td></tr>
+      <tr><td class="id">R-02</td><td><strong>Fuga entre empresas por error de programación</strong></td><td>Baja</td><td><span class="chip c-hi">Crítico</span></td><td>Filtrado por empresa como condición estructural; pruebas automatizadas específicas de aislamiento; revisión obligatoria de toda consulta nueva</td></tr>
+      <tr><td class="id">R-03</td><td><strong>El volumen documental supera lo supuesto</strong></td><td>Media</td><td>Medio</td><td>El almacenamiento escala sin cambio de arquitectura; revisar niveles de acceso y presupuesto</td></tr>
+      <tr><td class="id">R-04</td><td><strong>El alcance se amplía hacia el cálculo antes de tiempo</strong></td><td>Media</td><td>Alto</td><td>La sección 03 fija el límite por escrito; ampliarlo exige nueva versión de este documento y reestimación</td></tr>
+      <tr><td class="id">R-05</td><td><strong>Caída regional completa</strong></td><td>Muy baja</td><td>Alto</td><td>Riesgo aceptado en ADR-09; recuperación por redespliegue y restauración</td></tr>
+      <tr><td class="id">R-06</td><td><strong>Configuración manual que diverge del código de infraestructura</strong></td><td>Media</td><td>Medio</td><td>Bloqueos y política en producción; todo cambio pasa por la canalización</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ══════════ 16 GLOSARIO ══════════ -->
+<section id="glosario">
+  <h2><span class="num">16</span> Glosario</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Término</th><th>Definición</th></tr></thead>
+    <tbody>
+      <tr><td><strong>ADR</strong></td><td><em>Architecture Decision Record</em>. Registro de una decisión de arquitectura con su contexto, alternativas y consecuencias.</td></tr>
+      <tr><td><strong>AOT</strong></td><td><em>Ahead-of-time</em>. Compilación anticipada a código nativo: arranque instantáneo y menor consumo, a cambio de prohibir reflexión en ejecución.</td></tr>
+      <tr><td><strong>Backplane</strong></td><td>Componente que sincroniza el estado de conexiones en tiempo real cuando la aplicación corre en más de una instancia.</td></tr>
+      <tr><td><strong>Blob</strong></td><td>Objeto binario almacenado en Azure Storage. Aquí, cada documento cargado.</td></tr>
+      <tr><td><strong>Endpoint privado</strong></td><td>Interfaz de red con dirección IP privada que expone un servicio PaaS dentro de una red virtual.</td></tr>
+      <tr><td><strong>Incidencia</strong></td><td>Novedad del período que afecta el cálculo de nómina: ausencias, horas extra, bonos, altas y bajas.</td></tr>
+      <tr><td><strong>Managed Identity</strong></td><td>Identidad administrada por la plataforma que permite a un servicio autenticarse ante otro sin credenciales.</td></tr>
+      <tr><td><strong>PaaS</strong></td><td><em>Platform as a Service</em>. Servicio administrado donde el proveedor opera la infraestructura subyacente.</td></tr>
+      <tr><td><strong>PITR</strong></td><td><em>Point-in-time restore</em>. Restauración de la base de datos a un instante concreto dentro del período de retención.</td></tr>
+      <tr><td><strong>RPO</strong></td><td><em>Recovery Point Objective</em>. Pérdida máxima de datos admisible, medida en tiempo.</td></tr>
+      <tr><td><strong>RTO</strong></td><td><em>Recovery Time Objective</em>. Tiempo máximo admisible para restablecer el servicio.</td></tr>
+      <tr><td><strong>SAS</strong></td><td><em>Shared Access Signature</em>. Enlace firmado que concede acceso acotado a un recurso de almacenamiento por tiempo limitado.</td></tr>
+      <tr><td><strong>WAF</strong></td><td><em>Web Application Firewall</em>. Filtra tráfico HTTP contra ataques de capa de aplicación.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Referencias</h3>
+  <ul class="clean">
+    <li><b>ESPECIFICACION.md</b> — especificación técnica: estructura de solución, convenciones de código y estándar de documentación.</li>
+    <li><b>ARQUITECTURA.md</b> — versión en texto de esta arquitectura, con los diagramas en formato Mermaid versionable.</li>
+    <li><b>diagramas/</b> — fuentes de los diagramas en Mermaid y las láminas visuales de arquitectura y topología.</li>
+  </ul>
+
+  <div class="note">
+    <b>Sobre los iconos de los diagramas.</b> Son glifos originales dibujados para este documento, en su mismo lenguaje visual. <b>No son los iconos oficiales de Azure Architecture Icons.</b> Para una presentación que exija la iconografía corporativa de Microsoft, las figuras pueden exportarse a draw.io y sustituirse por el conjunto oficial que la herramienta integra.
+  </div>
+</section>
+
+<footer>
+  HuimanNet · Documento de Arquitectura de Software · Versión 1.0 · 2026-07-28 · Estado: borrador para revisión.<br>
+  Documento vivo: se actualiza conforme se cierren las decisiones abiertas y evolucione la carga real del sistema.
+</footer>
+
+</main>
+</div>

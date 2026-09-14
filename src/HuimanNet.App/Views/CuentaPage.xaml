@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HuimanNet.App.ViewModels"
+             xmlns:loc="clr-namespace:HuimanNet.App.Localizacion"
+             x:Class="HuimanNet.App.Views.CuentaPage"
+             x:DataType="vm:CuentaViewModel"
+             Title="{Binding Titulo}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="14">
+
+            <Border Style="{StaticResource Tarjeta}" IsVisible="{Binding RequiereCambio}">
+                <Label Text="{loc:T Clave=perfil.cambioObligatorio}" TextColor="{StaticResource Aviso}" />
+            </Border>
+            <Border Style="{StaticResource Tarjeta}" IsVisible="{Binding TieneError}">
+                <Label Text="{Binding MensajeDeError}" TextColor="{StaticResource Error}" />
+            </Border>
+            <Border Style="{StaticResource Tarjeta}" IsVisible="{Binding TieneExito}">
+                <Label Text="{Binding MensajeDeExito}" TextColor="{StaticResource Exito}" />
+            </Border>
+
+            <Border Style="{StaticResource Tarjeta}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="{loc:T Clave=perfil.datos}" Style="{StaticResource Subtitulo}" />
+                    <Label Text="{Binding Usuario.NombreCompleto}" FontAttributes="Bold" />
+                    <Label Text="{Binding Usuario.Correo}" Style="{StaticResource Tenue}" />
+                    <Label Text="{Binding Usuario.Rol, Converter={StaticResource Enumerado}}" TextColor="{StaticResource Primario}" />
+                    <Label Text="{Binding Usuario.EmpresaRazonSocial}" Style="{StaticResource Tenue}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource Tarjeta}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="{loc:T Clave=perfil.idioma}" Style="{StaticResource Subtitulo}" />
+                    <Picker ItemsSource="{Binding NombresDeIdiomas}" SelectedIndex="{Binding IndiceDeIdioma}" />
+                    <Label Text="{loc:T Clave=perfil.idiomaAyuda}" Style="{StaticResource Tenue}" FontSize="12" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource Tarjeta}" IsVisible="{Binding EsLocal}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="{loc:T Clave=perfil.cambiarContrasena}" Style="{StaticResource Subtitulo}" />
+                    <Entry Text="{Binding ContrasenaActual}" Placeholder="{loc:T Clave=perfil.contrasenaActual}" IsPassword="True" />
+                    <Entry Text="{Binding ContrasenaNueva}" Placeholder="{loc:T Clave=perfil.contrasenaNueva}" IsPassword="True" />
+                    <Entry Text="{Binding ContrasenaConfirmacion}" Placeholder="{loc:T Clave=perfil.contrasenaConfirmacion}" IsPassword="True" />
+                    <Label Text="{loc:T Clave=perfil.reglasContrasena}" Style="{StaticResource Tenue}" FontSize="12" />
+                    <Button Text="{loc:T Clave=perfil.cambiarContrasena}" Command="{Binding CambiarContrasenaCommand}"
+                            IsEnabled="{Binding EstaOcupado, Converter={StaticResource NoOcupado}}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource Tarjeta}">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="{loc:T Clave=perfil.accionesPermitidas}" Style="{StaticResource Subtitulo}" />
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Acciones}" Spacing="2">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Label Text="{Binding .}" FontSize="13" />
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="{loc:T Clave=nav.salir}" Command="{Binding CerrarSesionCommand}"
+                    IsEnabled="{Binding EstaOcupado, Converter={StaticResource NoOcupado}}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

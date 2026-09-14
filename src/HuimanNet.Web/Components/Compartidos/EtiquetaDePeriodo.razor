@@ -1,0 +1,19 @@
+@* Estado de un período con su color. *@
+@inject Traductor T
+
+<span class="etiqueta @Clase">@T.Enumerado(Estado)</span>
+
+@code {
+    /// <summary>Estado a mostrar.</summary>
+    [Parameter]
+    public EstadoPeriodo Estado { get; set; }
+
+    private string Clase => Estado switch
+    {
+        EstadoPeriodo.Abierto => "etiqueta-info",
+        EstadoPeriodo.Recibido => "etiqueta-violeta",
+        EstadoPeriodo.EnProceso => "etiqueta-advertencia",
+        EstadoPeriodo.ResultadosDisponibles => "etiqueta-ok",
+        _ => string.Empty,
+    };
+}

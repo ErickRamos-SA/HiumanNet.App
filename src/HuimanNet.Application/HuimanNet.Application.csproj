@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>HuimanNet.Application</RootNamespace>
+    <!-- Los casos de uso los comparten la API (AOT) y Blazor Server: sin reflexión. -->
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HuimanNet.Domain\HuimanNet.Domain.csproj" />
+    <ProjectReference Include="..\HuimanNet.Contracts\HuimanNet.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
+  <!--
+    Nota de diseño (AOT): NO se usa FluentValidation. Su API basada en árboles de
+    expresión requiere Expression.Compile() en tiempo de ejecución, que es
+    exactamente la clase de generación dinámica de código que descarta Native AOT
+    —el mismo motivo por el que se descartó Dapper (ESPECIFICACION.md §6.1).
+    La validación de entrada se implementa con validadores escritos a mano
+    (Common/IValidadorDeEntrada) y con los objetos de valor del dominio, que
+    validan en su construcción.
+  -->
+
+</Project>

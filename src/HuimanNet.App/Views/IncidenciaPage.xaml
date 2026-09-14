@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HuimanNet.App.ViewModels"
+             xmlns:loc="clr-namespace:HuimanNet.App.Localizacion"
+             x:Class="HuimanNet.App.Views.IncidenciaPage"
+             x:DataType="vm:IncidenciaViewModel"
+             Title="{Binding Titulo}">
+
+    <ContentPage.Resources>
+        <Style x:Key="Campo" TargetType="Entry">
+            <Setter Property="Keyboard" Value="Numeric" />
+            <Setter Property="HorizontalTextAlignment" Value="End" />
+        </Style>
+        <Style x:Key="Etiqueta" TargetType="Label">
+            <Setter Property="VerticalOptions" Value="Center" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+
+            <Border Style="{StaticResource Tarjeta}" IsVisible="{Binding TieneError}">
+                <Label Text="{Binding MensajeDeError}" TextColor="{StaticResource Error}" />
+            </Border>
+
+            <Label Text="{loc:T Clave=incidencias.grupoAsistencia}" Style="{StaticResource Subtitulo}" />
+            <Grid ColumnDefinitions="*,110" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
+                <Label Grid.Row="0" Text="{loc:T Clave=incidencias.dias}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="0" Grid.Column="1" Text="{Binding Modelo.DiasPeriodo}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="1" Text="{loc:T Clave=incidencias.vacaciones}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="1" Grid.Column="1" Text="{Binding Modelo.Vacaciones}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="2" Text="{loc:T Clave=incidencias.ausentismos}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="2" Grid.Column="1" Text="{Binding Modelo.Ausentismos}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="3" Text="{loc:T Clave=incidencias.incapacidades}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="3" Grid.Column="1" Text="{Binding Modelo.Incapacidades}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="4" Text="{loc:T Clave=incidencias.festivos}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="4" Grid.Column="1" Text="{Binding Modelo.Festivos}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="5" Text="{loc:T Clave=incidencias.domingos}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="5" Grid.Column="1" Text="{Binding Modelo.DomingosTrabajados}" Style="{StaticResource Campo}" />
+            </Grid>
+
+            <Label Text="{loc:T Clave=incidencias.grupoTiempoExtra}" Style="{StaticResource Subtitulo}" />
+            <Grid ColumnDefinitions="*,110" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
+                <Label Grid.Row="0" Text="{loc:T Clave=incidencias.horasDobles}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="0" Grid.Column="1" Text="{Binding Modelo.HorasDobles}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="1" Text="{loc:T Clave=incidencias.horasTriples}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="1" Grid.Column="1" Text="{Binding Modelo.HorasTriples}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="2" Text="{loc:T Clave=incidencias.horasDescontadas}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="2" Grid.Column="1" Text="{Binding Modelo.HorasDescontadas}" Style="{StaticResource Campo}" />
+            </Grid>
+
+            <Label Text="{loc:T Clave=incidencias.grupoPercepciones}" Style="{StaticResource Subtitulo}" />
+            <Grid ColumnDefinitions="*,110" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
+                <Label Grid.Row="0" Text="{loc:T Clave=incidencias.gratificacion}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="0" Grid.Column="1" Text="{Binding Modelo.Gratificacion}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="1" Text="{loc:T Clave=incidencias.reembolsos}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="1" Grid.Column="1" Text="{Binding Modelo.Reembolsos}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="2" Text="{loc:T Clave=incidencias.teletrabajo}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="2" Grid.Column="1" Text="{Binding Modelo.Teletrabajo}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="3" Text="{loc:T Clave=incidencias.aguinaldo}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="3" Grid.Column="1" Text="{Binding Modelo.Aguinaldo}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="4" Text="{loc:T Clave=incidencias.finiquito}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="4" Grid.Column="1" Text="{Binding Modelo.Finiquito}" Style="{StaticResource Campo}" />
+            </Grid>
+
+            <Label Text="{loc:T Clave=incidencias.grupoDeducciones}" Style="{StaticResource Subtitulo}" />
+            <Grid ColumnDefinitions="*,110" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="4">
+                <Label Grid.Row="0" Text="{loc:T Clave=incidencias.cafeteria}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="0" Grid.Column="1" Text="{Binding Modelo.Cafeteria}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="1" Text="{loc:T Clave=incidencias.otrosDescuentos}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="1" Grid.Column="1" Text="{Binding Modelo.OtrosDescuentos}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="2" Text="{loc:T Clave=incidencias.prestamoPersonal}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="2" Grid.Column="1" Text="{Binding Modelo.PrestamoPersonal}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="3" Text="{loc:T Clave=incidencias.descuentosFiscales}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="3" Grid.Column="1" Text="{Binding Modelo.DescuentosFiscales}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="4" Text="{loc:T Clave=incidencias.fonacot}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="4" Grid.Column="1" Text="{Binding Modelo.FonacotCapturado}" Style="{StaticResource Campo}" />
+            </Grid>
+
+            <Label Text="{loc:T Clave=incidencias.grupoSindicato}" Style="{StaticResource Subtitulo}" />
+            <Grid ColumnDefinitions="*,110" RowDefinitions="Auto,Auto" RowSpacing="4">
+                <Label Grid.Row="0" Text="{loc:T Clave=incidencias.descuentoSindical}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="0" Grid.Column="1" Text="{Binding Modelo.DescuentoSindicalAdicional}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="1" Text="{loc:T Clave=incidencias.ajusteSindical}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="1" Grid.Column="1" Text="{Binding Modelo.AjusteSindical}" Style="{StaticResource Campo}" />
+            </Grid>
+
+            <Label Text="{loc:T Clave=incidencias.grupoOtros}" Style="{StaticResource Subtitulo}" />
+            <Grid ColumnDefinitions="*,110" RowDefinitions="Auto,Auto" RowSpacing="4">
+                <Label Grid.Row="0" Text="{loc:T Clave=incidencias.isrManual}" Style="{StaticResource Etiqueta}" />
+                <Entry Grid.Row="0" Grid.Column="1" Text="{Binding Modelo.IsrManualTexto}" Style="{StaticResource Campo}" />
+                <Label Grid.Row="1" Text="{loc:T Clave=incidencias.movimiento}" Style="{StaticResource Etiqueta}" />
+                <Picker Grid.Row="1" Grid.Column="1" ItemsSource="{Binding NombresDeMovimientos}" SelectedIndex="{Binding IndiceDeMovimiento}" />
+            </Grid>
+            <Label Text="{loc:T Clave=incidencias.isrManualAyuda}" Style="{StaticResource Tenue}" FontSize="12" />
+            <Entry Text="{Binding Modelo.Observaciones}" Placeholder="{loc:T Clave=incidencias.observaciones}" MaxLength="500" />
+
+            <Button Text="{loc:T Clave=comun.guardar}" Command="{Binding GuardarCommand}"
+                    IsEnabled="{Binding EstaOcupado, Converter={StaticResource NoOcupado}}" />
+            <Button Text="{loc:T Clave=incidencias.restablecer}" Command="{Binding RestablecerCommand}"
+                    IsVisible="{Binding PuedeRestablecer}" BackgroundColor="{StaticResource Error}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

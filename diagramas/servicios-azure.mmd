@@ -1,0 +1,99 @@
+%% HuimanNet V1 — Vista de servicios Azure
+%% Naranja = núcleo (Blob) · Verde = Fase 1 (día 1) · Gris punteado = diferido a Fase 2/3
+flowchart TB
+    subgraph Usuarios["👥 Usuarios"]
+        Web["🌐 Navegador"]
+        Mobile["📱 App MAUI"]
+        Ops["🛠️ TI / DevOps"]
+    end
+
+    subgraph Perimetro["🛡️ Perímetro"]
+        DNS["Azure DNS<br/>+ TLS gestionado"]
+        DDoS["DDoS de plataforma<br/>(incluida)"]
+        FD["Front Door + WAF"]
+    end
+
+    subgraph Computo["⚙️ Cómputo — App Service Plan"]
+        Blazor["Blazor Server<br/>(web)"]
+        API["Minimal API AOT<br/>(backend MAUI)"]
+        Notif["BackgroundService<br/>(notificaciones)"]
+    end
+
+    subgraph Datos["💾 Datos"]
+        Blob["📁 Blob Storage<br/>NÚCLEO — archivos<br/>versionado · soft delete"]
+        SQL[("Azure SQL serverless<br/>metadatos · estados · bitácora")]
+        Queue["Storage Queue<br/>(avisos)"]
+        Redis[("Redis<br/>backplane SignalR")]
+    end
+
+    subgraph Seguridad["🔐 Seguridad"]
+        Entra["Entra ID<br/>OIDC · JWT · MFA · roles"]
+        DefSt["🦠 Defender for Storage<br/>escaneo de malware"]
+        KV["Key Vault"]
+        MI["Managed Identity"]
+        Audit["SQL Auditing"]
+        PE["Private Endpoints"]
+    end
+
+    subgraph Observ["📈 Observabilidad"]
+        AI["Application Insights"]
+        LA["Log Analytics"]
+        Mon["Azure Monitor<br/>alertas"]
+    end
+
+    subgraph DevOps["🚀 DevOps y gobierno"]
+        GH["GitHub Actions (CI/CD)"]
+        IaC["Bicep (IaC)"]
+        Envs["dev · test · prod"]
+        Gov["Policy · RBAC · Locks<br/>Tags · Budgets"]
+        BCK["Backups PITR/LTR<br/>+ retención legal"]
+    end
+
+    MAILs["✉️ Communication Services"]
+
+    Web --> DNS
+    Mobile --> DNS
+    DNS --> Blazor
+    DNS --> API
+    DNS -.-> FD
+    FD -.-> Blazor
+    FD -.-> API
+
+    Web -. OIDC .-> Entra
+    Mobile -. OIDC .-> Entra
+    API -. "valida JWT" .-> Entra
+
+    Blazor --> SQL
+    API --> SQL
+    Blazor -- "SAS de<br/>corta duración" --> Blob
+    API -- "SAS de<br/>corta duración" --> Blob
+    Blob --> DefSt
+    API --> Queue
+    Queue --> Notif
+    Notif --> MAILs
+    Blazor -.-> Redis
+
+    Blazor --> MI
+    API --> MI
+    MI --> KV
+    SQL --- Audit
+    Audit --> LA
+    PE -.-> SQL
+    PE -.-> Blob
+
+    Blazor -.-> AI
+    API -.-> AI
+    AI --> LA
+    LA --> Mon
+
+    Ops --> GH
+    GH --> IaC
+    IaC --> Envs
+
+    classDef fase1 fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
+    classDef nucleo fill:#fff8e1,stroke:#f57f17,color:#e65100,stroke-width:3px;
+    classDef diferido fill:#f5f5f5,stroke:#9e9e9e,color:#616161,stroke-dasharray: 5 5;
+
+    class Web,Mobile,Ops,DNS,DDoS,Blazor,API,Notif,SQL,Queue,Entra,DefSt,KV,MI,Audit,AI,LA,Mon,GH,IaC,Envs,Gov,BCK,MAILs fase1;
+    class Blob nucleo;
+    class FD,Redis,PE diferido;

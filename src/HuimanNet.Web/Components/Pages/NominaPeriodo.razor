@@ -1,0 +1,233 @@
+@page "/nomina"
+@inherits ComponenteDelPortal
+
+<PageTitle>@T["nomina.titulo"] · HuimanNet</PageTitle>
+
+<div class="encabezado-pagina">
+    <div>
+        <h1>@T["nomina.titulo"]</h1>
+        <p class="subtitulo">@T["nomina.subtitulo"]</p>
+    </div>
+    @if (PuedeCalcular && _periodoId is not null && !FaltaEmpresa)
+    {
+        <button type="button" class="boton boton-primario" disabled="@(EstaCargando || MotivoSinCalculo is not null)" @onclick="PedirCalculoAsync">
+            <Icono Nombre="calcular" /> @(EstaCargando ? T["nomina.calculando"] : EsReproceso ? T["nomina.reprocesar"] : T["nomina.calcular"])
+        </button>
+    }
+</div>
+
+<Mensajes Error="@MensajeDeError" Exito="@MensajeDeExito" />
+
+@if (FaltaEmpresa)
+{
+    <AvisoDeEmpresa />
+}
+else
+{
+    @if (!PuedeCalcular)
+    {
+        <div class="aviso aviso-info"><Icono Nombre="nomina" Tamano="18" /> <span>@T["nomina.soloLectura"]</span></div>
+    }
+    else if (MotivoSinCalculo is { } motivo)
+    {
+        <div class="aviso aviso-advertencia"><Icono Nombre="alerta" Tamano="18" /> <span>@motivo</span></div>
+    }
+
+    <section class="tarjeta">
+        <div class="formulario">
+            <div class="campo">
+                <label for="periodo">@T["comun.periodo"]</label>
+                <select id="periodo" value="@_periodoId" @onchange="CambiarPeriodoAsync">
+                    @if (_periodos.Count == 0)
+                    {
+                        <option value="">@T["periodos.sinPeriodos"]</option>
+                    }
+                    @foreach (PeriodoDto periodo in _periodos)
+                    {
+                        <option value="@periodo.Id">@periodo.Clave · @periodo.Descripcion (@T.Enumerado(periodo.Estado))</option>
+                    }
+                </select>
+            </div>
+            @if (PuedeCalcular)
+            {
+                <div class="campo">
+                    <label for="observaciones">@T["nomina.observaciones"]</label>
+                    <input id="observaciones" type="text" maxlength="500" @bind="_observaciones" placeholder="@T["nomina.observacionesAyuda"]" />
+                </div>
+            }
+            <div class="campo campo-ancho">
+                <span class="ayuda">@T["nomina.guardadoPorPeriodo"]</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="tarjeta tarjeta-tabla">
+        <header class="tarjeta-cabecera">
+            <h2>@T["nomina.corridas"]</h2>
+        </header>
+
+        @if (_corridas.Count == 0)
+        {
+            <div class="vacio">
+                <Icono Nombre="nomina" Tamano="36" />
+                <p>@T["nomina.sinCorridas"]</p>
+            </div>
+        }
+        else
+        {
+            <div class="tabla-contenedor">
+                <table class="tabla">
+                    <thead>
+                        <tr>
+                            <th>@T["nomina.corrida"]</th>
+                            <th>@T["nomina.fechaCalculo"]</th>
+                            <th>@T["nomina.calculadaPor"]</th>
+                            <th>@T["comun.estado"]</th>
+                            <th class="numero">@T["nomina.trabajadores"]</th>
+                            <th class="numero">@T["nomina.bruto"]</th>
+                            <th class="numero">@T["nomina.neto"]</th>
+                            <th class="numero">@T["nomina.costoTotal"]</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (CorridaDeNominaDto corrida in _corridas)
+                        {
+                            <tr class="fila-seleccionable" @onclick="() => Abrir(corrida)">
+                                <td><strong>#@corrida.Numero</strong></td>
+                                <td>@Fecha(corrida.FechaCalculo)</td>
+                                <td>@corrida.CalculadaPor</td>
+                                <td><EtiquetaDeCorrida Estado="corrida.Estado" /></td>
+                                <td class="numero">@corrida.Trabajadores.ToString("N0", T.Cultura)</td>
+                                <td class="numero">@Moneda(corrida.Bruto)</td>
+                                <td class="numero">@Moneda(corrida.Neto)</td>
+                                <td class="numero"><strong>@Moneda(corrida.CostoTotal)</strong></td>
+                                <td class="acciones-fila"><Icono Nombre="derecha" /></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+}
+
+<Dialogo Visible="_confirmarReproceso" Titulo="@T["nomina.reprocesar"]" AlCerrar="() => _confirmarReproceso = false">
+    <ChildContent>
+        <p>@T.Formato("nomina.confirmarReproceso", SiguienteNumero)</p>
+    </ChildContent>
+    <Pie>
+        <button type="button" class="boton" @onclick="() => _confirmarReproceso = false">@T["comun.cancelar"]</button>
+        <button type="button" class="boton boton-primario" disabled="@EstaCargando" @onclick="CalcularAsync">@T["nomina.reprocesar"]</button>
+    </Pie>
+</Dialogo>
+
+@code {
+    private IReadOnlyList<PeriodoDto> _periodos = [];
+    private IReadOnlyList<CorridaDeNominaDto> _corridas = [];
+    private Guid? _periodoId;
+    private string? _observaciones;
+    private bool _confirmarReproceso;
+
+    /// <summary>Período indicado en la dirección.</summary>
+    [SupplyParameterFromQuery(Name = "periodoId")]
+    public Guid? PeriodoIdDeRuta { get; set; }
+
+    /// <inheritdoc/>
+    protected override bool DependeDeEmpresa => true;
+
+    /// <summary>Sólo nómina y administración calculan; el resto consulta en solo lectura.</summary>
+    private bool PuedeCalcular => ContextoDeUsuario.Puede(AccionDelSistema.CalcularNomina);
+
+    private PeriodoDto? PeriodoActual => _periodos.FirstOrDefault(p => p.Id == _periodoId);
+
+    /// <summary>Si el período ya tiene corridas, calcular de nuevo es un reproceso.</summary>
+    private bool EsReproceso => _corridas.Count > 0;
+
+    private int SiguienteNumero => _corridas.Count == 0 ? 1 : _corridas.Max(c => c.Numero) + 1;
+
+    /// <summary>
+    /// Motivo por el que el período elegido no admite cálculo, o <c>null</c>.
+    /// Replica las reglas del servidor para explicarlas antes de pulsar.
+    /// </summary>
+    private string? MotivoSinCalculo => PeriodoActual switch
+    {
+        null => null,
+        { Estado: EstadoPeriodo.Abierto } => T["nomina.requiereArchivos"],
+        { Estado: EstadoPeriodo.Cerrado } => T["nomina.periodoCerrado"],
+        _ => _corridas.FirstOrDefault(c => c.Estado == EstadoDeCorrida.Aprobada) is { } aprobada
+            ? T.Formato("nomina.yaAprobada", aprobada.Numero)
+            : null,
+    };
+
+    /// <inheritdoc/>
+    protected override async Task CargarDatosAsync()
+    {
+        _corridas = [];
+
+        if (FaltaEmpresa)
+        {
+            _periodos = [];
+            _periodoId = null;
+            return;
+        }
+
+        _periodos = await Casos.ConsultarAsync<ListarPeriodosQuery, IReadOnlyList<PeriodoDto>>(
+            new ListarPeriodosQuery(EmpresaDeConsulta, IncluirCerrados: true));
+
+        _periodoId = _periodos.FirstOrDefault(p => p.Id == PeriodoIdDeRuta)?.Id
+            ?? _periodos.FirstOrDefault(p => p.Estado != EstadoPeriodo.Cerrado)?.Id
+            ?? _periodos.FirstOrDefault()?.Id;
+
+        await CargarCorridasAsync();
+    }
+
+    /// <inheritdoc/>
+    protected override Task AlCambiarEmpresaAsync()
+    {
+        PeriodoIdDeRuta = null;
+        return CargarDatosAsync();
+    }
+
+    private async Task CargarCorridasAsync()
+        => _corridas = _periodoId is { } periodoId
+            ? await Casos.ConsultarAsync<ListarCorridasQuery, IReadOnlyList<CorridaDeNominaDto>>(new ListarCorridasQuery(periodoId, EmpresaDeConsulta))
+            : [];
+
+    private Task CambiarPeriodoAsync(ChangeEventArgs argumentos)
+    {
+        _periodoId = Guid.TryParse(argumentos.Value?.ToString(), out Guid id) ? id : null;
+        LimpiarMensajes();
+        return EjecutarAsync(CargarCorridasAsync);
+    }
+
+    private Task PedirCalculoAsync()
+    {
+        LimpiarMensajes();
+
+        if (EsReproceso)
+        {
+            _confirmarReproceso = true;
+            return Task.CompletedTask;
+        }
+
+        return CalcularAsync();
+    }
+
+    private Task CalcularAsync() => EjecutarAsync(async () =>
+    {
+        _confirmarReproceso = false;
+
+        if (_periodoId is not { } periodoId)
+        {
+            return;
+        }
+
+        CorridaDeNominaDto corrida = await Casos.EjecutarAsync<CalcularNominaCommand, CorridaDeNominaDto>(
+            new CalcularNominaCommand(periodoId, EmpresaDeConsulta, _observaciones));
+
+        Abrir(corrida);
+    });
+
+    private void Abrir(CorridaDeNominaDto corrida) => Navegacion.NavigateTo($"nomina/corridas/{corrida.Id}?empresaId={corrida.EmpresaId}");
+}

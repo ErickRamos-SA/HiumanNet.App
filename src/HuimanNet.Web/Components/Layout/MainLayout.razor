@@ -1,0 +1,121 @@
+@* Estructura del portal: barra lateral con la navegación por permisos,
+   cabecera con la empresa de trabajo y el menú de la cuenta, y el cuerpo.
+   El cuerpo sólo se pinta cuando la identidad está resuelta, de modo que
+   todas las páginas arrancan con el idioma y los permisos ya conocidos. *@
+@inherits LayoutComponentBase
+@inject ContextoDeUsuarioDelCircuito Contexto
+@inject Traductor T
+@inject NavigationManager Navegacion
+
+<div class="portal @(_menuMovilAbierto ? "menu-movil-abierto" : null)">
+    <aside class="barra">
+        <a class="barra-marca" href="">
+            <span class="logo">H</span>
+            <span class="logo-texto">HuimanNet</span>
+        </a>
+        @if (_listo)
+        {
+            <NavMenu AlNavegar="CerrarMenuMovil" />
+        }
+    </aside>
+    <div class="barra-fondo" @onclick="CerrarMenuMovil"></div>
+
+    <div class="principal">
+        <header class="cabecera">
+            <button type="button" class="boton-icono solo-movil" @onclick="AlternarMenuMovil" aria-label="@T["comun.menu"]">
+                <Icono Nombre="menu" />
+            </button>
+            <div class="cabecera-espacio"></div>
+
+            @if (_listo)
+            {
+                @if (Contexto.EligeEmpresa)
+                {
+                    <SelectorDeEmpresa />
+                }
+                else if (Contexto.EmpresaRazonSocial is { } empresa)
+                {
+                    <span class="chip"><Icono Nombre="empresas" Tamano="16" /> @empresa</span>
+                }
+
+                @if (Contexto.Puede(AccionDelSistema.ConsultarExplicacionDeCalculos))
+                {
+                    <a class="boton-icono" href="explicacion" title="@T["nav.explicacion"]"><Icono Nombre="ayuda" /></a>
+                }
+
+                <div class="menu-usuario">
+                    <button type="button" class="avatar" @onclick="AlternarMenuUsuario" aria-label="@T["comun.cuenta"]">
+                        @Contexto.Iniciales
+                    </button>
+                    @if (_menuUsuarioAbierto)
+                    {
+                        <div class="menu-capa" @onclick="AlternarMenuUsuario"></div>
+                        <div class="menu-desplegable">
+                            <div class="menu-desplegable-cabecera">
+                                <strong>@Contexto.NombreCompleto</strong>
+                                <span class="tenue">@Contexto.Correo</span>
+                                <span class="etiqueta etiqueta-info">@T.Enumerado(Contexto.Rol)</span>
+                            </div>
+                            <a href="perfil" @onclick="AlternarMenuUsuario"><Icono Nombre="perfil" /> @T["nav.perfil"]</a>
+                            <button type="button" @onclick="CerrarSesion"><Icono Nombre="salir" /> @T["nav.salir"]</button>
+                        </div>
+                    }
+                </div>
+            }
+        </header>
+
+        <main class="cuerpo">
+            @if (_error is not null)
+            {
+                <div class="vacio">
+                    <Icono Nombre="alerta" Tamano="36" />
+                    <h3>@T["acceso.sinAcceso"]</h3>
+                    <p>@_error</p>
+                    <button type="button" class="boton" @onclick="CerrarSesion">@T["nav.salir"]</button>
+                </div>
+            }
+            else if (!_listo)
+            {
+                <div class="cargando"><span class="giro"></span> @T["comun.cargando"]</div>
+            }
+            else
+            {
+                @Body
+            }
+        </main>
+    </div>
+</div>
+
+<div id="blazor-error-ui">
+    @T["error.circuito"]
+    <a href="" class="reload">@T["comun.recargar"]</a>
+</div>
+
+@code {
+    private bool _listo;
+    private string? _error;
+    private bool _menuMovilAbierto;
+    private bool _menuUsuarioAbierto;
+
+    /// <inheritdoc/>
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await Contexto.GarantizarResueltoAsync();
+            _listo = true;
+        }
+        catch (HuimanNet.Domain.Exceptions.AccesoNoAutorizadoException)
+        {
+            _error = T["acceso.noRegistrado"];
+        }
+    }
+
+    private void AlternarMenuMovil() => _menuMovilAbierto = !_menuMovilAbierto;
+
+    private void CerrarMenuMovil() => _menuMovilAbierto = false;
+
+    private void AlternarMenuUsuario() => _menuUsuarioAbierto = !_menuUsuarioAbierto;
+
+    private void CerrarSesion() => Navegacion.NavigateTo("autenticacion/salir", forceLoad: true);
+}

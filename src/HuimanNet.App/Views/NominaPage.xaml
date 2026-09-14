@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  El cálculo es manual: la primera vez el botón dice «Calcular nómina» y
+  después «Reprocesar nómina». El aviso explica por qué no se puede calcular
+  (período sin archivos, cerrado o ya aprobado) o que la consulta es de solo
+  lectura para la empresa cliente.
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HuimanNet.App.ViewModels"
+             xmlns:loc="clr-namespace:HuimanNet.App.Localizacion"
+             xmlns:nom="clr-namespace:HuimanNet.Contracts.Nomina;assembly=HuimanNet.Contracts"
+             x:Class="HuimanNet.App.Views.NominaPage"
+             x:DataType="vm:NominaViewModel"
+             Title="{Binding Titulo}">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="12,12,12,0" RowSpacing="8">
+
+        <Picker Grid.Row="0" ItemsSource="{Binding NombresDePeriodos}" SelectedIndex="{Binding IndiceDePeriodo}"
+                Title="{loc:T Clave=comun.periodo}" />
+
+        <VerticalStackLayout Grid.Row="1" Spacing="6">
+            <Label Text="{Binding AvisoDeCalculo}" Style="{StaticResource Tenue}" FontSize="13"
+                   IsVisible="{Binding AvisoDeCalculo, Converter={StaticResource NoNulo}}" />
+            <Entry Text="{Binding Observaciones}" Placeholder="{loc:T Clave=nomina.observacionesAyuda}" MaxLength="500"
+                   IsVisible="{Binding PuedeCalcular}" />
+            <Button Text="{Binding TextoDeCalculo}" Command="{Binding CalcularCommand}" IsVisible="{Binding PuedeCalcular}" />
+        </VerticalStackLayout>
+
+        <Border Grid.Row="2" Style="{StaticResource Tarjeta}" IsVisible="{Binding TieneError}">
+            <Label Text="{Binding MensajeDeError}" TextColor="{StaticResource Error}" />
+        </Border>
+
+        <RefreshView Grid.Row="3" Command="{Binding CargarCommand}" IsRefreshing="{Binding EstaOcupado, Mode=OneWay}">
+            <CollectionView ItemsSource="{Binding Corridas}" SelectionMode="None">
+                <CollectionView.Header>
+                    <VerticalStackLayout Spacing="2" Margin="0,0,0,8">
+                        <Label Text="{loc:T Clave=nomina.corridas}" Style="{StaticResource Subtitulo}" />
+                        <Label Text="{loc:T Clave=nomina.guardadoPorPeriodo}" Style="{StaticResource Tenue}" FontSize="12" />
+                    </VerticalStackLayout>
+                </CollectionView.Header>
+                <CollectionView.EmptyView>
+                    <Label Text="{loc:T Clave=nomina.sinCorridas}" Style="{StaticResource Tenue}"
+                           HorizontalTextAlignment="Center" Margin="0,40,0,0" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="nom:CorridaDeNominaDto">
+                        <Border Style="{StaticResource Tarjeta}" Margin="0,0,0,10">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:NominaViewModel}}, Path=AbrirCorridaCommand, x:DataType=vm:NominaViewModel}"
+                                    CommandParameter="{Binding .}" />
+                            </Border.GestureRecognizers>
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                                <Label Grid.Row="0" FontAttributes="Bold" Text="{Binding Numero, StringFormat='#{0}'}" />
+                                <Label Grid.Row="0" Grid.Column="1" Text="{Binding Estado, Converter={StaticResource Enumerado}}"
+                                       TextColor="{StaticResource Primario}" FontSize="13" />
+                                <Label Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource Tenue}">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="{Binding FechaCalculo, Converter={StaticResource Fecha}}" />
+                                            <Span Text=" · " />
+                                            <Span Text="{Binding CalculadaPor}" />
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+                                <HorizontalStackLayout Grid.Row="2" Grid.ColumnSpan="2" Spacing="14" Margin="0,4,0,0">
+                                    <HorizontalStackLayout Spacing="4">
+                                        <Label Text="{loc:T Clave=nomina.trabajadores}" FontSize="13" Style="{StaticResource Tenue}" />
+                                        <Label Text="{Binding Trabajadores}" FontSize="13" />
+                                    </HorizontalStackLayout>
+                                    <HorizontalStackLayout Spacing="4">
+                                        <Label Text="{loc:T Clave=nomina.costoTotal}" FontSize="13" Style="{StaticResource Tenue}" />
+                                        <Label Text="{Binding CostoTotal, Converter={StaticResource Moneda}}" FontSize="13" FontAttributes="Bold" />
+                                    </HorizontalStackLayout>
+                                </HorizontalStackLayout>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+
+    </Grid>
+
+</ContentPage>

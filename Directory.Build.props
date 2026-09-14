@@ -1,0 +1,39 @@
+<Project>
+
+  <!--
+    Propiedades compartidas por TODOS los proyectos de la solución HuimanNet.
+    Ver ESPECIFICACION.md §9 (mejores prácticas transversales).
+  -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <NeutralLanguage>es</NeutralLanguage>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+  </PropertyGroup>
+
+  <!-- Documentación XML obligatoria (ESPECIFICACION.md §7). -->
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- Analizadores de Roslyn. En CI las advertencias se tratan como errores. -->
+  <PropertyGroup>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- Metadatos de ensamblado. -->
+  <PropertyGroup>
+    <Company>HuimanNet</Company>
+    <Product>HuimanNet</Product>
+    <Authors>HuimanNet</Authors>
+    <Version>1.0.0</Version>
+    <Copyright>© $([System.DateTime]::UtcNow.Year) HuimanNet</Copyright>
+  </PropertyGroup>
+
+</Project>

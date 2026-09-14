@@ -1,0 +1,144 @@
+@page "/bitacora"
+@inherits ComponenteDelPortal
+@inject TimeProvider Reloj
+
+<PageTitle>@T["bitacora.titulo"] · HuimanNet</PageTitle>
+
+<div class="encabezado-pagina">
+    <div>
+        <h1>@T["bitacora.titulo"]</h1>
+        <p class="subtitulo">@T["bitacora.subtitulo"]</p>
+    </div>
+</div>
+
+<Mensajes Error="@MensajeDeError" />
+
+<section class="tarjeta tarjeta-tabla">
+    <div class="barra-herramientas">
+        <div class="campo">
+            <label for="desde">@T["bitacora.desde"]</label>
+            <input id="desde" type="date" @bind="_desde" />
+        </div>
+        <div class="campo">
+            <label for="hasta">@T["bitacora.hasta"]</label>
+            <input id="hasta" type="date" @bind="_hasta" />
+        </div>
+        <div class="campo">
+            <label for="accion">@T["bitacora.accion"]</label>
+            <select id="accion" @bind="_accion">
+                <option value="">@T["comun.todas"]</option>
+                @foreach (AccionAuditada accion in Enum.GetValues<AccionAuditada>().Where(a => a != AccionAuditada.NoEspecificado))
+                {
+                    <option value="@accion">@T.Enumerado(accion)</option>
+                }
+            </select>
+        </div>
+        <div class="campo">
+            <label>&nbsp;</label>
+            <button type="button" class="boton" disabled="@EstaCargando" @onclick="FiltrarAsync">
+                <Icono Nombre="filtro" Tamano="16" /> @T["comun.filtrar"]
+            </button>
+        </div>
+    </div>
+
+    @if (_pagina is null || _pagina.Elementos.Count == 0)
+    {
+        <div class="vacio">
+            <Icono Nombre="bitacora" Tamano="36" />
+            <p>@T["bitacora.vacia"]</p>
+        </div>
+    }
+    else
+    {
+        <div class="tabla-contenedor">
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th>@T["comun.fecha"]</th>
+                        <th>@T["bitacora.accion"]</th>
+                        <th>@T["bitacora.usuario"]</th>
+                        <th>@T["comun.empresa"]</th>
+                        <th>@T["bitacora.recurso"]</th>
+                        <th>@T["bitacora.resultado"]</th>
+                        <th>@T["bitacora.detalle"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (RegistroAuditoriaDto registro in _pagina.Elementos)
+                    {
+                        <tr>
+                            <td>@Fecha(registro.Momento)</td>
+                            <td>@T.Enumerado(registro.Accion)</td>
+                            <td>@registro.UsuarioNombre</td>
+                            <td>@(registro.EmpresaRazonSocial ?? "—")</td>
+                            <td>@registro.RecursoTipo</td>
+                            <td>
+                                <span class="etiqueta @(registro.Exito ? "etiqueta-ok" : "etiqueta-error")">
+                                    @(registro.Exito ? T["bitacora.correcto"] : T["bitacora.rechazado"])
+                                </span>
+                            </td>
+                            <td class="tenue">@registro.Detalle</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="paginacion">
+            <span class="tenue">@T.Formato("comun.paginaDe", _pagina.Pagina, _pagina.TotalPaginas)</span>
+            <button type="button" class="boton boton-pequeno" disabled="@(_paginaActual <= 1 || EstaCargando)" @onclick="() => IrAPaginaAsync(_paginaActual - 1)">
+                <Icono Nombre="izquierda" Tamano="16" /> @T["comun.anterior"]
+            </button>
+            <button type="button" class="boton boton-pequeno" disabled="@(_paginaActual >= _pagina.TotalPaginas || EstaCargando)" @onclick="() => IrAPaginaAsync(_paginaActual + 1)">
+                @T["comun.siguiente"] <Icono Nombre="derecha" Tamano="16" />
+            </button>
+        </div>
+    }
+</section>
+
+@code {
+    private const int TamanoDePagina = 25;
+
+    private PaginaDto<RegistroAuditoriaDto>? _pagina;
+    private int _paginaActual = 1;
+    private DateOnly _desde;
+    private DateOnly _hasta;
+    private string _accion = string.Empty;
+
+    /// <inheritdoc/>
+    protected override bool DependeDeEmpresa => true;
+
+    /// <inheritdoc/>
+    protected override Task CargarDatosAsync()
+    {
+        if (_hasta == default)
+        {
+            _hasta = DateOnly.FromDateTime(Reloj.GetLocalNow().DateTime);
+            _desde = _hasta.AddDays(-30);
+        }
+
+        return ConsultarAsync();
+    }
+
+    private Task FiltrarAsync() => EjecutarAsync(() =>
+    {
+        _paginaActual = 1;
+        return ConsultarAsync();
+    });
+
+    private Task IrAPaginaAsync(int pagina) => EjecutarAsync(() =>
+    {
+        _paginaActual = pagina;
+        return ConsultarAsync();
+    });
+
+    private async Task ConsultarAsync()
+    {
+        DateTimeOffset desde = new(_desde.ToDateTime(TimeOnly.MinValue));
+        DateTimeOffset hasta = new(_hasta.ToDateTime(TimeOnly.MaxValue));
+        AccionAuditada? accion = Enum.TryParse(_accion, out AccionAuditada valor) ? valor : null;
+
+        _pagina = await Casos.ConsultarAsync<ConsultarBitacoraQuery, PaginaDto<RegistroAuditoriaDto>>(new ConsultarBitacoraQuery(
+            EmpresaDeConsulta, desde, hasta, accion, UsuarioId: null, _paginaActual, TamanoDePagina));
+    }
+}

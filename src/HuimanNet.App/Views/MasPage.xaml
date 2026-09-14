@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HuimanNet.App.ViewModels"
+             x:Class="HuimanNet.App.Views.MasPage"
+             x:DataType="vm:MasViewModel"
+             Title="{Binding Titulo}">
+
+    <CollectionView ItemsSource="{Binding Opciones}" SelectionMode="None" Margin="12">
+        <CollectionView.ItemTemplate>
+            <DataTemplate x:DataType="vm:OpcionDeMenu">
+                <Border Style="{StaticResource Tarjeta}" Margin="0,0,0,10">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer
+                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MasViewModel}}, Path=AbrirCommand, x:DataType=vm:MasViewModel}"
+                            CommandParameter="{Binding .}" />
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout Spacing="3">
+                        <Label Text="{Binding Titulo}" Style="{StaticResource Subtitulo}" />
+                        <Label Text="{Binding Descripcion}" Style="{StaticResource Tenue}" FontSize="13" />
+                    </VerticalStackLayout>
+                </Border>
+            </DataTemplate>
+        </CollectionView.ItemTemplate>
+    </CollectionView>
+
+</ContentPage>

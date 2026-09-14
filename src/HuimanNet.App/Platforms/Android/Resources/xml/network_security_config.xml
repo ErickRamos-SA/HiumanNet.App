@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Todo el tráfico va cifrado. La única excepción es el equipo anfitrión del
+  emulador (10.0.2.2) y localhost, donde la API de desarrollo escucha por HTTP
+  para no depender de certificados de desarrollo en el dispositivo. En
+  producción la API es HTTPS y estas direcciones no existen.
+-->
+<network-security-config>
+  <base-config cleartextTrafficPermitted="false" />
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="false">10.0.2.2</domain>
+    <domain includeSubdomains="false">localhost</domain>
+  </domain-config>
+</network-security-config>

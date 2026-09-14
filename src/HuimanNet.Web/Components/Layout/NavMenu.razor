@@ -1,0 +1,84 @@
+@* La navegación se adapta a las acciones efectivas del usuario, pero es sólo
+   comodidad de interfaz: los casos de uso vuelven a autorizar siempre. *@
+@inject ContextoDeUsuarioDelCircuito Contexto
+@inject Traductor T
+
+<nav class="navegacion" @onclick="AlNavegar">
+    <NavLink class="nav-elemento" href="" Match="NavLinkMatch.All">
+        <Icono Nombre="inicio" /><span>@T["nav.inicio"]</span>
+    </NavLink>
+
+    @if (Puede(AccionDelSistema.CargarDocumentos) || Puede(AccionDelSistema.DescargarDocumentos)
+        || Puede(AccionDelSistema.CapturarIncidencias) || Puede(AccionDelSistema.ConsultarNomina))
+    {
+        <div class="nav-grupo">@T["nav.grupoOperacion"]</div>
+
+        @if (Puede(AccionDelSistema.CargarDocumentos) || Puede(AccionDelSistema.DescargarDocumentos))
+        {
+            <NavLink class="nav-elemento" href="periodos"><Icono Nombre="periodos" /><span>@T["nav.periodos"]</span></NavLink>
+        }
+
+        @if (Puede(AccionDelSistema.CapturarIncidencias))
+        {
+            <NavLink class="nav-elemento" href="incidencias"><Icono Nombre="incidencias" /><span>@T["nav.incidencias"]</span></NavLink>
+        }
+
+        @if (Puede(AccionDelSistema.ConsultarNomina))
+        {
+            <NavLink class="nav-elemento" href="nomina"><Icono Nombre="nomina" /><span>@T["nav.nomina"]</span></NavLink>
+        }
+
+        @if (Contexto.EsTransversal && Puede(AccionDelSistema.GestionarPeriodos))
+        {
+            <NavLink class="nav-elemento" href="bandeja"><Icono Nombre="bandeja" /><span>@T["nav.bandeja"]</span></NavLink>
+        }
+    }
+
+    @if (Puede(AccionDelSistema.AdministrarEmpleados) || Puede(AccionDelSistema.AdministrarEmpresas)
+        || Puede(AccionDelSistema.AdministrarUsuarios) || Puede(AccionDelSistema.AdministrarCatalogosDeCalculo))
+    {
+        <div class="nav-grupo">@T["nav.grupoAdministracion"]</div>
+
+        @if (Puede(AccionDelSistema.AdministrarEmpleados))
+        {
+            <NavLink class="nav-elemento" href="empleados"><Icono Nombre="empleados" /><span>@T["nav.empleados"]</span></NavLink>
+        }
+
+        @if (Puede(AccionDelSistema.AdministrarEmpresas))
+        {
+            <NavLink class="nav-elemento" href="empresas"><Icono Nombre="empresas" /><span>@T["nav.empresas"]</span></NavLink>
+        }
+
+        @if (Puede(AccionDelSistema.AdministrarUsuarios))
+        {
+            <NavLink class="nav-elemento" href="usuarios"><Icono Nombre="usuarios" /><span>@T["nav.usuarios"]</span></NavLink>
+        }
+
+        @if (Puede(AccionDelSistema.AdministrarCatalogosDeCalculo))
+        {
+            <NavLink class="nav-elemento" href="catalogos"><Icono Nombre="catalogos" /><span>@T["nav.catalogos"]</span></NavLink>
+        }
+    }
+
+    <div class="nav-grupo">@T["nav.grupoConsulta"]</div>
+
+    @if (Puede(AccionDelSistema.ConsultarExplicacionDeCalculos))
+    {
+        <NavLink class="nav-elemento" href="explicacion"><Icono Nombre="explicacion" /><span>@T["nav.explicacion"]</span></NavLink>
+    }
+
+    @if (Puede(AccionDelSistema.ConsultarBitacora))
+    {
+        <NavLink class="nav-elemento" href="bitacora"><Icono Nombre="bitacora" /><span>@T["nav.bitacora"]</span></NavLink>
+    }
+
+    <NavLink class="nav-elemento" href="perfil"><Icono Nombre="perfil" /><span>@T["nav.perfil"]</span></NavLink>
+</nav>
+
+@code {
+    /// <summary>Se invoca al elegir un destino (cierra el menú en móviles).</summary>
+    [Parameter]
+    public EventCallback AlNavegar { get; set; }
+
+    private bool Puede(AccionDelSistema accion) => Contexto.Puede(accion);
+}

@@ -1,0 +1,951 @@
+@page "/catalogos"
+@inherits ComponenteDelPortal
+
+<PageTitle>@T["catalogos.titulo"] · HuimanNet</PageTitle>
+
+<div class="encabezado-pagina">
+    <div>
+        <h1>@T["catalogos.titulo"]</h1>
+        <p class="subtitulo">@T["catalogos.subtitulo"]</p>
+    </div>
+    <div class="acciones">
+        <div class="campo">
+            <label for="ambito">@T["catalogos.ambito"]</label>
+            <select id="ambito" value="@(_ambitoEmpresa ? "empresa" : "global")" @onchange="CambiarAmbitoAsync">
+                <option value="global">@T["catalogos.global"]</option>
+                @if (Estado.EmpresaId is not null)
+                {
+                    <option value="empresa">@T.Formato("catalogos.deEmpresa", Estado.EmpresaNombre ?? string.Empty)</option>
+                }
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="pestanas">
+    @foreach (Pestana pestana in Enum.GetValues<Pestana>())
+    {
+        <button type="button" class="pestana @(pestana == _pestana ? "activa" : null)" @onclick="() => CambiarPestanaAsync(pestana)">
+            @T[$"catalogos.pestana.{pestana}"]
+        </button>
+    }
+</div>
+
+<Mensajes Error="@MensajeDeError" Exito="@MensajeDeExito" />
+
+@switch (_pestana)
+{
+    case Pestana.Parametros:
+        <section class="tarjeta tarjeta-tabla">
+            <div class="barra-herramientas">
+                <div class="buscador">
+                    <Icono Nombre="buscar" Tamano="18" />
+                    <input type="search" placeholder="@T["catalogos.buscar"]" @bind="_texto" @bind:event="oninput" />
+                </div>
+                <span class="espaciador"></span>
+                <button type="button" class="boton boton-primario boton-pequeno" @onclick="NuevoParametro"><Icono Nombre="agregar" Tamano="16" /> @T["catalogos.nuevoParametro"]</button>
+            </div>
+            <div class="tabla-contenedor">
+                <table class="tabla tabla-compacta">
+                    <thead>
+                        <tr>
+                            <th>@T["catalogos.clave"]</th>
+                            <th>@T["comun.descripcion"]</th>
+                            <th>@T["catalogos.grupo"]</th>
+                            <th class="numero">@T["catalogos.valor"]</th>
+                            <th>@T["catalogos.unidad"]</th>
+                            <th>@T["catalogos.vigencia"]</th>
+                            <th>@T["catalogos.ambito"]</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (ParametroDeCalculoDto p in _parametros.Where(p => Coincide(p.Clave, p.Descripcion, p.Grupo)).OrderBy(p => p.Grupo).ThenBy(p => p.Clave).ThenByDescending(p => p.VigenteDesde))
+                        {
+                            <tr>
+                                <td><code>@p.Clave</code></td>
+                                <td>@p.Descripcion</td>
+                                <td class="tenue">@p.Grupo</td>
+                                <td class="numero">@Numero(p.Valor, 6)</td>
+                                <td class="tenue">@p.Unidad</td>
+                                <td>@Vigencia(p.VigenteDesde, p.VigenteHasta)</td>
+                                <td><EtiquetaAmbito EmpresaId="p.EmpresaId" /></td>
+                                <td class="acciones-fila">
+                                    <button type="button" class="boton-icono" title="@T["comun.editar"]" @onclick="() => EditarParametro(p)"><Icono Nombre="editar" Tamano="18" /></button>
+                                    <button type="button" class="boton-icono" title="@T["comun.eliminar"]" @onclick="@(() => Confirmar(T.Formato("catalogos.confirmarEliminar", p.Clave), () => Casos.EjecutarAsync(new EliminarParametroCommand(p.Id))))"><Icono Nombre="eliminar" Tamano="18" /></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        break;
+
+    case Pestana.Tablas:
+        <section class="tarjeta tarjeta-tabla">
+            <div class="barra-herramientas">
+                <span class="tenue">@T["catalogos.tablasAyuda"]</span>
+                <span class="espaciador"></span>
+                <button type="button" class="boton boton-primario boton-pequeno" @onclick="NuevaTabla"><Icono Nombre="agregar" Tamano="16" /> @T["catalogos.nuevaTabla"]</button>
+            </div>
+            <div class="tabla-contenedor">
+                <table class="tabla tabla-compacta">
+                    <thead>
+                        <tr>
+                            <th>@T["catalogos.clave"]</th>
+                            <th>@T["comun.descripcion"]</th>
+                            <th class="numero">@T["catalogos.renglones"]</th>
+                            <th>@T["catalogos.vigencia"]</th>
+                            <th>@T["catalogos.ambito"]</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (TablaDeRangosDto t in _tablas.OrderBy(t => t.Clave).ThenByDescending(t => t.VigenteDesde))
+                        {
+                            <tr>
+                                <td><code>@t.Clave</code></td>
+                                <td>@t.Descripcion</td>
+                                <td class="numero">@t.Rangos.Count</td>
+                                <td>@Vigencia(t.VigenteDesde, t.VigenteHasta)</td>
+                                <td><EtiquetaAmbito EmpresaId="t.EmpresaId" /></td>
+                                <td class="acciones-fila">
+                                    <button type="button" class="boton-icono" title="@T["comun.editar"]" @onclick="() => EditarTabla(t)"><Icono Nombre="editar" Tamano="18" /></button>
+                                    <button type="button" class="boton-icono" title="@T["comun.eliminar"]" @onclick="@(() => Confirmar(T.Formato("catalogos.confirmarEliminar", t.Clave), () => Casos.EjecutarAsync(new EliminarTablaCommand(t.Id))))"><Icono Nombre="eliminar" Tamano="18" /></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        break;
+
+    case Pestana.Conceptos:
+        <section class="tarjeta tarjeta-tabla">
+            <div class="barra-herramientas">
+                <div class="buscador">
+                    <Icono Nombre="buscar" Tamano="18" />
+                    <input type="search" placeholder="@T["catalogos.buscar"]" @bind="_texto" @bind:event="oninput" />
+                </div>
+                <select @bind="_esquemaFiltro" aria-label="@T["contratos.esquema"]">
+                    <option value="@EsquemaDePago.NoEspecificado">@T["corrida.todosLosEsquemas"]</option>
+                    <option value="@EsquemaDePago.Imss">@T.Enumerado(EsquemaDePago.Imss)</option>
+                    <option value="@EsquemaDePago.Sindicato">@T.Enumerado(EsquemaDePago.Sindicato)</option>
+                    <option value="@EsquemaDePago.Honorarios">@T.Enumerado(EsquemaDePago.Honorarios)</option>
+                </select>
+                <span class="espaciador"></span>
+                <button type="button" class="boton boton-primario boton-pequeno" @onclick="NuevoConcepto"><Icono Nombre="agregar" Tamano="16" /> @T["catalogos.nuevoConcepto"]</button>
+            </div>
+            <div class="tabla-contenedor">
+                <table class="tabla tabla-compacta">
+                    <thead>
+                        <tr>
+                            <th class="numero">@T["catalogos.orden"]</th>
+                            <th>@T["catalogos.concepto"]</th>
+                            <th>@T["catalogos.tipo"]</th>
+                            <th>@T["empleados.esquemas"]</th>
+                            <th>@T["catalogos.formula"]</th>
+                            <th>@T["comun.estado"]</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (ConceptoDeNominaDto k in ConceptosFiltrados())
+                        {
+                            <tr>
+                                <td class="numero">@k.Orden</td>
+                                <td>
+                                    <div class="celda-principal">
+                                        <code>@k.Clave</code>
+                                        <span class="tenue">@k.Nombre</span>
+                                    </div>
+                                </td>
+                                <td>@T.Enumerado(k.Tipo)</td>
+                                <td>
+                                    @foreach (EsquemaDePago esquema in EsquemasDe(k.Esquemas))
+                                    {
+                                        <span class="etiqueta etiqueta-info" style="margin-right:.25rem">@T.Enumerado(esquema)</span>
+                                    }
+                                </td>
+                                <td><code class="formula-corta" title="@k.Formula">@k.Formula</code></td>
+                                <td>
+                                    <span class="etiqueta @(k.Activo ? "etiqueta-ok" : "etiqueta-error")">@(k.Activo ? T["comun.activo"] : T["comun.inactivo"])</span>
+                                    @if (k.EmpresaId is not null)
+                                    {
+                                        <EtiquetaAmbito EmpresaId="k.EmpresaId" />
+                                    }
+                                </td>
+                                <td class="acciones-fila">
+                                    <button type="button" class="boton-icono" title="@T["comun.editar"]" @onclick="() => EditarConcepto(k)"><Icono Nombre="editar" Tamano="18" /></button>
+                                    <button type="button" class="boton-icono" title="@T["comun.eliminar"]" @onclick="@(() => Confirmar(T.Formato("catalogos.confirmarEliminar", k.Clave), () => Casos.EjecutarAsync(new EliminarConceptoCommand(k.Id))))"><Icono Nombre="eliminar" Tamano="18" /></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        break;
+
+    case Pestana.Explicaciones:
+        <section class="tarjeta tarjeta-tabla">
+            <div class="barra-herramientas">
+                <select @bind="_esquemaFiltro" aria-label="@T["contratos.esquema"]">
+                    <option value="@EsquemaDePago.NoEspecificado">@T["corrida.todosLosEsquemas"]</option>
+                    <option value="@EsquemaDePago.Imss">@T.Enumerado(EsquemaDePago.Imss)</option>
+                    <option value="@EsquemaDePago.Sindicato">@T.Enumerado(EsquemaDePago.Sindicato)</option>
+                    <option value="@EsquemaDePago.Honorarios">@T.Enumerado(EsquemaDePago.Honorarios)</option>
+                </select>
+                <span class="tenue">@T["catalogos.explicacionesAyuda"]</span>
+                <span class="espaciador"></span>
+                <button type="button" class="boton boton-primario boton-pequeno" @onclick="NuevaExplicacion"><Icono Nombre="agregar" Tamano="16" /> @T["catalogos.nuevaSeccion"]</button>
+            </div>
+            <div class="tabla-contenedor">
+                <table class="tabla tabla-compacta">
+                    <thead>
+                        <tr>
+                            <th>@T["contratos.esquema"]</th>
+                            <th>@T["perfil.idioma"]</th>
+                            <th class="numero">@T["catalogos.orden"]</th>
+                            <th>@T["catalogos.tituloSeccion"]</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (ExplicacionDeCalculoDto x in _explicaciones.Where(x => _esquemaFiltro == EsquemaDePago.NoEspecificado || x.Esquema == _esquemaFiltro).OrderBy(x => x.Esquema).ThenBy(x => x.Idioma).ThenBy(x => x.Orden))
+                        {
+                            <tr>
+                                <td>@T.Enumerado(x.Esquema)</td>
+                                <td>@T.Enumerado(x.Idioma)</td>
+                                <td class="numero">@x.Orden</td>
+                                <td>@x.Titulo</td>
+                                <td class="acciones-fila">
+                                    <button type="button" class="boton-icono" title="@T["comun.editar"]" @onclick="() => EditarExplicacion(x)"><Icono Nombre="editar" Tamano="18" /></button>
+                                    <button type="button" class="boton-icono" title="@T["comun.eliminar"]" @onclick="@(() => Confirmar(T.Formato("catalogos.confirmarEliminar", x.Titulo), () => Casos.EjecutarAsync(new EliminarExplicacionCommand(x.Id))))"><Icono Nombre="eliminar" Tamano="18" /></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        break;
+
+    case Pestana.Probar:
+        <div class="rejilla-2">
+            <section class="tarjeta">
+                <header class="tarjeta-cabecera"><h2>@T["catalogos.probarFormula"]</h2></header>
+                <p class="tenue">@T["catalogos.probarAyuda"]</p>
+                <div class="formulario-apilado">
+                    <div class="campo">
+                        <label for="p-esquema">@T["contratos.esquema"]</label>
+                        <select id="p-esquema" @bind="_prueba.Esquema" @bind:after="CargarReferenciaAsync">
+                            <option value="@EsquemaDePago.Imss">@T.Enumerado(EsquemaDePago.Imss)</option>
+                            <option value="@EsquemaDePago.Sindicato">@T.Enumerado(EsquemaDePago.Sindicato)</option>
+                            <option value="@EsquemaDePago.Honorarios">@T.Enumerado(EsquemaDePago.Honorarios)</option>
+                        </select>
+                    </div>
+                    <div class="campo">
+                        <label for="p-formula">@T["catalogos.formula"]</label>
+                        <textarea id="p-formula" class="entrada-formula" spellcheck="false" @bind="_prueba.Formula"></textarea>
+                        <span class="ayuda">@T["catalogos.sintaxisAyuda"]</span>
+                    </div>
+
+                    <h3>@T["catalogos.valoresDePrueba"]</h3>
+                    <p class="tenue">@T["catalogos.valoresDePruebaAyuda"]</p>
+                    <table class="tabla tabla-compacta tabla-rangos">
+                        <tbody>
+                            @foreach (ModeloValor valor in _prueba.Valores)
+                            {
+                                <tr>
+                                    <td><input type="text" placeholder="@T["catalogos.clave"]" @bind="valor.Clave" /></td>
+                                    <td><input type="number" step="any" @bind="valor.Valor" /></td>
+                                    <td class="acciones-fila"><button type="button" class="boton-icono" @onclick="() => _prueba.Valores.Remove(valor)"><Icono Nombre="eliminar" Tamano="16" /></button></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <div class="acciones">
+                        <button type="button" class="boton boton-pequeno" @onclick="() => _prueba.Valores.Add(new ModeloValor())"><Icono Nombre="agregar" Tamano="16" /> @T["catalogos.agregarValor"]</button>
+                        <span class="espaciador"></span>
+                        <button type="button" class="boton boton-primario" disabled="@EstaCargando" @onclick="ProbarAsync"><Icono Nombre="formula" /> @T["catalogos.evaluar"]</button>
+                    </div>
+                </div>
+
+                @if (_respuesta is { } respuesta)
+                {
+                    <ResultadoDePrueba Respuesta="respuesta" />
+                }
+            </section>
+
+            <section class="tarjeta">
+                <header class="tarjeta-cabecera"><h2>@T["catalogos.referencia"]</h2></header>
+                @if (_referencia is { } referencia)
+                {
+                    <h3>@T["explicacion.funciones"]</h3>
+                    <div class="lista-referencia">
+                        <dl class="definiciones">
+                            @foreach (FuncionDeFormulaDto funcion in referencia.Funciones)
+                            {
+                                <dt><code>@funcion.Firma</code></dt>
+                                <dd style="font-weight:400">@funcion.Descripcion</dd>
+                            }
+                        </dl>
+                    </div>
+                    <h3 style="margin-top:1.25rem">@T["explicacion.variables"]</h3>
+                    <div class="lista-referencia">
+                        <dl class="definiciones">
+                            @foreach (VariableDeCalculoDto variable in referencia.Variables)
+                            {
+                                <dt><code>@variable.Clave</code></dt>
+                                <dd style="font-weight:400">@variable.Descripcion <span class="tenue">(@variable.Origen)</span></dd>
+                            }
+                        </dl>
+                    </div>
+                }
+            </section>
+        </div>
+        break;
+}
+
+@* ---- Parámetro ---- *@
+<Dialogo Visible="_parametro is not null" Titulo="@(_parametro?.Id is null ? T["catalogos.nuevoParametro"] : T["catalogos.editarParametro"])" AlCerrar="() => _parametro = null">
+    <ChildContent>
+        @if (_parametro is { } p)
+        {
+            <div class="formulario">
+                <div class="campo">
+                    <label for="pa-clave">@T["catalogos.clave"]</label>
+                    <input id="pa-clave" type="text" maxlength="60" @bind="p.Clave" />
+                    <span class="ayuda">@T["catalogos.claveAyuda"]</span>
+                </div>
+                <div class="campo">
+                    <label for="pa-grupo">@T["catalogos.grupo"]</label>
+                    <input id="pa-grupo" type="text" maxlength="60" @bind="p.Grupo" />
+                </div>
+                <div class="campo campo-ancho">
+                    <label for="pa-descripcion">@T["comun.descripcion"]</label>
+                    <input id="pa-descripcion" type="text" maxlength="300" @bind="p.Descripcion" />
+                </div>
+                <CampoNumerico Etiqueta="@T["catalogos.valor"]" @bind-Valor="p.Valor" />
+                <div class="campo">
+                    <label for="pa-unidad">@T["catalogos.unidad"]</label>
+                    <input id="pa-unidad" type="text" maxlength="30" @bind="p.Unidad" />
+                </div>
+                <div class="campo">
+                    <label for="pa-desde">@T["catalogos.vigenteDesde"]</label>
+                    <input id="pa-desde" type="date" @bind="p.VigenteDesde" />
+                </div>
+                <div class="campo">
+                    <label for="pa-hasta">@T["catalogos.vigenteHasta"]</label>
+                    <input id="pa-hasta" type="date" @bind="p.VigenteHasta" />
+                </div>
+                <SelectorDeAmbito @bind-EmpresaId="p.EmpresaId" />
+            </div>
+        }
+    </ChildContent>
+    <Pie>
+        <button type="button" class="boton" @onclick="() => _parametro = null">@T["comun.cancelar"]</button>
+        <button type="button" class="boton boton-primario" disabled="@EstaCargando" @onclick="GuardarParametroAsync">@T["comun.guardar"]</button>
+    </Pie>
+</Dialogo>
+
+@* ---- Tabla por rangos ---- *@
+<Dialogo Visible="_tabla is not null" Titulo="@(_tabla?.Id is null ? T["catalogos.nuevaTabla"] : T["catalogos.editarTabla"])" Ancho="true" AlCerrar="() => _tabla = null">
+    <ChildContent>
+        @if (_tabla is { } t)
+        {
+            <div class="formulario formulario-3">
+                <div class="campo">
+                    <label for="ta-clave">@T["catalogos.clave"]</label>
+                    <input id="ta-clave" type="text" maxlength="60" @bind="t.Clave" />
+                </div>
+                <div class="campo">
+                    <label for="ta-desde">@T["catalogos.vigenteDesde"]</label>
+                    <input id="ta-desde" type="date" @bind="t.VigenteDesde" />
+                </div>
+                <div class="campo">
+                    <label for="ta-hasta">@T["catalogos.vigenteHasta"]</label>
+                    <input id="ta-hasta" type="date" @bind="t.VigenteHasta" />
+                </div>
+                <div class="campo campo-ancho">
+                    <label for="ta-descripcion">@T["comun.descripcion"]</label>
+                    <input id="ta-descripcion" type="text" maxlength="300" @bind="t.Descripcion" />
+                </div>
+                <SelectorDeAmbito @bind-EmpresaId="t.EmpresaId" />
+            </div>
+
+            <h3 style="margin-top:1.25rem">@T["catalogos.renglones"]</h3>
+            <p class="tenue">@T["catalogos.renglonesAyuda"]</p>
+            <div class="tabla-contenedor">
+                <table class="tabla tabla-compacta tabla-rangos">
+                    <thead>
+                        <tr>
+                            <th>@T["catalogos.limiteInferior"]</th>
+                            <th>@T["catalogos.limiteSuperior"]</th>
+                            <th>@T["catalogos.cuotaFija"]</th>
+                            <th>@T["catalogos.porcentaje"]</th>
+                            <th>@T["catalogos.valor"]</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (ModeloRango rango in t.Rangos)
+                        {
+                            <tr>
+                                <td><input type="number" step="any" @bind="rango.LimiteInferior" /></td>
+                                <td><input type="number" step="any" @bind="rango.LimiteSuperior" placeholder="∞" /></td>
+                                <td><input type="number" step="any" @bind="rango.CuotaFija" /></td>
+                                <td><input type="number" step="any" @bind="rango.Porcentaje" /></td>
+                                <td><input type="number" step="any" @bind="rango.Valor" /></td>
+                                <td class="acciones-fila"><button type="button" class="boton-icono" @onclick="() => t.Rangos.Remove(rango)"><Icono Nombre="eliminar" Tamano="16" /></button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <button type="button" class="boton boton-pequeno" style="margin-top:.6rem" @onclick="() => t.AgregarRango()"><Icono Nombre="agregar" Tamano="16" /> @T["catalogos.agregarRenglon"]</button>
+        }
+    </ChildContent>
+    <Pie>
+        <button type="button" class="boton" @onclick="() => _tabla = null">@T["comun.cancelar"]</button>
+        <button type="button" class="boton boton-primario" disabled="@EstaCargando" @onclick="GuardarTablaAsync">@T["comun.guardar"]</button>
+    </Pie>
+</Dialogo>
+
+@* ---- Concepto ---- *@
+<Dialogo Visible="_concepto is not null" Titulo="@(_concepto?.Id is null ? T["catalogos.nuevoConcepto"] : T["catalogos.editarConcepto"])" Ancho="true" AlCerrar="() => _concepto = null">
+    <ChildContent>
+        @if (_concepto is { } k)
+        {
+            <div class="formulario formulario-3">
+                <div class="campo">
+                    <label for="co-clave">@T["catalogos.clave"]</label>
+                    <input id="co-clave" type="text" maxlength="60" @bind="k.Clave" />
+                    <span class="ayuda">@T["catalogos.claveAyuda"]</span>
+                </div>
+                <div class="campo">
+                    <label for="co-nombre">@T["comun.nombre"]</label>
+                    <input id="co-nombre" type="text" maxlength="120" @bind="k.Nombre" />
+                </div>
+                <div class="campo">
+                    <label for="co-tipo">@T["catalogos.tipo"]</label>
+                    <select id="co-tipo" @bind="k.Tipo">
+                        @foreach (TipoDeConcepto tipo in Enum.GetValues<TipoDeConcepto>().Where(t => t != TipoDeConcepto.NoEspecificado))
+                        {
+                            <option value="@tipo">@T.Enumerado(tipo)</option>
+                        }
+                    </select>
+                </div>
+                <div class="campo campo-ancho">
+                    <label for="co-descripcion">@T["comun.descripcion"]</label>
+                    <input id="co-descripcion" type="text" maxlength="500" @bind="k.Descripcion" />
+                </div>
+                <div class="campo">
+                    <label>@T["empleados.esquemas"]</label>
+                    <div class="acciones">
+                        <label class="casilla"><input type="checkbox" @bind="k.Imss" /> @T.Enumerado(EsquemaDePago.Imss)</label>
+                        <label class="casilla"><input type="checkbox" @bind="k.Sindicato" /> @T.Enumerado(EsquemaDePago.Sindicato)</label>
+                        <label class="casilla"><input type="checkbox" @bind="k.Honorarios" /> @T.Enumerado(EsquemaDePago.Honorarios)</label>
+                    </div>
+                </div>
+                <div class="campo">
+                    <label for="co-orden">@T["catalogos.orden"]</label>
+                    <input id="co-orden" type="number" step="1" @bind="k.Orden" />
+                    <span class="ayuda">@T["catalogos.ordenAyuda"]</span>
+                </div>
+                <div class="campo">
+                    <label class="casilla"><input type="checkbox" @bind="k.VisibleEnRecibo" /> @T["catalogos.visibleEnRecibo"]</label>
+                    <label class="casilla"><input type="checkbox" @bind="k.Activo" /> @T["comun.activo"]</label>
+                </div>
+                <div class="campo campo-ancho">
+                    <label for="co-formula">@T["catalogos.formula"]</label>
+                    <textarea id="co-formula" class="entrada-formula" spellcheck="false" @bind="k.Formula"></textarea>
+                    <span class="ayuda">@T["catalogos.sintaxisAyuda"]</span>
+                </div>
+                <SelectorDeAmbito @bind-EmpresaId="k.EmpresaId" />
+            </div>
+            <div class="acciones" style="margin-top:.75rem">
+                <button type="button" class="boton boton-pequeno" disabled="@EstaCargando" @onclick="ProbarConceptoAsync"><Icono Nombre="formula" Tamano="16" /> @T["catalogos.validarFormula"]</button>
+            </div>
+            @if (_respuestaConcepto is { } r)
+            {
+                <ResultadoDePrueba Respuesta="r" />
+            }
+        }
+    </ChildContent>
+    <Pie>
+        <button type="button" class="boton" @onclick="() => _concepto = null">@T["comun.cancelar"]</button>
+        <button type="button" class="boton boton-primario" disabled="@EstaCargando" @onclick="GuardarConceptoAsync">@T["comun.guardar"]</button>
+    </Pie>
+</Dialogo>
+
+@* ---- Sección de explicación ---- *@
+<Dialogo Visible="_explicacion is not null" Titulo="@(_explicacion?.Id is null ? T["catalogos.nuevaSeccion"] : T["catalogos.editarSeccion"])" Ancho="true" AlCerrar="() => _explicacion = null">
+    <ChildContent>
+        @if (_explicacion is { } x)
+        {
+            <div class="formulario formulario-3">
+                <div class="campo">
+                    <label for="ex-esquema">@T["contratos.esquema"]</label>
+                    <select id="ex-esquema" @bind="x.Esquema">
+                        <option value="@EsquemaDePago.Imss">@T.Enumerado(EsquemaDePago.Imss)</option>
+                        <option value="@EsquemaDePago.Sindicato">@T.Enumerado(EsquemaDePago.Sindicato)</option>
+                        <option value="@EsquemaDePago.Honorarios">@T.Enumerado(EsquemaDePago.Honorarios)</option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label for="ex-idioma">@T["perfil.idioma"]</label>
+                    <select id="ex-idioma" @bind="x.Idioma">
+                        <option value="@Idioma.Espanol">@T.Enumerado(Idioma.Espanol)</option>
+                        <option value="@Idioma.Ingles">@T.Enumerado(Idioma.Ingles)</option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label for="ex-orden">@T["catalogos.orden"]</label>
+                    <input id="ex-orden" type="number" step="1" @bind="x.Orden" />
+                </div>
+                <div class="campo campo-ancho">
+                    <label for="ex-titulo">@T["catalogos.tituloSeccion"]</label>
+                    <input id="ex-titulo" type="text" maxlength="200" @bind="x.Titulo" />
+                </div>
+                <div class="campo campo-ancho">
+                    <label for="ex-cuerpo">@T["catalogos.cuerpoSeccion"]</label>
+                    <textarea id="ex-cuerpo" rows="12" @bind="x.Cuerpo"></textarea>
+                </div>
+            </div>
+        }
+    </ChildContent>
+    <Pie>
+        <button type="button" class="boton" @onclick="() => _explicacion = null">@T["comun.cancelar"]</button>
+        <button type="button" class="boton boton-primario" disabled="@EstaCargando" @onclick="GuardarExplicacionAsync">@T["comun.guardar"]</button>
+    </Pie>
+</Dialogo>
+
+@* ---- Confirmación de borrado ---- *@
+<Dialogo Visible="_confirmacion is not null" Titulo="@T["comun.eliminar"]" AlCerrar="() => _confirmacion = null">
+    <ChildContent>
+        <p>@_confirmacion?.Mensaje</p>
+    </ChildContent>
+    <Pie>
+        <button type="button" class="boton" @onclick="() => _confirmacion = null">@T["comun.cancelar"]</button>
+        <button type="button" class="boton boton-peligro" disabled="@EstaCargando" @onclick="EjecutarConfirmacionAsync">@T["comun.eliminar"]</button>
+    </Pie>
+</Dialogo>
+
+@code {
+    private Pestana _pestana = Pestana.Parametros;
+    private bool _ambitoEmpresa;
+    private string? _texto;
+    private EsquemaDePago _esquemaFiltro = EsquemaDePago.NoEspecificado;
+
+    private IReadOnlyList<ParametroDeCalculoDto> _parametros = [];
+    private IReadOnlyList<TablaDeRangosDto> _tablas = [];
+    private IReadOnlyList<ConceptoDeNominaDto> _conceptos = [];
+    private IReadOnlyList<ExplicacionDeCalculoDto> _explicaciones = [];
+
+    private ModeloParametro? _parametro;
+    private ModeloTabla? _tabla;
+    private ModeloConcepto? _concepto;
+    private ModeloExplicacion? _explicacion;
+    private (string Mensaje, Func<Task> Accion)? _confirmacion;
+
+    private readonly ModeloPrueba _prueba = new();
+    private ProbarFormulaResponse? _respuesta;
+    private ProbarFormulaResponse? _respuestaConcepto;
+    private ExplicacionCompletaDto? _referencia;
+
+    private enum Pestana
+    {
+        Parametros,
+        Tablas,
+        Conceptos,
+        Explicaciones,
+        Probar,
+    }
+
+    /// <inheritdoc/>
+    protected override bool DependeDeEmpresa => true;
+
+    /// <summary>Empresa cuyo catálogo propio se consulta, o <c>null</c> para el global.</summary>
+    private Guid? EmpresaDelAmbito => _ambitoEmpresa ? Estado.EmpresaId : null;
+
+    /// <inheritdoc/>
+    protected override Task CargarDatosAsync()
+    {
+        if (Estado.EmpresaId is null)
+        {
+            _ambitoEmpresa = false;
+        }
+
+        return CargarPestanaAsync();
+    }
+
+    private async Task CargarPestanaAsync()
+    {
+        switch (_pestana)
+        {
+            case Pestana.Parametros:
+                _parametros = await Casos.ConsultarAsync<ListarParametrosQuery, IReadOnlyList<ParametroDeCalculoDto>>(new ListarParametrosQuery(EmpresaDelAmbito));
+                break;
+            case Pestana.Tablas:
+                _tablas = await Casos.ConsultarAsync<ListarTablasQuery, IReadOnlyList<TablaDeRangosDto>>(new ListarTablasQuery(EmpresaDelAmbito));
+                break;
+            case Pestana.Conceptos:
+                _conceptos = await Casos.ConsultarAsync<ListarConceptosQuery, IReadOnlyList<ConceptoDeNominaDto>>(new ListarConceptosQuery(EmpresaDelAmbito));
+                break;
+            case Pestana.Explicaciones:
+                _explicaciones = await Casos.ConsultarAsync<ListarExplicacionesQuery, IReadOnlyList<ExplicacionDeCalculoDto>>(new ListarExplicacionesQuery(null, null));
+                break;
+            case Pestana.Probar:
+                await CargarReferenciaAsync();
+                break;
+        }
+    }
+
+    private Task CambiarPestanaAsync(Pestana pestana)
+    {
+        _pestana = pestana;
+        _texto = null;
+        LimpiarMensajes();
+        return EjecutarAsync(CargarPestanaAsync);
+    }
+
+    private Task CambiarAmbitoAsync(ChangeEventArgs argumentos)
+    {
+        _ambitoEmpresa = string.Equals(argumentos.Value?.ToString(), "empresa", StringComparison.Ordinal) && Estado.EmpresaId is not null;
+        return EjecutarAsync(CargarPestanaAsync);
+    }
+
+    private async Task CargarReferenciaAsync()
+    {
+        _referencia = await Casos.ConsultarAsync<ObtenerExplicacionCompletaQuery, ExplicacionCompletaDto>(
+            new ObtenerExplicacionCompletaQuery(_prueba.Esquema, T.Idioma, EmpresaDelAmbito, null));
+    }
+
+    private bool Coincide(params string?[] textos)
+        => string.IsNullOrWhiteSpace(_texto)
+           || textos.Any(t => t is not null && t.Contains(_texto.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<ConceptoDeNominaDto> ConceptosFiltrados()
+        => _conceptos
+            .Where(k => _esquemaFiltro == EsquemaDePago.NoEspecificado || k.Esquemas.Incluye(_esquemaFiltro))
+            .Where(k => Coincide(k.Clave, k.Nombre, k.Formula))
+            .OrderBy(k => k.Orden)
+            .ThenBy(k => k.Clave, StringComparer.Ordinal);
+
+    private static IEnumerable<EsquemaDePago> EsquemasDe(EsquemasDePago esquemas)
+        => new[] { EsquemaDePago.Imss, EsquemaDePago.Sindicato, EsquemaDePago.Honorarios }.Where(e => esquemas.Incluye(e));
+
+    private string Vigencia(DateOnly desde, DateOnly? hasta)
+        => hasta is { } h ? $"{Fecha(desde)} – {Fecha(h)}" : T.Formato("catalogos.desde", Fecha(desde));
+
+    private void Confirmar(string mensaje, Func<Task> accion)
+    {
+        LimpiarMensajes();
+        _confirmacion = (mensaje, accion);
+    }
+
+    private Task EjecutarConfirmacionAsync() => EjecutarAsync(async () =>
+    {
+        if (_confirmacion is not { } confirmacion)
+        {
+            return;
+        }
+
+        await confirmacion.Accion();
+        _confirmacion = null;
+        MensajeDeExito = T["catalogos.eliminado"];
+        await CargarPestanaAsync();
+    });
+
+    // ---- Parámetros -------------------------------------------------------
+
+    private void NuevoParametro()
+    {
+        LimpiarMensajes();
+        _parametro = new ModeloParametro { EmpresaId = EmpresaDelAmbito };
+    }
+
+    private void EditarParametro(ParametroDeCalculoDto p)
+    {
+        LimpiarMensajes();
+        _parametro = new ModeloParametro
+        {
+            Id = p.Id,
+            Clave = p.Clave,
+            Descripcion = p.Descripcion,
+            Grupo = p.Grupo,
+            Valor = p.Valor,
+            Unidad = p.Unidad,
+            EmpresaId = p.EmpresaId,
+            VigenteDesde = p.VigenteDesde,
+            VigenteHasta = p.VigenteHasta,
+        };
+    }
+
+    private Task GuardarParametroAsync() => EjecutarAsync(async () =>
+    {
+        if (_parametro is not { } p)
+        {
+            return;
+        }
+
+        ParametroDeCalculoDto guardado = await Casos.EjecutarAsync<GuardarParametroCommand, ParametroDeCalculoDto>(new GuardarParametroCommand(
+            p.Id,
+            new GuardarParametroRequest(p.Clave.Trim().ToUpperInvariant(), p.Descripcion.Trim(), p.Grupo.Trim(), p.Valor, p.Unidad.Trim(), p.EmpresaId, p.VigenteDesde, p.VigenteHasta)));
+
+        _parametro = null;
+        MensajeDeExito = T.Formato("catalogos.guardado", guardado.Clave);
+        await CargarPestanaAsync();
+    });
+
+    // ---- Tablas -----------------------------------------------------------
+
+    private void NuevaTabla()
+    {
+        LimpiarMensajes();
+        _tabla = new ModeloTabla { EmpresaId = EmpresaDelAmbito };
+        _tabla.AgregarRango();
+    }
+
+    private void EditarTabla(TablaDeRangosDto t)
+    {
+        LimpiarMensajes();
+        _tabla = new ModeloTabla
+        {
+            Id = t.Id,
+            Clave = t.Clave,
+            Descripcion = t.Descripcion,
+            EmpresaId = t.EmpresaId,
+            VigenteDesde = t.VigenteDesde,
+            VigenteHasta = t.VigenteHasta,
+        };
+
+        _tabla.Rangos.AddRange(t.Rangos.Select(r => new ModeloRango
+        {
+            LimiteInferior = r.LimiteInferior,
+            LimiteSuperior = r.LimiteSuperior,
+            CuotaFija = r.CuotaFija,
+            Porcentaje = r.Porcentaje,
+            Valor = r.Valor,
+        }));
+    }
+
+    private Task GuardarTablaAsync() => EjecutarAsync(async () =>
+    {
+        if (_tabla is not { } t)
+        {
+            return;
+        }
+
+        List<RangoDeTablaDto> rangos = t.Rangos
+            .OrderBy(r => r.LimiteInferior)
+            .Select(r => new RangoDeTablaDto(r.LimiteInferior, r.LimiteSuperior, r.CuotaFija, r.Porcentaje, r.Valor))
+            .ToList();
+
+        TablaDeRangosDto guardada = await Casos.EjecutarAsync<GuardarTablaCommand, TablaDeRangosDto>(new GuardarTablaCommand(
+            t.Id,
+            new GuardarTablaRequest(t.Clave.Trim().ToUpperInvariant(), t.Descripcion.Trim(), t.EmpresaId, t.VigenteDesde, t.VigenteHasta, rangos)));
+
+        _tabla = null;
+        MensajeDeExito = T.Formato("catalogos.guardado", guardada.Clave);
+        await CargarPestanaAsync();
+    });
+
+    // ---- Conceptos --------------------------------------------------------
+
+    private void NuevoConcepto()
+    {
+        LimpiarMensajes();
+        _respuestaConcepto = null;
+        _concepto = new ModeloConcepto
+        {
+            EmpresaId = EmpresaDelAmbito,
+            Orden = (_conceptos.Count == 0 ? 0 : _conceptos.Max(k => k.Orden)) + 10,
+        };
+    }
+
+    private void EditarConcepto(ConceptoDeNominaDto k)
+    {
+        LimpiarMensajes();
+        _respuestaConcepto = null;
+        _concepto = new ModeloConcepto
+        {
+            Id = k.Id,
+            Clave = k.Clave,
+            Nombre = k.Nombre,
+            Descripcion = k.Descripcion,
+            Tipo = k.Tipo,
+            Imss = k.Esquemas.Incluye(EsquemaDePago.Imss),
+            Sindicato = k.Esquemas.Incluye(EsquemaDePago.Sindicato),
+            Honorarios = k.Esquemas.Incluye(EsquemaDePago.Honorarios),
+            Orden = k.Orden,
+            Formula = k.Formula,
+            VisibleEnRecibo = k.VisibleEnRecibo,
+            Activo = k.Activo,
+            EmpresaId = k.EmpresaId,
+        };
+    }
+
+    private Task ProbarConceptoAsync() => EjecutarAsync(async () =>
+    {
+        if (_concepto is not { } k)
+        {
+            return;
+        }
+
+        EsquemaDePago esquema = k.Imss ? EsquemaDePago.Imss : k.Sindicato ? EsquemaDePago.Sindicato : EsquemaDePago.Honorarios;
+        _respuestaConcepto = await Casos.ConsultarAsync<ProbarFormulaQuery, ProbarFormulaResponse>(
+            new ProbarFormulaQuery(new ProbarFormulaRequest(k.Formula, esquema, k.EmpresaId, [])));
+    });
+
+    private Task GuardarConceptoAsync() => EjecutarAsync(async () =>
+    {
+        if (_concepto is not { } k)
+        {
+            return;
+        }
+
+        EsquemasDePago esquemas = (k.Imss ? EsquemasDePago.Imss : EsquemasDePago.Ninguno)
+            | (k.Sindicato ? EsquemasDePago.Sindicato : EsquemasDePago.Ninguno)
+            | (k.Honorarios ? EsquemasDePago.Honorarios : EsquemasDePago.Ninguno);
+
+        ConceptoDeNominaDto guardado = await Casos.EjecutarAsync<GuardarConceptoCommand, ConceptoDeNominaDto>(new GuardarConceptoCommand(
+            k.Id,
+            new GuardarConceptoRequest(k.Clave.Trim().ToUpperInvariant(), k.Nombre.Trim(), k.Descripcion.Trim(), k.Tipo, esquemas, k.Orden, k.Formula.Trim(), k.VisibleEnRecibo, k.Activo, k.EmpresaId)));
+
+        _concepto = null;
+        MensajeDeExito = T.Formato("catalogos.guardado", guardado.Clave);
+        await CargarPestanaAsync();
+    });
+
+    // ---- Explicaciones ----------------------------------------------------
+
+    private void NuevaExplicacion()
+    {
+        LimpiarMensajes();
+        _explicacion = new ModeloExplicacion
+        {
+            Esquema = _esquemaFiltro == EsquemaDePago.NoEspecificado ? EsquemaDePago.Imss : _esquemaFiltro,
+            Idioma = T.Idioma,
+            Orden = (_explicaciones.Count == 0 ? 0 : _explicaciones.Max(x => x.Orden)) + 1,
+        };
+    }
+
+    private void EditarExplicacion(ExplicacionDeCalculoDto x)
+    {
+        LimpiarMensajes();
+        _explicacion = new ModeloExplicacion { Id = x.Id, Esquema = x.Esquema, Idioma = x.Idioma, Orden = x.Orden, Titulo = x.Titulo, Cuerpo = x.Cuerpo };
+    }
+
+    private Task GuardarExplicacionAsync() => EjecutarAsync(async () =>
+    {
+        if (_explicacion is not { } x)
+        {
+            return;
+        }
+
+        await Casos.EjecutarAsync<GuardarExplicacionCommand, ExplicacionDeCalculoDto>(new GuardarExplicacionCommand(
+            x.Id, new GuardarExplicacionRequest(x.Esquema, x.Idioma, x.Orden, x.Titulo.Trim(), x.Cuerpo.Trim())));
+
+        _explicacion = null;
+        MensajeDeExito = T.Formato("catalogos.guardado", x.Titulo);
+        await CargarPestanaAsync();
+    });
+
+    // ---- Probar fórmula ---------------------------------------------------
+
+    private Task ProbarAsync() => EjecutarAsync(async () =>
+    {
+        List<ValorDto> valores = _prueba.Valores
+            .Where(v => !string.IsNullOrWhiteSpace(v.Clave))
+            .Select(v => new ValorDto(v.Clave.Trim().ToUpperInvariant(), v.Valor))
+            .ToList();
+
+        _respuesta = await Casos.ConsultarAsync<ProbarFormulaQuery, ProbarFormulaResponse>(
+            new ProbarFormulaQuery(new ProbarFormulaRequest(_prueba.Formula, _prueba.Esquema, EmpresaDelAmbito, valores)));
+    });
+
+    private sealed class ModeloParametro
+    {
+        public Guid? Id { get; init; }
+        public string Clave { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public string Grupo { get; set; } = string.Empty;
+        public decimal Valor { get; set; }
+        public string Unidad { get; set; } = string.Empty;
+        public Guid? EmpresaId { get; set; }
+        public DateOnly VigenteDesde { get; set; } = new(DateTime.Today.Year, 1, 1);
+        public DateOnly? VigenteHasta { get; set; }
+    }
+
+    private sealed class ModeloRango
+    {
+        public decimal LimiteInferior { get; set; }
+        public decimal? LimiteSuperior { get; set; }
+        public decimal CuotaFija { get; set; }
+        public decimal Porcentaje { get; set; }
+        public decimal Valor { get; set; }
+    }
+
+    private sealed class ModeloTabla
+    {
+        public Guid? Id { get; init; }
+        public string Clave { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public Guid? EmpresaId { get; set; }
+        public DateOnly VigenteDesde { get; set; } = new(DateTime.Today.Year, 1, 1);
+        public DateOnly? VigenteHasta { get; set; }
+        public List<ModeloRango> Rangos { get; } = [];
+
+        /// <summary>Agrega un renglón que continúa donde terminó el anterior.</summary>
+        public void AgregarRango()
+        {
+            ModeloRango? ultimo = Rangos.LastOrDefault();
+            Rangos.Add(new ModeloRango { LimiteInferior = ultimo?.LimiteSuperior is { } superior ? superior + 0.01m : 0m });
+        }
+    }
+
+    private sealed class ModeloConcepto
+    {
+        public Guid? Id { get; init; }
+        public string Clave { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public TipoDeConcepto Tipo { get; set; } = TipoDeConcepto.Percepcion;
+        public bool Imss { get; set; } = true;
+        public bool Sindicato { get; set; }
+        public bool Honorarios { get; set; }
+        public int Orden { get; set; }
+        public string Formula { get; set; } = "0";
+        public bool VisibleEnRecibo { get; set; } = true;
+        public bool Activo { get; set; } = true;
+        public Guid? EmpresaId { get; set; }
+    }
+
+    private sealed class ModeloExplicacion
+    {
+        public Guid? Id { get; init; }
+        public EsquemaDePago Esquema { get; set; } = EsquemaDePago.Imss;
+        public Idioma Idioma { get; set; } = Idioma.Espanol;
+        public int Orden { get; set; } = 1;
+        public string Titulo { get; set; } = string.Empty;
+        public string Cuerpo { get; set; } = string.Empty;
+    }
+
+    private sealed class ModeloValor
+    {
+        public string Clave { get; set; } = string.Empty;
+        public decimal Valor { get; set; }
+    }
+
+    private sealed class ModeloPrueba
+    {
+        public EsquemaDePago Esquema { get; set; } = EsquemaDePago.Imss;
+        public string Formula { get; set; } = "REDONDEAR(SUELDO_PERIODO_REAL * 1.16; 2)";
+        public List<ModeloValor> Valores { get; } = [new() { Clave = "SUELDO_PERIODO_REAL", Valor = 3500m }];
+    }
+}

@@ -1,0 +1,50 @@
+@* Ventana modal. El contenido y el pie los aporta la página. *@
+@inject Traductor T
+
+@if (Visible)
+{
+    <div class="dialogo-fondo" @onclick="CerrarAsync">
+        <div class="dialogo @(Ancho ? "dialogo-ancho" : null)" role="dialog" aria-modal="true" aria-label="@Titulo"
+             @onclick:stopPropagation="true">
+            <header class="dialogo-cabecera">
+                <h2>@Titulo</h2>
+                <button type="button" class="boton-icono" @onclick="CerrarAsync" aria-label="@T["comun.cerrar"]">
+                    <Icono Nombre="cerrar" />
+                </button>
+            </header>
+            <div class="dialogo-cuerpo">@ChildContent</div>
+            @if (Pie is not null)
+            {
+                <footer class="dialogo-pie">@Pie</footer>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>Indica si la ventana está abierta.</summary>
+    [Parameter]
+    public bool Visible { get; set; }
+
+    /// <summary>Título de la ventana.</summary>
+    [Parameter]
+    public string? Titulo { get; set; }
+
+    /// <summary>Indica si la ventana usa el ancho amplio.</summary>
+    [Parameter]
+    public bool Ancho { get; set; }
+
+    /// <summary>Contenido de la ventana.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Botones del pie.</summary>
+    [Parameter]
+    public RenderFragment? Pie { get; set; }
+
+    /// <summary>Se invoca al cerrar la ventana.</summary>
+    [Parameter]
+    public EventCallback AlCerrar { get; set; }
+
+    private Task CerrarAsync() => AlCerrar.InvokeAsync();
+}

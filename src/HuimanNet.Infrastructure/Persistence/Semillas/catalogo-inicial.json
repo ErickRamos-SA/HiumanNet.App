@@ -1,0 +1,1698 @@
+{
+  "version": 1,
+  "vigenteDesde": "2026-01-01",
+  "fuente": "Guía de Cálculo de Nómina 1.1 y archivo de cálculo de referencia (NOMINA SEM 05, febrero 2026).",
+  "parametros": [
+    {
+      "clave": "DIAS_PERIODO_NOMINA",
+      "descripcion": "Días del período de pago (nómina semanal).",
+      "grupo": "Generales",
+      "valor": 7,
+      "unidad": "días"
+    },
+    {
+      "clave": "DIAS_BASE_TABLA_ISR",
+      "descripcion": "Días a los que está expresada la tarifa de ISR del catálogo (semanal directa).",
+      "grupo": "ISR",
+      "valor": 7,
+      "unidad": "días"
+    },
+    {
+      "clave": "UMA_DIARIA",
+      "descripcion": "Unidad de Medida y Actualización, valor diario.",
+      "grupo": "Generales",
+      "valor": 113.14,
+      "unidad": "MXN"
+    },
+    {
+      "clave": "UMI_DIARIA",
+      "descripcion": "Unidad Mixta INFONAVIT, valor diario.",
+      "grupo": "INFONAVIT",
+      "valor": 100.81,
+      "unidad": "MXN"
+    },
+    {
+      "clave": "SM_ZONA_A",
+      "descripcion": "Salario mínimo diario, zona A (resto del país).",
+      "grupo": "Generales",
+      "valor": 315.04,
+      "unidad": "MXN"
+    },
+    {
+      "clave": "SM_ZONA_B",
+      "descripcion": "Salario mínimo diario, zona B (frontera norte).",
+      "grupo": "Generales",
+      "valor": 440.87,
+      "unidad": "MXN"
+    },
+    {
+      "clave": "HORAS_JORNADA",
+      "descripcion": "Horas de la jornada diaria para valuar horas extra y descuentos por hora.",
+      "grupo": "Percepciones",
+      "valor": 8,
+      "unidad": "horas"
+    },
+    {
+      "clave": "FACTOR_FESTIVO",
+      "descripcion": "Factor con el que se paga un día festivo laborado.",
+      "grupo": "Percepciones",
+      "valor": 2,
+      "unidad": "factor"
+    },
+    {
+      "clave": "FACTOR_HORA_DOBLE",
+      "descripcion": "Factor de la hora extra doble.",
+      "grupo": "Percepciones",
+      "valor": 2,
+      "unidad": "factor"
+    },
+    {
+      "clave": "FACTOR_HORA_TRIPLE",
+      "descripcion": "Factor de la hora extra triple.",
+      "grupo": "Percepciones",
+      "valor": 3,
+      "unidad": "factor"
+    },
+    {
+      "clave": "PRIMA_VACACIONAL_PCT",
+      "descripcion": "Prima vacacional sobre el pago de vacaciones.",
+      "grupo": "Percepciones",
+      "valor": 0.25,
+      "unidad": "%"
+    },
+    {
+      "clave": "PRIMA_DOMINICAL_PCT",
+      "descripcion": "Prima dominical sobre el salario diario por domingo trabajado.",
+      "grupo": "Percepciones",
+      "valor": 0.25,
+      "unidad": "%"
+    },
+    {
+      "clave": "FACTOR_FALTA_PROPORCIONAL",
+      "descripcion": "Factor que castiga el séptimo día por cada ausencia (7/6) cuando la razón social aplica faltas proporcionales.",
+      "grupo": "Percepciones",
+      "valor": 1.16666667,
+      "unidad": "factor"
+    },
+    {
+      "clave": "AGUINALDO_UMAS_EXENTAS",
+      "descripcion": "Aguinaldo exento de ISR, en veces la UMA diaria.",
+      "grupo": "ISR",
+      "valor": 30,
+      "unidad": "UMA"
+    },
+    {
+      "clave": "PRIMA_VAC_UMAS_EXENTAS",
+      "descripcion": "Prima vacacional exenta de ISR, en veces la UMA diaria.",
+      "grupo": "ISR",
+      "valor": 15,
+      "unidad": "UMA"
+    },
+    {
+      "clave": "SUBSIDIO_ENTREGAR_EXCEDENTE",
+      "descripcion": "1 para entregar al trabajador el subsidio que excede al impuesto; 0 para fijar el ISR en cero como hace el modelo de referencia.",
+      "grupo": "ISR",
+      "valor": 0,
+      "unidad": "sí/no"
+    },
+    {
+      "clave": "IMSS_EM_CUOTA_FIJA_PAT",
+      "descripcion": "Enfermedad y maternidad, cuota fija patronal sobre la UMA.",
+      "grupo": "IMSS",
+      "valor": 0.204,
+      "unidad": "%"
+    },
+    {
+      "clave": "IMSS_EM_UMAS_EXCEDENTE",
+      "descripcion": "Umbral del excedente de enfermedad y maternidad, en veces la UMA.",
+      "grupo": "IMSS",
+      "valor": 3,
+      "unidad": "UMA"
+    },
+    {
+      "clave": "IMSS_EM_EXCEDENTE_PAT",
+      "descripcion": "Enfermedad y maternidad, excedente patronal.",
+      "grupo": "IMSS",
+      "valor": 0.011,
+      "unidad": "%"
+    },
+    {
+      "clave": "IMSS_EM_EXCEDENTE_OBR",
+      "descripcion": "Enfermedad y maternidad, excedente obrero.",
+      "grupo": "IMSS",
+      "valor": 0.004,
+      "unidad": "%"
+    },
+    {
+      "clave": "IMSS_PD_PAT",
+      "descripcion": "Prestaciones en dinero, patronal.",
+      "grupo": "IMSS",
+      "valor": 0.007,
+      "unidad": "%"
+    },
+    {
+      "clave": "IMSS_PD_OBR",
+      "descripcion": "Prestaciones en dinero, obrera.",
+      "grupo": "IMSS",
+      "valor": 0.0025,
+      "unidad": "%"
+    },
+    {
+      "clave": "IMSS_GMP_PAT",
+      "descripcion": "Gastos médicos para pensionados, patronal.",
+      "grupo": "IMSS",
+      "valor": 0.0105,
+      "unidad": "%"
+    },
+    {
+      "clave": "IMSS_GMP_OBR",
+      "descripcion": "Gastos médicos para pensionados, obrera.",
+      "grupo": "IMSS",
+      "valor": 0.00375,
+      "unidad": "%"
+    },
+    {
+      "clave": "IMSS_IV_PAT",
+      "descripcion": "Invalidez y vida, patronal.",
+      "grupo": "IMSS",
+      "valor": 0.0175,
+      "unidad": "%"
+    },
+    {
+      "clave": "IMSS_IV_OBR",
+      "descripcion": "Invalidez y vida, obrera.",
+      "grupo": "IMSS",
+      "valor": 0.00625,
+      "unidad": "%"
+    },
+    {
+      "clave": "IMSS_GPS_PAT",
+      "descripcion": "Guarderías y prestaciones sociales, patronal.",
+      "grupo": "IMSS",
+      "valor": 0.01,
+      "unidad": "%"
+    },
+    {
+      "clave": "IMSS_RETIRO_PAT",
+      "descripcion": "Retiro, patronal.",
+      "grupo": "IMSS",
+      "valor": 0.02,
+      "unidad": "%"
+    },
+    {
+      "clave": "IMSS_CV_OBR",
+      "descripcion": "Cesantía en edad avanzada y vejez, obrera.",
+      "grupo": "IMSS",
+      "valor": 0.01125,
+      "unidad": "%"
+    },
+    {
+      "clave": "IMSS_PRT_DEFAULT",
+      "descripcion": "Prima de riesgo de trabajo cuando la razón social no define una (PRT 1 del modelo).",
+      "grupo": "IMSS",
+      "valor": 0.025984,
+      "unidad": "%"
+    },
+    {
+      "clave": "INFONAVIT_PAT",
+      "descripcion": "Aportación patronal INFONAVIT.",
+      "grupo": "INFONAVIT",
+      "valor": 0.05,
+      "unidad": "%"
+    },
+    {
+      "clave": "INFONAVIT_DESCUENTOS_BIMESTRE",
+      "descripcion": "Número de descuentos INFONAVIT por bimestre (calendario semanal).",
+      "grupo": "INFONAVIT",
+      "valor": 9,
+      "unidad": "descuentos"
+    },
+    {
+      "clave": "FONACOT_SEMANAS_MES",
+      "descripcion": "Semanas del mes para prorratear el descuento FONACOT.",
+      "grupo": "FONACOT",
+      "valor": 4,
+      "unidad": "semanas"
+    },
+    {
+      "clave": "FONACOT_APLICAR_AUTOMATICO",
+      "descripcion": "1 para descontar FONACOT automáticamente (mensual / semanas); 0 para usar el importe capturado, como el modelo de referencia.",
+      "grupo": "FONACOT",
+      "valor": 0,
+      "unidad": "sí/no"
+    },
+    {
+      "clave": "ISN_ZONA_A",
+      "descripcion": "Impuesto sobre nóminas, zona A.",
+      "grupo": "ISN",
+      "valor": 0.04,
+      "unidad": "%"
+    },
+    {
+      "clave": "ISN_ZONA_B",
+      "descripcion": "Impuesto sobre nóminas, zona B.",
+      "grupo": "ISN",
+      "valor": 0.0425,
+      "unidad": "%"
+    },
+    {
+      "clave": "SINDICATO_CUOTA_PCT",
+      "descripcion": "Cuota sindical descontada sobre las percepciones del esquema sindical.",
+      "grupo": "Sindicato",
+      "valor": 0,
+      "unidad": "%"
+    },
+    {
+      "clave": "SINDICATO_CAUSA_ISN",
+      "descripcion": "1 si las percepciones del esquema sindical causan ISN; 0 en caso contrario.",
+      "grupo": "Sindicato",
+      "valor": 0,
+      "unidad": "sí/no"
+    },
+    {
+      "clave": "HON_ISR_MODO",
+      "descripcion": "Retención de ISR en honorarios: 1 tasa fija, 2 tarifa de ISR sin subsidio.",
+      "grupo": "Honorarios",
+      "valor": 1,
+      "unidad": "modo"
+    },
+    {
+      "clave": "HON_ISR_TASA_FIJA",
+      "descripcion": "Tasa fija de retención de ISR en honorarios.",
+      "grupo": "Honorarios",
+      "valor": 0.1,
+      "unidad": "%"
+    },
+    {
+      "clave": "HON_IVA_RETENCION_PCT",
+      "descripcion": "Proporción del IVA trasladado que se retiene en honorarios (dos terceras partes).",
+      "grupo": "Honorarios",
+      "valor": 0.66666667,
+      "unidad": "%"
+    },
+    {
+      "clave": "IVA_TASA",
+      "descripcion": "Tasa general de IVA.",
+      "grupo": "Generales",
+      "valor": 0.16,
+      "unidad": "%"
+    }
+  ],
+  "tablas": [
+    {
+      "clave": "ISR",
+      "descripcion": "Tarifa de ISR aplicada de forma directa sobre la base semanal (§02.4 de la guía).",
+      "rangos": [
+        {
+          "limiteInferior": 0.01,
+          "limiteSuperior": 194.46,
+          "cuotaFija": 0.0,
+          "porcentaje": 0.0192,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 194.47,
+          "limiteSuperior": 1650.67,
+          "cuotaFija": 3.71,
+          "porcentaje": 0.064,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 1650.68,
+          "limiteSuperior": 2900.87,
+          "cuotaFija": 96.95,
+          "porcentaje": 0.1088,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 2900.88,
+          "limiteSuperior": 3372.11,
+          "cuotaFija": 232.96,
+          "porcentaje": 0.16,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 3372.12,
+          "limiteSuperior": 4037.32,
+          "cuotaFija": 308.35,
+          "porcentaje": 0.1792,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 4037.33,
+          "limiteSuperior": 8142.75,
+          "cuotaFija": 427.56,
+          "porcentaje": 0.2136,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 8142.76,
+          "limiteSuperior": 12834.08,
+          "cuotaFija": 1304.45,
+          "porcentaje": 0.2352,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 12834.09,
+          "limiteSuperior": 24502.45,
+          "cuotaFija": 2407.86,
+          "porcentaje": 0.3,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 24502.46,
+          "limiteSuperior": 32669.91,
+          "cuotaFija": 5908.35,
+          "porcentaje": 0.32,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 32669.92,
+          "limiteSuperior": 98009.66,
+          "cuotaFija": 8521.94,
+          "porcentaje": 0.34,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 98009.67,
+          "limiteSuperior": null,
+          "cuotaFija": 30737.49,
+          "porcentaje": 0.35,
+          "valor": 0
+        }
+      ]
+    },
+    {
+      "clave": "SUBSIDIO",
+      "descripcion": "Subsidio al empleo semanal (§02.5 de la guía).",
+      "rangos": [
+        {
+          "limiteInferior": 0.01,
+          "limiteSuperior": 2341.94,
+          "cuotaFija": 0,
+          "porcentaje": 0,
+          "valor": 109.29
+        },
+        {
+          "limiteInferior": 2341.95,
+          "limiteSuperior": 999999.99,
+          "cuotaFija": 0,
+          "porcentaje": 0,
+          "valor": 0.0
+        }
+      ]
+    },
+    {
+      "clave": "CVR",
+      "descripcion": "Cesantía y vejez patronal según el SDI expresado en veces la UMA (§02.7 de la guía). Se consulta con SDI / UMA_DIARIA.",
+      "rangos": [
+        {
+          "limiteInferior": 0.0,
+          "limiteSuperior": 1.0,
+          "cuotaFija": 0,
+          "porcentaje": 0.0315,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 1.01,
+          "limiteSuperior": 1.5,
+          "cuotaFija": 0,
+          "porcentaje": 0.03676,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 1.51,
+          "limiteSuperior": 2.0,
+          "cuotaFija": 0,
+          "porcentaje": 0.04851,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 2.01,
+          "limiteSuperior": 2.5,
+          "cuotaFija": 0,
+          "porcentaje": 0.05556,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 2.51,
+          "limiteSuperior": 3.0,
+          "cuotaFija": 0,
+          "porcentaje": 0.06026,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 3.01,
+          "limiteSuperior": 3.5,
+          "cuotaFija": 0,
+          "porcentaje": 0.06361,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 3.51,
+          "limiteSuperior": 4.0,
+          "cuotaFija": 0,
+          "porcentaje": 0.06613,
+          "valor": 0
+        },
+        {
+          "limiteInferior": 4.01,
+          "limiteSuperior": 25.0,
+          "cuotaFija": 0,
+          "porcentaje": 0.07513,
+          "valor": 0
+        }
+      ]
+    }
+  ],
+  "conceptos": [
+    {
+      "clave": "SD_REAL",
+      "nombre": "Salario diario real",
+      "descripcion": "Sueldo real pactado entre los días del período.",
+      "tipo": "Base",
+      "esquemas": "Todos",
+      "orden": 10,
+      "formula": "SUELDO_PERIODO_REAL / DIAS_PERIODO",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "DIAS_TRABAJADOS",
+      "nombre": "Días trabajados",
+      "descripcion": "Días del período menos ausentismos (con factor 7/6 si la razón social aplica faltas proporcionales), vacaciones e incapacidades.",
+      "tipo": "Base",
+      "esquemas": "Todos",
+      "orden": 20,
+      "formula": "SI(APLICA_FALTAS_PROPORCIONALES = 1; DIAS_PERIODO - AUSENTISMOS * FACTOR_FALTA_PROPORCIONAL - VACACIONES - INCAPACIDADES; DIAS_PERIODO - AUSENTISMOS - VACACIONES - INCAPACIDADES)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "INC_SUELDO",
+      "nombre": "Sueldo del período",
+      "descripcion": "Salario diario real por días trabajados.",
+      "tipo": "Percepcion",
+      "esquemas": "Todos",
+      "orden": 30,
+      "formula": "SD_REAL * DIAS_TRABAJADOS",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INC_VACACIONES",
+      "nombre": "Vacaciones",
+      "descripcion": "Días de vacaciones por salario diario real.",
+      "tipo": "Percepcion",
+      "esquemas": "Todos",
+      "orden": 40,
+      "formula": "VACACIONES * SD_REAL",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INC_PRIMA_VACACIONAL",
+      "nombre": "Prima vacacional",
+      "descripcion": "Porcentaje de prima sobre el pago de vacaciones.",
+      "tipo": "Percepcion",
+      "esquemas": "Todos",
+      "orden": 50,
+      "formula": "INC_VACACIONES * PRIMA_VACACIONAL_PCT",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INC_FESTIVO",
+      "nombre": "Festivos laborados",
+      "descripcion": "Días festivos por salario diario por el factor de festivo.",
+      "tipo": "Percepcion",
+      "esquemas": "Todos",
+      "orden": 60,
+      "formula": "FESTIVOS * SD_REAL * FACTOR_FESTIVO",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INC_HORAS_DOBLES",
+      "nombre": "Horas extra dobles",
+      "descripcion": "Salario por hora por el factor doble por las horas.",
+      "tipo": "Percepcion",
+      "esquemas": "Todos",
+      "orden": 70,
+      "formula": "(SD_REAL / HORAS_JORNADA) * FACTOR_HORA_DOBLE * HORAS_DOBLES",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INC_HORAS_TRIPLES",
+      "nombre": "Horas extra triples",
+      "descripcion": "Salario por hora por el factor triple por las horas.",
+      "tipo": "Percepcion",
+      "esquemas": "Todos",
+      "orden": 80,
+      "formula": "(SD_REAL / HORAS_JORNADA) * FACTOR_HORA_TRIPLE * HORAS_TRIPLES",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INC_PRIMA_DOMINICAL",
+      "nombre": "Prima dominical",
+      "descripcion": "Porcentaje del salario diario por domingo trabajado.",
+      "tipo": "Percepcion",
+      "esquemas": "Todos",
+      "orden": 90,
+      "formula": "SD_REAL * PRIMA_DOMINICAL_PCT * DOMINGOS",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INC_GRATIFICACION",
+      "nombre": "Gratificaciones y bonos",
+      "descripcion": "Importe capturado más el bono fijo del contrato.",
+      "tipo": "Percepcion",
+      "esquemas": "Todos",
+      "orden": 100,
+      "formula": "GRATIFICACION",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INC_REEMBOLSOS",
+      "nombre": "Reembolsos y otros",
+      "descripcion": "Importes anticipados por el trabajador y devueltos.",
+      "tipo": "Percepcion",
+      "esquemas": "Todos",
+      "orden": 110,
+      "formula": "REEMBOLSOS",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INC_TELETRABAJO",
+      "nombre": "Teletrabajo",
+      "descripcion": "Apoyo por teletrabajo.",
+      "tipo": "Percepcion",
+      "esquemas": "Todos",
+      "orden": 120,
+      "formula": "TELETRABAJO",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INC_FINIQUITO",
+      "nombre": "Finiquito",
+      "descripcion": "Importe de finiquito en la última nómina.",
+      "tipo": "Percepcion",
+      "esquemas": "Todos",
+      "orden": 130,
+      "formula": "FINIQUITO",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INC_CAFETERIA",
+      "nombre": "Cafetería",
+      "descripcion": "Gastos de cafetería descontados.",
+      "tipo": "Deduccion",
+      "esquemas": "Todos",
+      "orden": 140,
+      "formula": "CAFETERIA",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INC_HORAS_DESCONTADAS",
+      "nombre": "Horas descontadas",
+      "descripcion": "Salario por hora por las horas a descontar.",
+      "tipo": "Deduccion",
+      "esquemas": "Todos",
+      "orden": 150,
+      "formula": "(SD_REAL / HORAS_JORNADA) * HORAS_DESCONTADAS",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INC_OTROS_DESCUENTOS",
+      "nombre": "Otros descuentos",
+      "descripcion": "Otros descuentos personales del período.",
+      "tipo": "Deduccion",
+      "esquemas": "Todos",
+      "orden": 160,
+      "formula": "OTROS_DESCUENTOS",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INC_PRESTAMO_PERSONAL",
+      "nombre": "Préstamo personal",
+      "descripcion": "Descuento de préstamo personal, incluido el fijo del contrato.",
+      "tipo": "Deduccion",
+      "esquemas": "Todos",
+      "orden": 170,
+      "formula": "PRESTAMO_PERSONAL",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "BRUTO_INCIDENCIAS",
+      "nombre": "Total de percepciones (bruto)",
+      "descripcion": "Suma de percepciones de incidencias menos descuentos personales (§04.10).",
+      "tipo": "Total",
+      "esquemas": "Todos",
+      "orden": 180,
+      "formula": "INC_SUELDO + INC_VACACIONES + INC_PRIMA_VACACIONAL + INC_FESTIVO + INC_HORAS_DOBLES + INC_HORAS_TRIPLES + INC_PRIMA_DOMINICAL + INC_GRATIFICACION + INC_REEMBOLSOS + INC_TELETRABAJO + INC_FINIQUITO - INC_CAFETERIA - INC_HORAS_DESCONTADAS - INC_OTROS_DESCUENTOS - INC_PRESTAMO_PERSONAL",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "OTRAS_DEDUCCIONES",
+      "nombre": "Otros descuentos del recibo",
+      "descripcion": "Descuentos capturados directamente en el recibo (columna OTROS del modelo).",
+      "tipo": "Deduccion",
+      "esquemas": "Todos",
+      "orden": 895,
+      "formula": "DESCUENTOS_FISCALES",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "PENSION_ALIMENTICIA",
+      "nombre": "Pensión alimenticia",
+      "descripcion": "Porcentaje sobre las percepciones del recibo o importe fijo del contrato.",
+      "tipo": "Deduccion",
+      "esquemas": "Todos",
+      "orden": 890,
+      "formula": "SI(PENSION_ALIMENTICIA_PORCENTAJE > 0; REDONDEAR(TOTAL_PERCEPCIONES * PENSION_ALIMENTICIA_PORCENTAJE; 2); PENSION_ALIMENTICIA_IMPORTE)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "FALTAS_FISCAL",
+      "nombre": "Faltas del recibo fiscal",
+      "descripcion": "Ausentismos con factor 7/6 más incapacidades, topadas a los días del período; cero si la razón social no aplica faltas proporcionales (columna Faltas del modelo).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 200,
+      "formula": "SI(APLICA_FALTAS_PROPORCIONALES = 1; MIN(AUSENTISMOS * FACTOR_FALTA_PROPORCIONAL + INCAPACIDADES; DIAS_PERIODO); 0)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "DIAS_TRABAJADOS_FISCAL",
+      "nombre": "Días trabajados del recibo fiscal",
+      "descripcion": "Días del período menos las faltas fiscales.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 210,
+      "formula": "MAX(DIAS_PERIODO - FALTAS_FISCAL; 0)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "SUELDO",
+      "nombre": "Sueldo",
+      "descripcion": "Días trabajados fiscales menos vacaciones, por el salario diario registrado ante el IMSS.",
+      "tipo": "Percepcion",
+      "esquemas": "Imss",
+      "orden": 220,
+      "formula": "(DIAS_TRABAJADOS_FISCAL - VACACIONES) * SALARIO_DIARIO_FISCAL",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "AGUINALDO_FISCAL",
+      "nombre": "Aguinaldo",
+      "descripcion": "Aguinaldo pagado en el período.",
+      "tipo": "Percepcion",
+      "esquemas": "Imss",
+      "orden": 230,
+      "formula": "AGUINALDO",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "VACACIONES_FISCAL",
+      "nombre": "Vacaciones",
+      "descripcion": "Días de vacaciones por el salario diario fiscal.",
+      "tipo": "Percepcion",
+      "esquemas": "Imss",
+      "orden": 240,
+      "formula": "VACACIONES * SALARIO_DIARIO_FISCAL",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "PRIMA_VACACIONAL",
+      "nombre": "Prima vacacional",
+      "descripcion": "Porcentaje de prima sobre las vacaciones fiscales.",
+      "tipo": "Percepcion",
+      "esquemas": "Imss",
+      "orden": 250,
+      "formula": "VACACIONES_FISCAL * PRIMA_VACACIONAL_PCT",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "GRATIFICACION_FISCAL",
+      "nombre": "Gratificación",
+      "descripcion": "Con sueldo mixto (complemento sindical) la gratificación se paga vía sindicato, como en el modelo de referencia; en un contrato IMSS puro integra el recibo fiscal al 100 %.",
+      "tipo": "Percepcion",
+      "esquemas": "Imss",
+      "orden": 260,
+      "formula": "SI(COMPLEMENTO_SINDICAL_APLICA = 1; 0; GRATIFICACION)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "TELETRABAJO_FISCAL",
+      "nombre": "Teletrabajo",
+      "descripcion": "Apoyo por teletrabajo en el recibo fiscal.",
+      "tipo": "Percepcion",
+      "esquemas": "Imss",
+      "orden": 270,
+      "formula": "TELETRABAJO",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "TOTAL_PERCEPCIONES",
+      "nombre": "Total de percepciones",
+      "descripcion": "Sueldo, aguinaldo, vacaciones, prima vacacional, gratificación y teletrabajo del recibo.",
+      "tipo": "Total",
+      "esquemas": "Imss",
+      "orden": 280,
+      "formula": "SUELDO + AGUINALDO_FISCAL + VACACIONES_FISCAL + PRIMA_VACACIONAL + GRATIFICACION_FISCAL + TELETRABAJO_FISCAL",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "EXC_AGUINALDO",
+      "nombre": "Excedente gravable de aguinaldo",
+      "descripcion": "Aguinaldo menos 30 UMA, nunca negativo (fórmula normativa, §05.1.1).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 300,
+      "formula": "MAX(AGUINALDO_FISCAL - AGUINALDO_UMAS_EXENTAS * UMA_DIARIA; 0)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "EXC_PRIMA_VACACIONAL",
+      "nombre": "Excedente gravable de prima vacacional",
+      "descripcion": "Prima vacacional menos 15 UMA, nunca negativo (§05.1.2).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 310,
+      "formula": "MAX(PRIMA_VACACIONAL - PRIMA_VAC_UMAS_EXENTAS * UMA_DIARIA; 0)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "BASE_GRAVABLE",
+      "nombre": "Base gravable",
+      "descripcion": "Sueldo, vacaciones, excedentes y gratificación (§05.1).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 320,
+      "formula": "SUELDO + VACACIONES_FISCAL + EXC_AGUINALDO + EXC_PRIMA_VACACIONAL + GRATIFICACION_FISCAL",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "BASE_GRAVABLE_TABLA",
+      "nombre": "Base gravable a días de tabla",
+      "descripcion": "Base gravable expresada en los días de la tarifa (7 semanal: sin ajuste).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 330,
+      "formula": "BASE_GRAVABLE * (DIAS_BASE_TABLA_ISR / DIAS_PERIODO)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "ISR_LIMITE_INFERIOR",
+      "nombre": "Límite inferior",
+      "descripcion": "Límite inferior del rango de la tarifa.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 340,
+      "formula": "TABLA(\"ISR\"; BASE_GRAVABLE_TABLA; \"LIMITE_INFERIOR\")",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "ISR_EXCEDENTE",
+      "nombre": "Excedente del límite inferior",
+      "descripcion": "Base menos límite inferior.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 350,
+      "formula": "BASE_GRAVABLE_TABLA - ISR_LIMITE_INFERIOR",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "ISR_PORCENTAJE",
+      "nombre": "Porcentaje sobre excedente",
+      "descripcion": "Porcentaje del rango de la tarifa.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 360,
+      "formula": "TABLA(\"ISR\"; BASE_GRAVABLE_TABLA; \"PORCENTAJE\")",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "ISR_MARGINAL",
+      "nombre": "Impuesto marginal",
+      "descripcion": "Excedente por porcentaje.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 370,
+      "formula": "ISR_EXCEDENTE * ISR_PORCENTAJE",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "ISR_CUOTA_FIJA",
+      "nombre": "Cuota fija",
+      "descripcion": "Cuota fija del rango de la tarifa.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 380,
+      "formula": "TABLA(\"ISR\"; BASE_GRAVABLE_TABLA; \"CUOTA_FIJA\")",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "ISR_DETERMINADO",
+      "nombre": "Impuesto determinado",
+      "descripcion": "Cuota fija más impuesto marginal (§05.2).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 390,
+      "formula": "ISR_MARGINAL + ISR_CUOTA_FIJA",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "SUBSIDIO_TABLA",
+      "nombre": "Subsidio al empleo de tabla",
+      "descripcion": "Subsidio que corresponde a la base según la tabla semanal.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 400,
+      "formula": "TABLA(\"SUBSIDIO\"; BASE_GRAVABLE_TABLA; \"VALOR\")",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "ISR_NETO_TABLA",
+      "nombre": "ISR menos subsidio",
+      "descripcion": "Impuesto determinado menos subsidio, llevado a los días del período y redondeado a dos decimales.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 410,
+      "formula": "REDONDEAR((ISR_DETERMINADO - SUBSIDIO_TABLA) / (DIAS_BASE_TABLA_ISR / DIAS_PERIODO); 2)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "ISR",
+      "nombre": "ISR retenido",
+      "descripcion": "Retención manual si se capturó; cero si el salario diario fiscal no supera el mínimo; en otro caso el ISR neto de subsidio, nunca negativo (§05.3 y §05.4).",
+      "tipo": "Deduccion",
+      "esquemas": "Imss",
+      "orden": 420,
+      "formula": "SI(ISR_MANUAL_APLICA = 1; ISR_MANUAL; SI(SALARIO_DIARIO_FISCAL <= SALARIO_MINIMO_ZONA; 0; MAX(ISR_NETO_TABLA; 0)))",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "SUBSIDIO_ENTREGADO",
+      "nombre": "Subsidio entregado",
+      "descripcion": "Subsidio que excede al impuesto, entregado sólo si el parámetro SUBSIDIO_ENTREGAR_EXCEDENTE vale 1 (el modelo de referencia no lo entrega).",
+      "tipo": "Percepcion",
+      "esquemas": "Imss",
+      "orden": 430,
+      "formula": "SI(SUBSIDIO_ENTREGAR_EXCEDENTE = 1 Y SALARIO_DIARIO_FISCAL > SALARIO_MINIMO_ZONA Y ISR_MANUAL_APLICA = 0; MAX(0 - ISR_NETO_TABLA; 0); 0)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "COP_INCAPACIDADES",
+      "nombre": "Incapacidades para IMSS",
+      "descripcion": "Días de incapacidad considerados en las cuotas (sólo si la razón social aplica faltas).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 500,
+      "formula": "SI(APLICA_FALTAS_PROPORCIONALES = 1; INCAPACIDADES; 0)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_AUSENCIAS",
+      "nombre": "Ausencias para IMSS",
+      "descripcion": "Días de ausentismo considerados en las cuotas (sólo si la razón social aplica faltas).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 510,
+      "formula": "SI(APLICA_FALTAS_PROPORCIONALES = 1; AUSENTISMOS; 0)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_DIAS",
+      "nombre": "Días cotizables",
+      "descripcion": "Días del período menos incapacidades y ausencias (base de riesgo de trabajo).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 520,
+      "formula": "DIAS_PERIODO - COP_INCAPACIDADES - COP_AUSENCIAS",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_DIAS_GENERALES",
+      "nombre": "Días base de cuotas generales",
+      "descripcion": "Días del período menos incapacidades (los ausentismos sí cotizan en enfermedad y maternidad).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 530,
+      "formula": "COP_DIAS + COP_AUSENCIAS",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_TOPE_EXCEDENTE",
+      "nombre": "Umbral de excedente (3 UMA)",
+      "descripcion": "Tres veces la UMA diaria.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 540,
+      "formula": "IMSS_EM_UMAS_EXCEDENTE * UMA_DIARIA",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_CUOTA_FIJA_EM",
+      "nombre": "Cuota fija EM (patronal)",
+      "descripcion": "UMA por 20.40 % por días generales.",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 550,
+      "formula": "UMA_DIARIA * IMSS_EM_CUOTA_FIJA_PAT * COP_DIAS_GENERALES",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_EXCEDENTE_PAT",
+      "nombre": "Excedente EM patronal",
+      "descripcion": "(SDI − 3 UMA) por días generales por 1.10 % cuando el SDI supera 3 UMA.",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 560,
+      "formula": "SI(SDI < COP_TOPE_EXCEDENTE; 0; (SDI - COP_TOPE_EXCEDENTE) * COP_DIAS_GENERALES * IMSS_EM_EXCEDENTE_PAT)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_EXCEDENTE_OBR",
+      "nombre": "Excedente EM obrero",
+      "descripcion": "(SDI − 3 UMA) por días generales por 0.40 % cuando el SDI supera 3 UMA.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 570,
+      "formula": "SI(SDI < COP_TOPE_EXCEDENTE; 0; (SDI - COP_TOPE_EXCEDENTE) * COP_DIAS_GENERALES * IMSS_EM_EXCEDENTE_OBR)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_PRESTACIONES_DINERO_PAT",
+      "nombre": "Prestaciones en dinero (patronal)",
+      "descripcion": "SDI por días generales por 0.70 %.",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 580,
+      "formula": "COP_DIAS_GENERALES * SDI * IMSS_PD_PAT",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_PRESTACIONES_DINERO_OBR",
+      "nombre": "Prestaciones en dinero (obrera)",
+      "descripcion": "SDI por días generales por 0.25 %.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 590,
+      "formula": "COP_DIAS_GENERALES * SDI * IMSS_PD_OBR",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_GMP_PAT",
+      "nombre": "Gastos médicos pensionados (patronal)",
+      "descripcion": "SDI por días generales por 1.05 %.",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 600,
+      "formula": "COP_DIAS_GENERALES * SDI * IMSS_GMP_PAT",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_GMP_OBR",
+      "nombre": "Gastos médicos pensionados (obrera)",
+      "descripcion": "SDI por días generales por 0.375 %.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 610,
+      "formula": "COP_DIAS_GENERALES * SDI * IMSS_GMP_OBR",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_RIESGO_TRABAJO",
+      "nombre": "Riesgo de trabajo",
+      "descripcion": "SDI por días cotizables por la prima de riesgo.",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 620,
+      "formula": "COP_DIAS * SDI * PRIMA_RIESGO",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_INVALIDEZ_VIDA_PAT",
+      "nombre": "Invalidez y vida (patronal)",
+      "descripcion": "SDI por días del período por 1.75 %.",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 630,
+      "formula": "DIAS_PERIODO * SDI * IMSS_IV_PAT",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_INVALIDEZ_VIDA_OBR",
+      "nombre": "Invalidez y vida (obrera)",
+      "descripcion": "SDI por días del período por 0.625 %.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 640,
+      "formula": "DIAS_PERIODO * SDI * IMSS_IV_OBR",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_GUARDERIAS",
+      "nombre": "Guarderías y prestaciones sociales",
+      "descripcion": "SDI por días del período por 1 %.",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 650,
+      "formula": "DIAS_PERIODO * SDI * IMSS_GPS_PAT",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_EM_PATRONAL",
+      "nombre": "Cuotas patronales EM, IV, RT y GPS",
+      "descripcion": "Suma de los ramos patronales excepto retiro, cesantía y vejez.",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 660,
+      "formula": "COP_CUOTA_FIJA_EM + COP_EXCEDENTE_PAT + COP_PRESTACIONES_DINERO_PAT + COP_GMP_PAT + COP_RIESGO_TRABAJO + COP_INVALIDEZ_VIDA_PAT + COP_GUARDERIAS",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "COP_EM_OBRERA",
+      "nombre": "Cuotas obreras EM e IV",
+      "descripcion": "Suma de los ramos obreros excepto cesantía y vejez.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 670,
+      "formula": "COP_EXCEDENTE_OBR + COP_PRESTACIONES_DINERO_OBR + COP_GMP_OBR + COP_INVALIDEZ_VIDA_OBR",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_EM_TOTAL",
+      "nombre": "Total EM, IV, RT y GPS",
+      "descripcion": "Patronal más obrera de los ramos anteriores (columna Total del bloque IMSS del modelo).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 680,
+      "formula": "COP_EM_PATRONAL + COP_EM_OBRERA",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_RETIRO",
+      "nombre": "Retiro",
+      "descripcion": "SDI por días del período por 2 %.",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 690,
+      "formula": "DIAS_PERIODO * SDI * IMSS_RETIRO_PAT",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_CESANTIA_VEJEZ_PAT",
+      "nombre": "Cesantía y vejez (patronal)",
+      "descripcion": "Porcentaje de la tabla CVR según el SDI en UMAs, por días del período por SDI.",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 700,
+      "formula": "TABLA(\"CVR\"; SDI / UMA_DIARIA; \"PORCENTAJE\") * DIAS_PERIODO * SDI",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_CESANTIA_VEJEZ_OBR",
+      "nombre": "Cesantía y vejez (obrera)",
+      "descripcion": "SDI por días del período por 1.125 %.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 710,
+      "formula": "DIAS_PERIODO * SDI * IMSS_CV_OBR",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_RCV_PATRONAL",
+      "nombre": "Retiro, cesantía y vejez patronal",
+      "descripcion": "Retiro más cesantía y vejez patronal.",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 720,
+      "formula": "COP_RETIRO + COP_CESANTIA_VEJEZ_PAT",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "COP_RCV_TOTAL",
+      "nombre": "Retiro, cesantía y vejez total",
+      "descripcion": "Patronal más obrera.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 730,
+      "formula": "COP_RCV_PATRONAL + COP_CESANTIA_VEJEZ_OBR",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "INFONAVIT_PATRONAL",
+      "nombre": "INFONAVIT patronal",
+      "descripcion": "SDI por días del período por 5 %.",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 740,
+      "formula": "DIAS_PERIODO * SDI * INFONAVIT_PAT",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "COP_RCV_INFONAVIT_TOTAL",
+      "nombre": "RCV e INFONAVIT (columna SUMA del modelo)",
+      "descripcion": "Retiro, cesantía y vejez total más INFONAVIT patronal.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 750,
+      "formula": "COP_RCV_TOTAL + INFONAVIT_PATRONAL",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "IMSS_PATRONAL_TOTAL",
+      "nombre": "Cuotas patronales IMSS",
+      "descripcion": "Todos los ramos patronales del IMSS (sin INFONAVIT).",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 760,
+      "formula": "COP_EM_PATRONAL + COP_RCV_PATRONAL",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "COP_DIAS_TRABAJADOS_NOMINA",
+      "nombre": "Días trabajados para el descuento",
+      "descripcion": "Días trabajados del recibo, redondeados y topados a los días del período (§06.4).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 770,
+      "formula": "SI(DIAS_TRABAJADOS_FISCAL < DIAS_PERIODO; REDONDEAR(DIAS_TRABAJADOS_FISCAL; 0); DIAS_PERIODO)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COP_OBRERA_TOTAL",
+      "nombre": "Cuota obrera total",
+      "descripcion": "Cesantía y vejez obrera más los ramos obreros de EM e IV.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 780,
+      "formula": "COP_CESANTIA_VEJEZ_OBR + COP_EM_OBRERA",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "COP_FACTOR_DIARIO",
+      "nombre": "Cuota obrera diaria",
+      "descripcion": "Cuota obrera total entre los días cotizables.",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 790,
+      "formula": "COP_OBRERA_TOTAL / COP_DIAS",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "IMSS_TRABAJADOR",
+      "nombre": "IMSS retenido al trabajador",
+      "descripcion": "Cuota obrera diaria por días trabajados, redondeada; cero si el salario diario fiscal no supera el mínimo (§06.4).",
+      "tipo": "Deduccion",
+      "esquemas": "Imss",
+      "orden": 800,
+      "formula": "SI(SALARIO_DIARIO_FISCAL <= SALARIO_MINIMO_ZONA; 0; REDONDEAR(COP_DIAS_TRABAJADOS_NOMINA * COP_FACTOR_DIARIO; 2))",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "INFONAVIT_MENSUAL",
+      "nombre": "INFONAVIT mensual base",
+      "descripcion": "Cuota fija, factor VSM por UMI, o salario diario por porcentaje, según la modalidad del aviso (§07.1).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 850,
+      "formula": "SI(INFONAVIT_TIPO = 1; INFONAVIT_VALOR; SI(INFONAVIT_TIPO = 2; INFONAVIT_VALOR * UMI_DIARIA; SI(INFONAVIT_TIPO = 3; SALARIO_DIARIO_FISCAL * INFONAVIT_VALOR; 0)))",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "INFONAVIT_BIMESTRAL",
+      "nombre": "INFONAVIT bimestral",
+      "descripcion": "Mensual por dos más seguro de vivienda (§07.2).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 860,
+      "formula": "SI(INFONAVIT_TIPO > 0; INFONAVIT_MENSUAL * 2 + INFONAVIT_SEGURO_VIVIENDA; 0)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "INFONAVIT_TRABAJADOR",
+      "nombre": "Crédito INFONAVIT",
+      "descripcion": "Bimestral entre el número de descuentos del bimestre.",
+      "tipo": "Deduccion",
+      "esquemas": "Imss",
+      "orden": 870,
+      "formula": "REDONDEAR(INFONAVIT_BIMESTRAL / INFONAVIT_DESCUENTOS_BIMESTRE; 2)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "FONACOT",
+      "nombre": "Crédito FONACOT",
+      "descripcion": "Mensual entre semanas del mes si el descuento automático está activo; si no, el importe capturado (§08).",
+      "tipo": "Deduccion",
+      "esquemas": "Imss",
+      "orden": 880,
+      "formula": "SI(FONACOT_APLICAR_AUTOMATICO = 1; REDONDEAR(FONACOT_MENSUAL / FONACOT_SEMANAS_MES; 2); FONACOT_CAPTURADO)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "TOTAL_DEDUCCIONES",
+      "nombre": "Total de deducciones",
+      "descripcion": "ISR, IMSS, FONACOT, INFONAVIT, otros y pensión alimenticia (§09.1).",
+      "tipo": "Total",
+      "esquemas": "Imss",
+      "orden": 910,
+      "formula": "ISR + IMSS_TRABAJADOR + FONACOT + INFONAVIT_TRABAJADOR + OTRAS_DEDUCCIONES + PENSION_ALIMENTICIA",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "NETO_PAGADO",
+      "nombre": "Neto pagado",
+      "descripcion": "Percepciones menos deducciones, más el subsidio entregado (§09.2).",
+      "tipo": "Total",
+      "esquemas": "Imss",
+      "orden": 920,
+      "formula": "TOTAL_PERCEPCIONES - TOTAL_DEDUCCIONES + SUBSIDIO_ENTREGADO",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "COMPLEMENTO_SINDICAL",
+      "nombre": "Complemento sindical",
+      "descripcion": "Sólo con sueldo mixto: bruto de incidencias menos neto y menos créditos (o menos todas las deducciones, redondeado, si el subsidio se absorbe), menos descuento adicional, más ajuste manual (§09.3).",
+      "tipo": "Total",
+      "esquemas": "Imss",
+      "orden": 930,
+      "formula": "SI(COMPLEMENTO_SINDICAL_APLICA = 1; SI(SUBSIDIO_ABSORBIDO = 1; REDONDEAR(BRUTO_INCIDENCIAS - NETO_PAGADO - TOTAL_DEDUCCIONES; 0); BRUTO_INCIDENCIAS - NETO_PAGADO - (FONACOT + INFONAVIT_TRABAJADOR + OTRAS_DEDUCCIONES + PENSION_ALIMENTICIA)) - DESCUENTO_SINDICAL_ADICIONAL + AJUSTE_SINDICAL; 0)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "ISN_BASE",
+      "nombre": "Base del ISN",
+      "descripcion": "Percepciones del recibo menos conceptos exentos (teletrabajo) (§11).",
+      "tipo": "Base",
+      "esquemas": "Imss",
+      "orden": 940,
+      "formula": "TOTAL_PERCEPCIONES - TELETRABAJO_FISCAL",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "ISN_CAUSADO",
+      "nombre": "ISN causado",
+      "descripcion": "Base por la tasa de la zona del trabajador.",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 945,
+      "formula": "ISN_BASE * ISN_TASA_ZONA",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "ISN",
+      "nombre": "ISN facturable",
+      "descripcion": "ISN causado; cero en Maquila, donde el complemento sindical no causa el impuesto en la factura.",
+      "tipo": "Patronal",
+      "esquemas": "Imss",
+      "orden": 950,
+      "formula": "SI(ES_MAQUILA = 1; 0; ISN_CAUSADO)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "TOTAL_NOMINA_FACTURABLE",
+      "nombre": "Base facturable",
+      "descripcion": "Complemento sindical en Maquila; bruto de incidencias en Nómina (§10.2).",
+      "tipo": "Costo",
+      "esquemas": "Imss",
+      "orden": 960,
+      "formula": "SI(ES_MAQUILA = 1; COMPLEMENTO_SINDICAL; BRUTO_INCIDENCIAS)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "COSTO_ISR",
+      "nombre": "ISR trasladado",
+      "descripcion": "ISR que se factura; cero en finiquitos, con subsidio absorbido o en Maquila.",
+      "tipo": "Costo",
+      "esquemas": "Imss",
+      "orden": 970,
+      "formula": "SI(ES_FINIQUITO = 1 O SUBSIDIO_ABSORBIDO = 1 O ES_MAQUILA = 1; 0; ISR)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COSTO_IMSS",
+      "nombre": "IMSS trasladado",
+      "descripcion": "Total EM, IV, RT y GPS que se factura; cero en Maquila.",
+      "tipo": "Costo",
+      "esquemas": "Imss",
+      "orden": 980,
+      "formula": "SI(ES_MAQUILA = 1; 0; COP_EM_TOTAL)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COSTO_INFONAVIT",
+      "nombre": "RCV e INFONAVIT trasladados",
+      "descripcion": "Retiro, cesantía, vejez e INFONAVIT que se facturan; cero en Maquila.",
+      "tipo": "Costo",
+      "esquemas": "Imss",
+      "orden": 990,
+      "formula": "SI(ES_MAQUILA = 1; 0; COP_RCV_INFONAVIT_TOTAL)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COSTO_OTROS",
+      "nombre": "Otros costos",
+      "descripcion": "Porcentaje de otros costos sobre el neto pagado.",
+      "tipo": "Costo",
+      "esquemas": "Imss",
+      "orden": 1000,
+      "formula": "PORCENTAJE_OTROS_COSTOS * NETO_PAGADO",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "COMISION",
+      "nombre": "Comisión",
+      "descripcion": "Sobre costo: porcentaje del subtotal (base, ISR, IMSS, INFONAVIT e ISN); sobre brutos: porcentaje del bruto de incidencias (§12.1).",
+      "tipo": "Costo",
+      "esquemas": "Imss",
+      "orden": 1010,
+      "formula": "SI(COMISION_SOBRE_COSTO = 1; (TOTAL_NOMINA_FACTURABLE + COSTO_ISR + COSTO_IMSS + COSTO_INFONAVIT + ISN) * PORCENTAJE_COMISION; BRUTO_INCIDENCIAS * PORCENTAJE_COMISION)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "COSTO_TOTAL",
+      "nombre": "Costo total al cliente",
+      "descripcion": "Base facturable más cargas trasladadas, ISN, otros y comisión, antes de IVA (columna Suma del modelo).",
+      "tipo": "Costo",
+      "esquemas": "Imss",
+      "orden": 1020,
+      "formula": "TOTAL_NOMINA_FACTURABLE + COSTO_ISR + COSTO_IMSS + COSTO_INFONAVIT + ISN + COSTO_OTROS + COMISION",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "TOTAL_PERCEPCIONES",
+      "nombre": "Total de percepciones",
+      "descripcion": "En el esquema sindical el recibo es el bruto de incidencias.",
+      "tipo": "Total",
+      "esquemas": "Sindicato",
+      "orden": 200,
+      "formula": "BRUTO_INCIDENCIAS",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "CUOTA_SINDICAL",
+      "nombre": "Cuota sindical",
+      "descripcion": "Porcentaje del parámetro SINDICATO_CUOTA_PCT sobre las percepciones.",
+      "tipo": "Deduccion",
+      "esquemas": "Sindicato",
+      "orden": 210,
+      "formula": "REDONDEAR(TOTAL_PERCEPCIONES * SINDICATO_CUOTA_PCT; 2)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "TOTAL_DEDUCCIONES",
+      "nombre": "Total de deducciones",
+      "descripcion": "Cuota sindical, otros descuentos y pensión alimenticia.",
+      "tipo": "Total",
+      "esquemas": "Sindicato",
+      "orden": 230,
+      "formula": "CUOTA_SINDICAL + OTRAS_DEDUCCIONES + PENSION_ALIMENTICIA",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "NETO_PAGADO",
+      "nombre": "Neto pagado",
+      "descripcion": "Percepciones menos deducciones; sin ISR ni IMSS.",
+      "tipo": "Total",
+      "esquemas": "Sindicato",
+      "orden": 240,
+      "formula": "TOTAL_PERCEPCIONES - TOTAL_DEDUCCIONES",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "ISN",
+      "nombre": "ISN",
+      "descripcion": "Sólo si el parámetro SINDICATO_CAUSA_ISN vale 1.",
+      "tipo": "Patronal",
+      "esquemas": "Sindicato",
+      "orden": 250,
+      "formula": "SI(SINDICATO_CAUSA_ISN = 1; TOTAL_PERCEPCIONES * ISN_TASA_ZONA; 0)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "TOTAL_NOMINA_FACTURABLE",
+      "nombre": "Base facturable",
+      "descripcion": "Percepciones del esquema sindical.",
+      "tipo": "Costo",
+      "esquemas": "Sindicato",
+      "orden": 260,
+      "formula": "TOTAL_PERCEPCIONES",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "COMISION",
+      "nombre": "Comisión",
+      "descripcion": "Sobre costo: porcentaje de base más ISN; sobre brutos: porcentaje del bruto.",
+      "tipo": "Costo",
+      "esquemas": "Sindicato",
+      "orden": 270,
+      "formula": "SI(COMISION_SOBRE_COSTO = 1; (TOTAL_NOMINA_FACTURABLE + ISN) * PORCENTAJE_COMISION; BRUTO_INCIDENCIAS * PORCENTAJE_COMISION)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "COSTO_TOTAL",
+      "nombre": "Costo total al cliente",
+      "descripcion": "Base, ISN y comisión, antes de IVA.",
+      "tipo": "Costo",
+      "esquemas": "Sindicato",
+      "orden": 280,
+      "formula": "TOTAL_NOMINA_FACTURABLE + ISN + COMISION",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "TOTAL_PERCEPCIONES",
+      "nombre": "Honorarios del período",
+      "descripcion": "Bruto de incidencias valuado con el importe pactado.",
+      "tipo": "Total",
+      "esquemas": "Honorarios",
+      "orden": 200,
+      "formula": "BRUTO_INCIDENCIAS",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "HON_BASE_TABLA",
+      "nombre": "Base para tarifa",
+      "descripcion": "Honorarios expresados en los días de la tarifa de ISR.",
+      "tipo": "Base",
+      "esquemas": "Honorarios",
+      "orden": 205,
+      "formula": "TOTAL_PERCEPCIONES * (DIAS_BASE_TABLA_ISR / DIAS_PERIODO)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "ISR_TARIFA",
+      "nombre": "ISR por tarifa",
+      "descripcion": "Cuota fija más excedente por porcentaje, sin subsidio (asimilados).",
+      "tipo": "Base",
+      "esquemas": "Honorarios",
+      "orden": 210,
+      "formula": "REDONDEAR((TABLA(\"ISR\"; HON_BASE_TABLA; \"CUOTA_FIJA\") + (HON_BASE_TABLA - TABLA(\"ISR\"; HON_BASE_TABLA; \"LIMITE_INFERIOR\")) * TABLA(\"ISR\"; HON_BASE_TABLA; \"PORCENTAJE\")) / (DIAS_BASE_TABLA_ISR / DIAS_PERIODO); 2)",
+      "visibleEnRecibo": false
+    },
+    {
+      "clave": "ISR",
+      "nombre": "ISR retenido",
+      "descripcion": "Retención manual si se capturó; tarifa si HON_ISR_MODO = 2; en otro caso la tasa fija HON_ISR_TASA_FIJA.",
+      "tipo": "Deduccion",
+      "esquemas": "Honorarios",
+      "orden": 220,
+      "formula": "SI(ISR_MANUAL_APLICA = 1; ISR_MANUAL; SI(HON_ISR_MODO = 2; ISR_TARIFA; REDONDEAR(TOTAL_PERCEPCIONES * HON_ISR_TASA_FIJA; 2)))",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "IVA_TRASLADADO",
+      "nombre": "IVA trasladado",
+      "descripcion": "IVA sobre los honorarios cuando el contrato lo traslada.",
+      "tipo": "Percepcion",
+      "esquemas": "Honorarios",
+      "orden": 230,
+      "formula": "SI(HONORARIOS_APLICA_IVA = 1; REDONDEAR(TOTAL_PERCEPCIONES * IVA_TASA; 2); 0)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "IVA_RETENIDO",
+      "nombre": "IVA retenido",
+      "descripcion": "Proporción retenida del IVA trasladado.",
+      "tipo": "Deduccion",
+      "esquemas": "Honorarios",
+      "orden": 240,
+      "formula": "SI(HONORARIOS_APLICA_IVA = 1; REDONDEAR(IVA_TRASLADADO * HON_IVA_RETENCION_PCT; 2); 0)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "TOTAL_DEDUCCIONES",
+      "nombre": "Total de deducciones",
+      "descripcion": "ISR, IVA retenido, otros descuentos y pensión alimenticia.",
+      "tipo": "Total",
+      "esquemas": "Honorarios",
+      "orden": 260,
+      "formula": "ISR + IVA_RETENIDO + OTRAS_DEDUCCIONES + PENSION_ALIMENTICIA",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "NETO_PAGADO",
+      "nombre": "Neto pagado",
+      "descripcion": "Honorarios más IVA trasladado menos deducciones.",
+      "tipo": "Total",
+      "esquemas": "Honorarios",
+      "orden": 270,
+      "formula": "TOTAL_PERCEPCIONES + IVA_TRASLADADO - TOTAL_DEDUCCIONES",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "TOTAL_NOMINA_FACTURABLE",
+      "nombre": "Base facturable",
+      "descripcion": "Honorarios del período.",
+      "tipo": "Costo",
+      "esquemas": "Honorarios",
+      "orden": 280,
+      "formula": "TOTAL_PERCEPCIONES",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "COMISION",
+      "nombre": "Comisión",
+      "descripcion": "Porcentaje sobre la base facturable o sobre el bruto.",
+      "tipo": "Costo",
+      "esquemas": "Honorarios",
+      "orden": 290,
+      "formula": "SI(COMISION_SOBRE_COSTO = 1; TOTAL_NOMINA_FACTURABLE * PORCENTAJE_COMISION; BRUTO_INCIDENCIAS * PORCENTAJE_COMISION)",
+      "visibleEnRecibo": true
+    },
+    {
+      "clave": "COSTO_TOTAL",
+      "nombre": "Costo total al cliente",
+      "descripcion": "Base y comisión, antes de IVA.",
+      "tipo": "Costo",
+      "esquemas": "Honorarios",
+      "orden": 300,
+      "formula": "TOTAL_NOMINA_FACTURABLE + COMISION",
+      "visibleEnRecibo": true
+    }
+  ],
+  "explicaciones": [
+    {
+      "esquema": "Imss",
+      "idioma": "Espanol",
+      "orden": 10,
+      "titulo": "Qué calcula este esquema",
+      "cuerpo": "Es la nómina fiscal: el trabajador está registrado ante el IMSS con un salario diario y un salario diario integrado (SDI). Sobre ese salario se determinan el ISR, las cuotas obrero-patronales, el INFONAVIT y el ISN.\nSi el contrato tiene sueldo mixto (IMSS + sindicato), el recibo fiscal se calcula con el salario registrado y la diferencia hasta el sueldo real pactado se entrega como complemento sindical. La modalidad de la razón social sólo cambia lo que se factura: en Nómina se factura el bruto completo más las cargas; en Maquila sólo el complemento.\nTodos los valores (UMA, salarios mínimos, porcentajes de cuotas, tarifas) se leen del catálogo de parámetros y tablas vigente en la fecha del período; ninguno está fijo en el código."
+    },
+    {
+      "esquema": "Imss",
+      "idioma": "Espanol",
+      "orden": 20,
+      "titulo": "1. Percepciones de incidencias (bruto)",
+      "cuerpo": "Salario diario real = sueldo real del período / días del período.\nDías trabajados = días del período − ausentismos − vacaciones − incapacidades. Si la razón social aplica faltas proporcionales, cada ausencia descuenta 7/6 de día (pérdida del séptimo día).\nSueldo = salario diario real × días trabajados. Vacaciones = días × salario diario. Prima vacacional = vacaciones × 25 %. Festivo = días × salario diario × 2. Horas extra = (salario diario / 8) × 2 o × 3 por hora. Prima dominical = salario diario × 25 % × domingos.\nBruto de incidencias = suma de percepciones (más gratificación, reembolsos, teletrabajo y finiquito) − cafetería − horas descontadas − otros descuentos − préstamo personal."
+    },
+    {
+      "esquema": "Imss",
+      "idioma": "Espanol",
+      "orden": 30,
+      "titulo": "2. Recibo fiscal e ISR",
+      "cuerpo": "Faltas fiscales = ausentismos × 7/6 + incapacidades (sólo si la razón social aplica faltas; topadas a los días del período). Días trabajados fiscales = días del período − faltas fiscales.\nSueldo fiscal = (días trabajados fiscales − vacaciones) × salario diario fiscal. Vacaciones fiscales = vacaciones × salario diario fiscal; prima vacacional = 25 %.\nBase gravable = sueldo + vacaciones + excedente de aguinaldo (aguinaldo − 30 UMA, nunca negativo) + excedente de prima vacacional (prima − 15 UMA, nunca negativo) + gratificación gravable.\nLa tarifa de ISR del catálogo se aplica directamente sobre la base semanal: impuesto determinado = cuota fija + (base − límite inferior) × porcentaje. Se resta el subsidio al empleo de la tabla semanal. Si el resultado es negativo el ISR es cero (el subsidio excedente sólo se entrega si el parámetro SUBSIDIO_ENTREGAR_EXCEDENTE vale 1).\nSi el salario diario fiscal no supera el salario mínimo de la zona, no se retiene ISR. Si se capturó una retención manual, prevalece."
+    },
+    {
+      "esquema": "Imss",
+      "idioma": "Espanol",
+      "orden": 40,
+      "titulo": "3. Cuotas obrero-patronales del IMSS",
+      "cuerpo": "Se calculan sobre el SDI con cuatro bases de días: cuotas generales (enfermedad y maternidad, prestaciones en dinero, gastos médicos) = días − incapacidades; riesgo de trabajo = días − incapacidades − ausencias; invalidez y vida, guarderías, retiro y cesantía = días del período; INFONAVIT = días del período.\nPatronal: cuota fija = UMA × 20.40 % × días generales; excedente = (SDI − 3 UMA) × 1.10 % × días generales cuando el SDI supera 3 UMA; prestaciones en dinero 0.70 %; gastos médicos 1.05 %; riesgo de trabajo × prima de riesgo; invalidez y vida 1.75 %; guarderías 1 %; retiro 2 %; cesantía y vejez según la tabla CVR por el SDI en UMAs; INFONAVIT 5 %.\nObrera: excedente 0.40 %; prestaciones en dinero 0.25 %; gastos médicos 0.375 %; invalidez y vida 0.625 %; cesantía y vejez 1.125 %.\nDescuento al trabajador: la cuota obrera total se divide entre los días cotizables y se multiplica por los días trabajados del recibo (redondeados), con redondeo a dos decimales. Es cero si el salario diario fiscal no supera el mínimo."
+    },
+    {
+      "esquema": "Imss",
+      "idioma": "Espanol",
+      "orden": 50,
+      "titulo": "4. Créditos INFONAVIT y FONACOT",
+      "cuerpo": "INFONAVIT: monto mensual = cuota fija capturada, o factor VSM × UMI diaria, o salario diario × porcentaje, según la modalidad del aviso. Bimestral = mensual × 2 + seguro de vivienda. Descuento del período = bimestral / número de descuentos del bimestre (9 en calendario semanal).\nFONACOT: si el parámetro FONACOT_APLICAR_AUTOMATICO vale 1 se descuenta mensual / semanas del mes; si vale 0 (como en el modelo de referencia) se usa el importe capturado en la incidencia."
+    },
+    {
+      "esquema": "Imss",
+      "idioma": "Espanol",
+      "orden": 60,
+      "titulo": "5. Neto y complemento sindical",
+      "cuerpo": "Total de deducciones = ISR + IMSS + FONACOT + INFONAVIT + otros descuentos del recibo + pensión alimenticia. Neto pagado = percepciones del recibo − deducciones (+ subsidio entregado, si está habilitado).\nComplemento sindical (sólo contratos con sueldo mixto): bruto de incidencias − neto − (FONACOT + INFONAVIT + otros + pensión), o bien REDONDEAR(bruto − neto − deducciones; 0) cuando la razón social absorbe el subsidio; después se resta el descuento sindical adicional y se suma el ajuste manual capturados en la incidencia."
+    },
+    {
+      "esquema": "Imss",
+      "idioma": "Espanol",
+      "orden": 70,
+      "titulo": "6. ISN y costo al cliente",
+      "cuerpo": "ISN causado = (percepciones del recibo − teletrabajo) × tasa de la zona (4 % zona A, 4.25 % zona B, o la tasa forzada por la razón social). En la factura el ISN es cero para Maquila.\nBase facturable = complemento sindical (Maquila) o bruto de incidencias (Nómina). Cargas trasladadas: ISR (cero en finiquitos, con subsidio absorbido o en Maquila), IMSS (total EM, IV, RT y GPS) e INFONAVIT (RCV e INFONAVIT), ambas cero en Maquila.\nComisión = porcentaje sobre (base + ISR + IMSS + INFONAVIT + ISN) en modalidad sobre costo, o sobre el bruto de incidencias en modalidad sobre brutos. Costo total = base + cargas + ISN + otros costos + comisión; el IVA se aplica por razón social en el resumen de facturación."
+    },
+    {
+      "esquema": "Imss",
+      "idioma": "Ingles",
+      "orden": 10,
+      "titulo": "What this scheme calculates",
+      "cuerpo": "This is the statutory payroll: the worker is registered with IMSS with a daily wage and an integrated daily wage (SDI). Income tax (ISR), employer/employee social security contributions, INFONAVIT and the state payroll tax (ISN) are determined on that wage.\nWhen the contract has a mixed salary (IMSS + union), the statutory slip uses the registered wage and the difference up to the real agreed salary is paid through the union as a complement. The entity mode only changes what is billed: Payroll bills the full gross plus charges; Maquila bills only the complement.\nEvery value (UMA, minimum wages, contribution rates, tax brackets) is read from the parameter and table catalogue in force on the period date; none is hard-coded."
+    },
+    {
+      "esquema": "Imss",
+      "idioma": "Ingles",
+      "orden": 20,
+      "titulo": "1. Gross earnings from incidents",
+      "cuerpo": "Real daily wage = real period salary / period days. Days worked = period days − absences − vacation − sick leave; if the entity applies proportional absences, each absence deducts 7/6 of a day.\nSalary = real daily wage × days worked. Vacation = days × daily wage. Vacation premium = 25 %. Holiday worked = days × daily wage × 2. Overtime = (daily wage / 8) × 2 or × 3 per hour. Sunday premium = daily wage × 25 % × Sundays.\nGross = sum of earnings (plus bonuses, reimbursements, remote-work allowance and severance) − cafeteria − deducted hours − other deductions − personal loan."
+    },
+    {
+      "esquema": "Imss",
+      "idioma": "Ingles",
+      "orden": 30,
+      "titulo": "2. Statutory slip and income tax",
+      "cuerpo": "Statutory absences = absences × 7/6 + sick leave (only if the entity applies absences; capped at period days). Statutory days worked = period days − statutory absences.\nStatutory salary = (statutory days worked − vacation) × statutory daily wage. Taxable base = salary + vacation + taxable excess of year-end bonus (bonus − 30 UMA, never negative) + taxable excess of vacation premium (premium − 15 UMA) + taxable bonus.\nThe ISR tariff is applied directly on the weekly base: determined tax = fixed fee + (base − lower limit) × rate, minus the weekly employment subsidy. A negative result yields zero tax (the excess subsidy is paid only when SUBSIDIO_ENTREGAR_EXCEDENTE = 1). No tax is withheld when the statutory daily wage does not exceed the zone minimum wage. A manually captured withholding prevails."
+    },
+    {
+      "esquema": "Imss",
+      "idioma": "Ingles",
+      "orden": 40,
+      "titulo": "3. IMSS contributions",
+      "cuerpo": "Computed on the SDI with four day bases: general branches = days − sick leave; occupational risk = days − sick leave − absences; disability and life, day care, retirement and old age = period days; INFONAVIT = period days.\nEmployer: fixed fee = UMA × 20.40 % × general days; excess = (SDI − 3 UMA) × 1.10 % when SDI exceeds 3 UMA; cash benefits 0.70 %; pensioners medical 1.05 %; occupational risk × risk premium; disability and life 1.75 %; day care 1 %; retirement 2 %; old age per the CVR table by SDI in UMAs; INFONAVIT 5 %.\nEmployee: excess 0.40 %; cash benefits 0.25 %; pensioners medical 0.375 %; disability and life 0.625 %; old age 1.125 %.\nEmployee deduction: total employee contribution / contributable days × statutory days worked (rounded), rounded to two decimals; zero when the statutory daily wage does not exceed the minimum wage."
+    },
+    {
+      "esquema": "Imss",
+      "idioma": "Ingles",
+      "orden": 50,
+      "titulo": "4. INFONAVIT and FONACOT credits",
+      "cuerpo": "INFONAVIT: monthly amount = fixed fee, or VSM factor × daily UMI, or daily wage × percentage, per the notice type. Bimonthly = monthly × 2 + housing insurance. Period deduction = bimonthly / number of deductions per bimester (9 on a weekly calendar).\nFONACOT: when FONACOT_APLICAR_AUTOMATICO = 1 the monthly amount / weeks per month is deducted; otherwise the amount captured in the incident is used."
+    },
+    {
+      "esquema": "Imss",
+      "idioma": "Ingles",
+      "orden": 60,
+      "titulo": "5. Net pay and union complement",
+      "cuerpo": "Total deductions = ISR + IMSS + FONACOT + INFONAVIT + other slip deductions + alimony. Net pay = slip earnings − deductions (+ paid subsidy when enabled).\nUnion complement (mixed-salary contracts only): gross − net − (FONACOT + INFONAVIT + other + alimony), or ROUND(gross − net − deductions, 0) when the entity absorbs the subsidy; then the additional union deduction is subtracted and the manual adjustment added."
+    },
+    {
+      "esquema": "Imss",
+      "idioma": "Ingles",
+      "orden": 70,
+      "titulo": "6. Payroll tax and client cost",
+      "cuerpo": "ISN accrued = (slip earnings − remote-work allowance) × zone rate (4 % zone A, 4.25 % zone B, or the rate forced by the entity). On the invoice ISN is zero for Maquila.\nBillable base = union complement (Maquila) or gross (Payroll). Transferred charges: ISR (zero on severance, absorbed subsidy or Maquila), IMSS and INFONAVIT (both zero on Maquila). Commission = rate on (base + charges + ISN) in cost mode, or on gross in gross mode. Total cost = base + charges + ISN + other + commission; VAT is applied per paying entity in the billing summary."
+    },
+    {
+      "esquema": "Sindicato",
+      "idioma": "Espanol",
+      "orden": 10,
+      "titulo": "Qué calcula este esquema",
+      "cuerpo": "Pago íntegro vía sindicato o cooperativa, sin retención de ISR ni cuotas del IMSS. Las percepciones se valúan igual que las incidencias del esquema IMSS (sueldo real, vacaciones, horas extra, etc.).\nDeducciones: cuota sindical (parámetro SINDICATO_CUOTA_PCT), otros descuentos del recibo y pensión alimenticia. El ISN sólo se causa si SINDICATO_CAUSA_ISN vale 1. Costo al cliente = percepciones + ISN + comisión.\nCuando un trabajador tiene además un contrato IMSS con sueldo mixto, el complemento sindical se calcula en ese contrato y no aquí."
+    },
+    {
+      "esquema": "Sindicato",
+      "idioma": "Ingles",
+      "orden": 10,
+      "titulo": "What this scheme calculates",
+      "cuerpo": "Full payment through a union or cooperative, with no income tax withholding and no IMSS contributions. Earnings are valued exactly like the incidents of the IMSS scheme.\nDeductions: union fee (SINDICATO_CUOTA_PCT), other slip deductions and alimony. Payroll tax accrues only when SINDICATO_CAUSA_ISN = 1. Client cost = earnings + ISN + commission.\nWhen the worker also has an IMSS contract with a mixed salary, the union complement is calculated on that contract, not here."
+    },
+    {
+      "esquema": "Honorarios",
+      "idioma": "Espanol",
+      "orden": 10,
+      "titulo": "Qué calcula este esquema",
+      "cuerpo": "Pago por honorarios (servicios profesionales o asimilados). Las percepciones se valúan con el importe pactado y las incidencias del período.\nISR: retención manual si se capturó; tarifa de ISR sin subsidio si HON_ISR_MODO vale 2; en otro caso la tasa fija HON_ISR_TASA_FIJA (10 % por defecto).\nIVA: si el contrato traslada IVA, se añade IVA_TASA sobre los honorarios y se retiene la proporción HON_IVA_RETENCION_PCT (dos terceras partes). Neto = honorarios + IVA trasladado − ISR − IVA retenido − otros − pensión. Costo al cliente = honorarios + comisión."
+    },
+    {
+      "esquema": "Honorarios",
+      "idioma": "Ingles",
+      "orden": 10,
+      "titulo": "What this scheme calculates",
+      "cuerpo": "Payment for professional fees. Earnings are valued with the agreed amount and the period incidents.\nIncome tax: manual withholding if captured; ISR tariff without subsidy when HON_ISR_MODO = 2; otherwise the flat rate HON_ISR_TASA_FIJA (10 % by default).\nVAT: when the contract charges VAT, IVA_TASA is added on the fees and the proportion HON_IVA_RETENCION_PCT (two thirds) is withheld. Net = fees + VAT charged − ISR − VAT withheld − other − alimony. Client cost = fees + commission."
+    }
+  ]
+}

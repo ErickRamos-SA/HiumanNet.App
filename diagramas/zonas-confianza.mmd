@@ -1,0 +1,38 @@
+%% HuimanNet V1 — Zonas de confianza y ruta del archivo
+%% El archivo NUNCA atraviesa el servidor: sube/baja directo a Blob con SAS de corta duración.
+flowchart TB
+    subgraph Z0["🌍 Internet (no confiable)"]
+        U["Usuario autenticado"]
+    end
+
+    subgraph Z1["🛡️ Borde"]
+        TLSx["TLS 1.2+ · certificado gestionado"]
+    end
+
+    subgraph Z2["⚙️ Aplicación (HTTPS-only)"]
+        APP["Blazor / API AOT<br/>① valida identidad y rol<br/>② valida tipo y tamaño<br/>③ emite SAS acotado"]
+    end
+
+    subgraph Z3["💾 Datos (acceso restringido)"]
+        BLOBx["Blob Storage<br/>cifrado SSE · versionado"]
+        SCAN["🦠 Defender for Storage<br/>escaneo al subir"]
+        CUAR["Contenedor de cuarentena"]
+        SQLx[("SQL — metadatos<br/>bitácora de acceso")]
+        KVx["Key Vault"]
+    end
+
+    U -- "HTTPS 443" --> TLSx
+    TLSx --> APP
+    APP -- "Managed Identity" --> SQLx
+    APP -- "Managed Identity" --> KVx
+    APP -- "emite SAS<br/>(minutos, un solo recurso)" --> U
+    U -- "④ sube/descarga DIRECTO<br/>con SAS · HTTPS" --> BLOBx
+    BLOBx --> SCAN
+    SCAN -- "si es malicioso" --> CUAR
+    SCAN -- "si es limpio:<br/>marca disponible" --> SQLx
+    APP -- "⑤ registra en bitácora" --> SQLx
+
+    classDef zona0 fill:#ffebee,stroke:#c62828;
+    classDef peligro fill:#fff3e0,stroke:#e65100;
+    class U zona0;
+    class SCAN,CUAR peligro;

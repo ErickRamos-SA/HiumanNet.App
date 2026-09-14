@@ -1,0 +1,174 @@
+@page "/"
+@inherits ComponenteDelPortal
+
+<PageTitle>@T["inicio.titulo"] · HuimanNet</PageTitle>
+
+<div class="encabezado-pagina">
+    <div>
+        <h1>@T.Formato("inicio.saludo", PrimerNombre)</h1>
+        <p class="subtitulo">@T["inicio.subtitulo"]</p>
+    </div>
+</div>
+
+<Mensajes Error="@MensajeDeError" />
+
+@if (_resumen is not null)
+{
+    <div class="indicadores">
+        <Indicador Icono="empleados" Tono="azul" Valor="@_resumen.EmpleadosActivos.ToString("N0", T.Cultura)" Etiqueta="@T["inicio.empleadosActivos"]" />
+        <Indicador Icono="periodos" Tono="verde" Valor="@_resumen.PeriodosAbiertos.ToString("N0", T.Cultura)" Etiqueta="@T["inicio.periodosAbiertos"]" />
+        <Indicador Icono="documentos" Tono="ambar" Valor="@_resumen.DocumentosDisponibles.ToString("N0", T.Cultura)" Etiqueta="@T["inicio.documentosDisponibles"]" />
+        <Indicador Icono="cotejo" Tono="violeta" Valor="@_resumen.CorridasPorCotejar.ToString("N0", T.Cultura)" Etiqueta="@T["inicio.corridasPorCotejar"]" />
+    </div>
+
+    <div class="rejilla-inicio">
+        <div>
+            <section class="tarjeta">
+                <header class="tarjeta-cabecera">
+                    <h2>@T["inicio.pendientes"] <span class="tenue">(@_resumen.Pendientes.Count)</span></h2>
+                </header>
+
+                @if (_resumen.Pendientes.Count == 0)
+                {
+                    <div class="vacio">
+                        <Icono Nombre="check" Tamano="32" />
+                        <p>@T["inicio.sinPendientes"]</p>
+                    </div>
+                }
+                else
+                {
+                    <ul class="lista-tareas">
+                        @foreach (PendienteDto pendiente in _resumen.Pendientes)
+                        {
+                            <li>
+                                <a href="@pendiente.Ruta">
+                                    <span class="tarea-icono"><Icono Nombre="@IconoDe(pendiente.Clave)" /></span>
+                                    <span class="tarea-texto">
+                                        <strong>@T[pendiente.Clave]</strong>
+                                        <span class="tenue">@pendiente.Detalle</span>
+                                    </span>
+                                    <Icono Nombre="derecha" />
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+
+            @if (_corridas.Count > 0)
+            {
+                <section class="tarjeta tarjeta-tabla">
+                    <header class="tarjeta-cabecera">
+                        <h2>@T["inicio.corridasRecientes"]</h2>
+                        <a class="enlace-ver" href="nomina">@T["comun.verTodo"] <Icono Nombre="derecha" Tamano="16" /></a>
+                    </header>
+                    <div class="tabla-contenedor">
+                        <table class="tabla">
+                            <thead>
+                                <tr>
+                                    <th>@T["nomina.corrida"]</th>
+                                    <th>@T["comun.periodo"]</th>
+                                    <th>@T["comun.estado"]</th>
+                                    <th class="numero">@T["nomina.trabajadores"]</th>
+                                    <th class="numero">@T["nomina.costoTotal"]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (CorridaDeNominaDto corrida in _corridas)
+                                {
+                                    <tr class="fila-seleccionable" @onclick="@(() => Navegacion.NavigateTo($"nomina/corridas/{corrida.Id}?empresaId={corrida.EmpresaId}"))">
+                                        <td>#@corrida.Numero</td>
+                                        <td>@corrida.PeriodoClave · @corrida.PeriodoDescripcion</td>
+                                        <td><EtiquetaDeCorrida Estado="corrida.Estado" /></td>
+                                        <td class="numero">@corrida.Trabajadores.ToString("N0", T.Cultura)</td>
+                                        <td class="numero">@Moneda(corrida.CostoTotal)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            }
+        </div>
+
+        <section>
+            <h2 class="titulo-seccion">@T["inicio.accesosRapidos"]</h2>
+            <div class="accesos">
+                @foreach ((string Ruta, string Icono, string Clave) acceso in Accesos())
+                {
+                    <a class="acceso-rapido" href="@acceso.Ruta">
+                        <span class="acceso-icono"><Icono Nombre="@acceso.Icono" Tamano="22" /></span>
+                        <span>@T[acceso.Clave]</span>
+                    </a>
+                }
+            </div>
+        </section>
+    </div>
+}
+else if (!Inicializado)
+{
+    <div class="cargando"><span class="giro"></span> @T["comun.cargando"]</div>
+}
+
+@code {
+    private ResumenDeInicioDto? _resumen;
+    private IReadOnlyList<CorridaDeNominaDto> _corridas = [];
+
+    /// <inheritdoc/>
+    protected override bool DependeDeEmpresa => true;
+
+    private string PrimerNombre => ContextoDeUsuario.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
+
+    /// <inheritdoc/>
+    protected override async Task CargarDatosAsync()
+    {
+        _resumen = await Casos.ConsultarAsync<ObtenerResumenDeInicioQuery, ResumenDeInicioDto>(new ObtenerResumenDeInicioQuery(ContextoDeUsuario.EsTransversal ? null : EmpresaDeConsulta));
+
+        _corridas = ContextoDeUsuario.Puede(AccionDelSistema.ConsultarNomina)
+            ? await Casos.UsarAsync<IConsultasNomina, IReadOnlyList<CorridaDeNominaDto>>(
+                c => c.ListarRecientesAsync(EmpresaDeConsulta ?? ContextoDeUsuario.EmpresaId, 5))
+            : [];
+    }
+
+    private static string IconoDe(string clave) => clave switch
+    {
+        "pendiente.subirDocumentos" => "subir",
+        "pendiente.descargarResultados" => "descargar",
+        "pendiente.procesarPeriodo" => "bandeja",
+        "pendiente.cotejarCorrida" => "cotejo",
+        _ => "check",
+    };
+
+    private IEnumerable<(string Ruta, string Icono, string Clave)> Accesos()
+    {
+        if (ContextoDeUsuario.Puede(AccionDelSistema.CargarDocumentos) || ContextoDeUsuario.Puede(AccionDelSistema.DescargarDocumentos))
+        {
+            yield return ("periodos", "documentos", "inicio.accesoDocumentos");
+        }
+
+        if (ContextoDeUsuario.Puede(AccionDelSistema.CapturarIncidencias))
+        {
+            yield return ("incidencias", "incidencias", "inicio.accesoIncidencias");
+        }
+
+        if (ContextoDeUsuario.Puede(AccionDelSistema.CalcularNomina) || ContextoDeUsuario.Puede(AccionDelSistema.ConsultarNomina))
+        {
+            yield return ("nomina", "calcular", "inicio.accesoNomina");
+        }
+
+        if (ContextoDeUsuario.Puede(AccionDelSistema.AdministrarEmpleados))
+        {
+            yield return ("empleados", "empleados", "inicio.accesoEmpleados");
+        }
+
+        if (ContextoDeUsuario.Puede(AccionDelSistema.ConsultarExplicacionDeCalculos))
+        {
+            yield return ("explicacion", "explicacion", "inicio.accesoExplicacion");
+        }
+
+        if (ContextoDeUsuario.Puede(AccionDelSistema.AdministrarUsuarios))
+        {
+            yield return ("usuarios", "usuarios", "inicio.accesoUsuarios");
+        }
+    }
+}

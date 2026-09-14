@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Los conceptos (decenas por esquema) van en un CollectionView virtualizado:
+  sólo se crean las tarjetas visibles y se reciclan al desplazarse. Con un
+  BindableLayout dentro de un ScrollView se construían todas de golpe en el
+  hilo de la interfaz y Android llegaba a mostrar "no responde".
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HuimanNet.App.ViewModels"
+             xmlns:loc="clr-namespace:HuimanNet.App.Localizacion"
+             xmlns:cat="clr-namespace:HuimanNet.Contracts.Catalogos;assembly=HuimanNet.Contracts"
+             x:Class="HuimanNet.App.Views.ExplicacionPage"
+             x:DataType="vm:ExplicacionViewModel"
+             Title="{Binding Titulo}">
+
+    <CollectionView ItemsSource="{Binding Conceptos}" SelectionMode="None" Margin="16,0">
+
+        <CollectionView.Header>
+            <VerticalStackLayout Spacing="12" Padding="0,16,0,8">
+
+                <Label Text="{loc:T Clave=explicacion.subtitulo}" Style="{StaticResource Tenue}" />
+                <Picker ItemsSource="{Binding NombresDeEsquemas}" SelectedIndex="{Binding IndiceDeEsquema}"
+                        Title="{loc:T Clave=contratos.esquema}" />
+
+                <ActivityIndicator IsRunning="{Binding EstaOcupado}" IsVisible="{Binding EstaOcupado}" Color="{StaticResource Primario}" />
+
+                <Border Style="{StaticResource Tarjeta}" IsVisible="{Binding TieneError}">
+                    <Label Text="{Binding MensajeDeError}" TextColor="{StaticResource Error}" />
+                </Border>
+                <Label Text="{Binding AvisoDeCatalogo}" TextColor="{StaticResource Aviso}"
+                       IsVisible="{Binding AvisoDeCatalogo, Converter={StaticResource NoNulo}}" />
+
+                <!-- Pocas secciones por esquema e idioma: no necesitan virtualización. -->
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Secciones}" Spacing="10">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="cat:ExplicacionDeCalculoDto">
+                            <Border Style="{StaticResource Tarjeta}">
+                                <VerticalStackLayout Spacing="6">
+                                    <Label Text="{Binding Titulo}" Style="{StaticResource Subtitulo}" />
+                                    <Label Text="{Binding Cuerpo}" LineBreakMode="WordWrap" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <Label Text="{loc:T Clave=explicacion.conceptos}" Style="{StaticResource Subtitulo}" />
+                <Label Text="{loc:T Clave=explicacion.conceptosAyuda}" Style="{StaticResource Tenue}" FontSize="12" />
+            </VerticalStackLayout>
+        </CollectionView.Header>
+
+        <CollectionView.ItemTemplate>
+            <DataTemplate x:DataType="cat:ConceptoDeNominaDto">
+                <Border Style="{StaticResource Tarjeta}" Padding="10" Margin="0,0,0,8">
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
+                        <Label Text="{Binding Nombre}" FontAttributes="Bold" />
+                        <Label Grid.Column="1" Text="{Binding Tipo, Converter={StaticResource Enumerado}}"
+                               FontSize="12" TextColor="{StaticResource Primario}" />
+                        <Label Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Descripcion}"
+                               Style="{StaticResource Tenue}" FontSize="13" LineBreakMode="WordWrap" />
+                        <Label Grid.Row="2" Grid.ColumnSpan="2" FontFamily="monospace" FontSize="11" LineBreakMode="WordWrap">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="{Binding Clave}" FontAttributes="Bold" />
+                                    <Span Text=" = " />
+                                    <Span Text="{Binding Formula}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                    </Grid>
+                </Border>
+            </DataTemplate>
+        </CollectionView.ItemTemplate>
+
+    </CollectionView>
+
+</ContentPage>
