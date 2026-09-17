@@ -22,7 +22,11 @@ namespace HuimanNet.Infrastructure.Persistence;
 /// </remarks>
 public sealed class InicializadorDeBaseDeDatos
 {
+    /// <summary>Prefijo de los scripts SQL versionados incrustados en el ensamblado.</summary>
     private const string PrefijoDeRecursos = "HuimanNet.Infrastructure.Persistence.Scripts.";
+
+    /// <summary>Prefijo de los procedimientos almacenados incrustados en el ensamblado.</summary>
+    private const string PrefijoDeProcedimientos = "HuimanNet.Infrastructure.Persistence.Procedimientos.";
 
     private readonly ISqlConnectionFactory _factory;
     private readonly ILogger<InicializadorDeBaseDeDatos> _logger;
@@ -58,7 +62,7 @@ public sealed class InicializadorDeBaseDeDatos
         HashSet<string> aplicados = await ObtenerAplicadosAsync(conexion, cancellationToken);
         int ejecutados = 0;
 
-        foreach (string nombre in ObtenerNombresDeScripts())
+        foreach (string nombre in ObtenerNombresDeRecursos(PrefijoDeRecursos))
         {
             if (aplicados.Contains(nombre))
             {
@@ -67,7 +71,7 @@ public sealed class InicializadorDeBaseDeDatos
 
             _logger.LogInformation("Aplicando script de base de datos {Script}.", nombre);
 
-            foreach (string lote in DividirEnLotes(LeerScript(nombre)))
+            foreach (string lote in DividirEnLotes(LeerRecurso(PrefijoDeRecursos, nombre)))
             {
                 await using SqlCommand comando = conexion.CreateCommand();
                 comando.CommandText = lote;
@@ -84,7 +88,57 @@ public sealed class InicializadorDeBaseDeDatos
             _logger.LogInformation("La base de datos ya estaba al día: no había scripts pendientes.");
         }
 
+        await AplicarProcedimientosAsync(conexion, cancellationToken);
+
         return ejecutados;
+    }
+
+    /// <summary>
+    /// Vuelve a crear todos los procedimientos almacenados incrustados.
+    /// </summary>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>El número de archivos de procedimientos aplicados.</returns>
+    /// <remarks>
+    /// A diferencia de los scripts numerados, los procedimientos no se anotan en
+    /// el historial: son <c>CREATE OR ALTER</c> y se aplican enteros cada vez,
+    /// de modo que la base de datos siempre tiene la versión que espera el
+    /// código que la está usando. Aplicarlos exige permisos de DDL, igual que
+    /// los scripts.
+    /// </remarks>
+    /// <exception cref="SqlException">Se propaga si algún lote falla.</exception>
+    public async Task<int> AplicarProcedimientosAsync(CancellationToken cancellationToken = default)
+    {
+        await using SqlConnection conexion = _factory.Crear();
+        await conexion.OpenAsync(cancellationToken);
+
+        return await AplicarProcedimientosAsync(conexion, cancellationToken);
+    }
+
+    /// <summary>Aplica los procedimientos sobre una conexión ya abierta.</summary>
+    /// <param name="conexion">Conexión abierta.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>El número de archivos de procedimientos aplicados.</returns>
+    private async Task<int> AplicarProcedimientosAsync(
+        SqlConnection conexion, CancellationToken cancellationToken)
+    {
+        int aplicados = 0;
+
+        foreach (string nombre in ObtenerNombresDeRecursos(PrefijoDeProcedimientos))
+        {
+            foreach (string lote in DividirEnLotes(LeerRecurso(PrefijoDeProcedimientos, nombre)))
+            {
+                await using SqlCommand comando = conexion.CreateCommand();
+                comando.CommandText = lote;
+                comando.CommandTimeout = _factory.TiempoDeEsperaComandoSegundos;
+                await comando.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            aplicados++;
+        }
+
+        _logger.LogInformation("Procedimientos almacenados aplicados: {Archivos} archivos.", aplicados);
+
+        return aplicados;
     }
 
     /// <summary>
@@ -148,21 +202,29 @@ public sealed class InicializadorDeBaseDeDatos
         return creada;
     }
 
-    private static IEnumerable<string> ObtenerNombresDeScripts()
+    /// <summary>Lista los archivos SQL incrustados bajo un prefijo.</summary>
+    /// <param name="prefijo">Prefijo del recurso: scripts o procedimientos.</param>
+    /// <returns>Los nombres sin prefijo, en orden ordinal, que es el orden de aplicación.</returns>
+    private static IEnumerable<string> ObtenerNombresDeRecursos(string prefijo)
         => typeof(InicializadorDeBaseDeDatos).Assembly
             .GetManifestResourceNames()
-            .Where(static nombre =>
-                nombre.StartsWith(PrefijoDeRecursos, StringComparison.Ordinal)
+            .Where(nombre =>
+                nombre.StartsWith(prefijo, StringComparison.Ordinal)
                 && nombre.EndsWith(".sql", StringComparison.OrdinalIgnoreCase))
-            .Select(static nombre => nombre[PrefijoDeRecursos.Length..])
+            .Select(nombre => nombre[prefijo.Length..])
             .OrderBy(static nombre => nombre, StringComparer.Ordinal);
 
-    private static string LeerScript(string nombre)
+    /// <summary>Lee el contenido de un archivo SQL incrustado.</summary>
+    /// <param name="prefijo">Prefijo del recurso: scripts o procedimientos.</param>
+    /// <param name="nombre">Nombre del archivo, sin prefijo.</param>
+    /// <returns>El texto del archivo.</returns>
+    /// <exception cref="InvalidOperationException">Se lanza si el recurso no existe.</exception>
+    private static string LeerRecurso(string prefijo, string nombre)
     {
         Assembly ensamblado = typeof(InicializadorDeBaseDeDatos).Assembly;
 
-        using Stream flujo = ensamblado.GetManifestResourceStream(PrefijoDeRecursos + nombre)
-            ?? throw new InvalidOperationException($"No se encontró el script incrustado '{nombre}'.");
+        using Stream flujo = ensamblado.GetManifestResourceStream(prefijo + nombre)
+            ?? throw new InvalidOperationException($"No se encontró el recurso incrustado '{nombre}'.");
 
         using var lector = new StreamReader(flujo);
         return lector.ReadToEnd();
@@ -183,6 +245,10 @@ public sealed class InicializadorDeBaseDeDatos
             .Select(static lote => lote.Trim())
             .Where(static lote => lote.Length > 0);
 
+    /// <summary>Crea la tabla que anota los scripts aplicados, si no existe.</summary>
+    /// <param name="conexion">Conexión abierta.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Tarea que finaliza cuando la tabla existe.</returns>
     private async Task GarantizarTablaDeHistorialAsync(
         SqlConnection conexion, CancellationToken cancellationToken)
     {
@@ -204,6 +270,10 @@ public sealed class InicializadorDeBaseDeDatos
         await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    /// <summary>Lee los scripts ya aplicados.</summary>
+    /// <param name="conexion">Conexión abierta.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Los nombres de los scripts aplicados.</returns>
     private async Task<HashSet<string>> ObtenerAplicadosAsync(
         SqlConnection conexion, CancellationToken cancellationToken)
     {
@@ -223,6 +293,11 @@ public sealed class InicializadorDeBaseDeDatos
         return aplicados;
     }
 
+    /// <summary>Anota un script como aplicado.</summary>
+    /// <param name="conexion">Conexión abierta.</param>
+    /// <param name="nombre">Nombre del script.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Tarea que finaliza al anotarlo.</returns>
     private async Task AnotarAplicadoAsync(
         SqlConnection conexion, string nombre, CancellationToken cancellationToken)
     {

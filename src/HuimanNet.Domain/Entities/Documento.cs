@@ -17,6 +17,11 @@ namespace HuimanNet.Domain.Entities;
 /// </remarks>
 public sealed class Documento
 {
+    /// <summary>
+    /// Inicializa una instancia con valores ya validados. Sólo la usan las
+    /// fábricas y <see cref="Rehidratar"/>.
+    /// </summary>
+    /// <inheritdoc cref="Rehidratar" path="/param"/>
     private Documento(
         Guid id,
         Guid empresaId,
@@ -295,39 +300,6 @@ public sealed class Documento
     }
 
     /// <summary>
-    /// Descarta una carga que nunca llegó a completarse.
-    /// </summary>
-    /// <exception cref="DocumentoInvalidoException">
-    /// Se lanza si el documento ya superó el estado <see cref="EstadoDocumento.Pendiente"/>.
-    /// </exception>
-    public void Descartar()
-    {
-        if (Estado != EstadoDocumento.Pendiente)
-        {
-            throw new DocumentoInvalidoException(
-                $"Sólo puede descartarse un documento pendiente; su estado es '{Estado}'.");
-        }
-
-        Estado = EstadoDocumento.Descartado;
-    }
-
-    /// <summary>
-    /// Comprueba que el documento pertenece a la empresa indicada.
-    /// </summary>
-    /// <param name="empresaId">Empresa del usuario solicitante, tomada del token.</param>
-    /// <exception cref="AccesoNoAutorizadoException">
-    /// Se lanza si el documento pertenece a otra empresa.
-    /// </exception>
-    public void GarantizarPertenenciaA(Guid empresaId)
-    {
-        if (EmpresaId != empresaId)
-        {
-            throw new AccesoNoAutorizadoException(
-                $"El documento '{Id}' pertenece a la empresa '{EmpresaId}' y se solicitó desde '{empresaId}'.");
-        }
-    }
-
-    /// <summary>
     /// Comprueba que el documento está en condiciones de descargarse.
     /// </summary>
     /// <exception cref="DocumentoInvalidoException">
@@ -342,6 +314,16 @@ public sealed class Documento
         }
     }
 
+    /// <summary>
+    /// Genera la ruta del blob con identificadores del sistema, nunca con el
+    /// nombre que sube el usuario.
+    /// </summary>
+    /// <param name="empresaId">Empresa propietaria; es el primer segmento, para aislar por empresa.</param>
+    /// <param name="periodoId">Período de carga.</param>
+    /// <param name="tipo">Tipo de documento.</param>
+    /// <param name="documentoId">Identificador del documento.</param>
+    /// <param name="extension">Extensión del archivo original, con el punto.</param>
+    /// <returns>La ruta relativa dentro del contenedor.</returns>
     private static string ConstruirRutaBlob(
         Guid empresaId, Guid periodoId, TipoDocumento tipo, Guid documentoId, string extension)
         => $"{empresaId:N}/{periodoId:N}/{tipo.ToString().ToLowerInvariant()}/{documentoId:N}{extension}";

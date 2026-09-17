@@ -70,9 +70,13 @@ public static class DocumentosEndpoints
         return app;
     }
 
+    /// <summary>Reserva un documento y devuelve la URL firmada para subirlo.</summary>
+    /// <param name="peticion">Período, tipo, nombre y tamaño del archivo.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>201 con la URL de carga y la ruta para confirmarla.</returns>
     private static async Task<IResult> SolicitarCargaAsync(
         SolicitarCargaRequest peticion,
-        IValidadorDeEntrada<SolicitarCargaDocumentoCommand> validador,
         IManejadorDeComando<SolicitarCargaDocumentoCommand, SolicitarCargaResponse> manejador,
         CancellationToken cancellationToken)
     {
@@ -83,29 +87,35 @@ public static class DocumentosEndpoints
             peticion.TamanoBytes,
             peticion.EmpresaId);
 
-        validador.Validar(comando).GarantizarValido();
-
         SolicitarCargaResponse respuesta = await manejador.EjecutarAsync(comando, cancellationToken);
 
         return TypedResults.Created(RutasApi.ConfirmarCarga(respuesta.DocumentoId), respuesta);
     }
 
+    /// <summary>Confirma que el archivo se subió y registra su huella.</summary>
+    /// <param name="documentoId">Documento reservado.</param>
+    /// <param name="peticion">Huella SHA-256 calculada por el cliente.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>200 con el documento.</returns>
     private static async Task<IResult> ConfirmarCargaAsync(
         Guid documentoId,
         ConfirmarCargaRequest peticion,
-        IValidadorDeEntrada<ConfirmarCargaCommand> validador,
         IManejadorDeComando<ConfirmarCargaCommand, DocumentoDto> manejador,
         CancellationToken cancellationToken)
     {
         var comando = new ConfirmarCargaCommand(documentoId, peticion.HuellaSha256);
-
-        validador.Validar(comando).GarantizarValido();
 
         DocumentoDto documento = await manejador.EjecutarAsync(comando, cancellationToken);
 
         return TypedResults.Ok(documento);
     }
 
+    /// <summary>Emite una URL firmada de corta duración para descargar un documento.</summary>
+    /// <param name="documentoId">Documento solicitado.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>200 con el enlace.</returns>
     private static async Task<IResult> ObtenerEnlaceDescargaAsync(
         Guid documentoId,
         IManejadorDeConsulta<ObtenerEnlaceDescargaQuery, EnlaceDescargaResponse> manejador,
@@ -117,6 +127,11 @@ public static class DocumentosEndpoints
         return TypedResults.Ok(enlace);
     }
 
+    /// <summary>Registra el veredicto del escaneo de malware de un blob.</summary>
+    /// <param name="peticion">Ruta del blob, veredicto y motivo.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>202 si se registró.</returns>
     private static async Task<IResult> RegistrarResultadoEscaneoAsync(
         RegistrarResultadoEscaneoRequest peticion,
         IManejadorDeComando<RegistrarResultadoEscaneoCommand> manejador,
@@ -127,49 +142,5 @@ public static class DocumentosEndpoints
             cancellationToken);
 
         return TypedResults.Accepted((string?)null);
-    }
-}
-
-/// <summary>
-/// Endpoints anidados en el recurso <c>periodos</c> que devuelven documentos.
-/// </summary>
-public static class DocumentosDePeriodoEndpoints
-{
-    /// <summary>
-    /// Registra el listado de documentos de un período.
-    /// </summary>
-    /// <param name="app">Constructor de rutas de la aplicación.</param>
-    /// <returns>El mismo constructor, para encadenar llamadas.</returns>
-    /// <exception cref="ArgumentNullException">
-    /// Se lanza si <paramref name="app"/> es <c>null</c>.
-    /// </exception>
-    public static IEndpointRouteBuilder MapearDocumentosDePeriodo(this IEndpointRouteBuilder app)
-    {
-        ArgumentNullException.ThrowIfNull(app);
-
-        app.MapGet(RutasApi.Periodos + "/{periodoId:guid}/documentos", ListarAsync)
-            .WithTags("Documentos")
-            .WithName("ListarDocumentosDePeriodo")
-            .WithSummary("Lista los documentos de un período.")
-            .RequireAuthorization(PoliticasDeAutorizacion.UsuarioDelPortal)
-            .Produces<IReadOnlyList<DocumentoDto>>()
-            .ProducesProblem(StatusCodes.Status404NotFound);
-
-        return app;
-    }
-
-    private static async Task<IResult> ListarAsync(
-        Guid periodoId,
-        TipoDocumento? tipo,
-        bool? soloDescargables,
-        Guid? empresaId,
-        IManejadorDeConsulta<ListarDocumentosPorPeriodoQuery, IReadOnlyList<DocumentoDto>> manejador,
-        CancellationToken cancellationToken)
-    {
-        IReadOnlyList<DocumentoDto> documentos = await manejador.EjecutarAsync(
-            new ListarDocumentosPorPeriodoQuery(periodoId, tipo, soloDescargables ?? false, empresaId),
-            cancellationToken);
-
-        return TypedResults.Ok(documentos);
     }
 }

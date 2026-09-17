@@ -55,6 +55,14 @@ public sealed class LectorDeArchivosTabulares : ILectorDeArchivosTabulares
         return ConstruirTabla(filas, filaDeEncabezados);
     }
 
+    /// <summary>
+    /// Separa los encabezados de los datos y da a todas las filas el ancho de
+    /// los encabezados.
+    /// </summary>
+    /// <param name="filas">Filas leídas del archivo.</param>
+    /// <param name="filaDeEncabezados">Número de fila (desde 1) de los encabezados; se detecta si es <c>null</c>.</param>
+    /// <returns>La tabla, con el número de fila del primer dato para los mensajes de error.</returns>
+    /// <exception cref="DocumentoInvalidoException">Se lanza si el archivo no tiene filas.</exception>
     private static TablaLeida ConstruirTabla(List<string?[]> filas, int? filaDeEncabezados)
     {
         if (filas.Count == 0)
@@ -84,6 +92,8 @@ public sealed class LectorDeArchivosTabulares : ILectorDeArchivosTabulares
     /// entre las primeras filas: las hojas de nómina suelen tener títulos y
     /// notas antes de la fila de columnas.
     /// </summary>
+    /// <param name="filas">Filas leídas del archivo.</param>
+    /// <returns>El índice, base cero, de la fila de encabezados.</returns>
     private static int DetectarEncabezado(List<string?[]> filas)
     {
         int mejor = 0;
@@ -114,6 +124,12 @@ public sealed class LectorDeArchivosTabulares : ILectorDeArchivosTabulares
 
     // ---------------------------------------------------------------- CSV ----
 
+    /// <summary>
+    /// Lee un CSV en UTF-8 (o Latin-1 si no es UTF-8 válido), con comillas
+    /// dobles y el separador que se detecte en la primera línea.
+    /// </summary>
+    /// <param name="contenido">Bytes del archivo.</param>
+    /// <returns>Las filas, hasta <see cref="FilasMaximas"/>.</returns>
     private static List<string?[]> LeerCsv(ReadOnlyMemory<byte> contenido)
     {
         string texto;
@@ -206,6 +222,9 @@ public sealed class LectorDeArchivosTabulares : ILectorDeArchivosTabulares
         return filas;
     }
 
+    /// <summary>Elige el separador más frecuente en la primera línea.</summary>
+    /// <param name="texto">Contenido del CSV.</param>
+    /// <returns>Tabulador, punto y coma o coma; coma si hay empate.</returns>
     private static char DetectarSeparador(string texto)
     {
         int fin = texto.IndexOf('\n', StringComparison.Ordinal);
@@ -220,6 +239,11 @@ public sealed class LectorDeArchivosTabulares : ILectorDeArchivosTabulares
 
     // --------------------------------------------------------------- XLSX ----
 
+    /// <summary>Lee la hoja elegida de un libro XLSX sin dependencias externas.</summary>
+    /// <param name="contenido">Bytes del archivo.</param>
+    /// <param name="hojasPreferidas">Nombres de hoja a buscar en orden; si ninguno existe, la primera visible.</param>
+    /// <returns>Las filas de la hoja, hasta <see cref="FilasMaximas"/>.</returns>
+    /// <exception cref="DocumentoInvalidoException">Se lanza si el libro está dañado o su XML no es válido.</exception>
     private static List<string?[]> LeerXlsx(ReadOnlyMemory<byte> contenido, IReadOnlyList<string>? hojasPreferidas)
     {
         try
@@ -246,6 +270,12 @@ public sealed class LectorDeArchivosTabulares : ILectorDeArchivosTabulares
         }
     }
 
+    /// <summary>
+    /// Lee la tabla de cadenas compartidas del libro, a la que remiten las
+    /// celdas de texto; omite las guías fonéticas.
+    /// </summary>
+    /// <param name="zip">Libro abierto.</param>
+    /// <returns>Las cadenas por índice; vacía si el libro no tiene tabla.</returns>
     private static List<string> LeerCadenasCompartidas(ZipArchive zip)
     {
         var cadenas = new List<string>();
@@ -297,6 +327,14 @@ public sealed class LectorDeArchivosTabulares : ILectorDeArchivosTabulares
         return cadenas;
     }
 
+    /// <summary>
+    /// Elige la hoja a leer: la primera de las preferidas que exista, si no la
+    /// primera visible y, en último caso, la primera del libro.
+    /// </summary>
+    /// <param name="zip">Libro abierto.</param>
+    /// <param name="hojasPreferidas">Nombres de hoja a buscar en orden.</param>
+    /// <returns>La ruta de la hoja dentro del paquete.</returns>
+    /// <exception cref="DocumentoInvalidoException">Se lanza si el paquete no tiene índice de libro.</exception>
     private static string ElegirHoja(ZipArchive zip, IReadOnlyList<string>? hojasPreferidas)
     {
         var relaciones = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -376,6 +414,13 @@ public sealed class LectorDeArchivosTabulares : ILectorDeArchivosTabulares
         return hojas[0].Ruta;
     }
 
+    /// <summary>
+    /// Lee las filas de una hoja; rellena las filas vacías para que los números
+    /// coincidan con los de Excel.
+    /// </summary>
+    /// <param name="hoja">XML de la hoja.</param>
+    /// <param name="compartidas">Cadenas compartidas del libro.</param>
+    /// <returns>Las filas, hasta <see cref="FilasMaximas"/>.</returns>
     private static List<string?[]> LeerHoja(Stream hoja, List<string> compartidas)
     {
         var filas = new List<string?[]>();
@@ -421,6 +466,13 @@ public sealed class LectorDeArchivosTabulares : ILectorDeArchivosTabulares
         return filas;
     }
 
+    /// <summary>
+    /// Lee las celdas de la fila actual en su columna; las omitidas por Excel
+    /// quedan en <c>null</c>.
+    /// </summary>
+    /// <param name="xml">Lector situado en el elemento <c>row</c>.</param>
+    /// <param name="celdas">Lista que se llena con los valores de la fila.</param>
+    /// <param name="compartidas">Cadenas compartidas del libro.</param>
     private static void LeerFila(XmlReader xml, List<string?> celdas, List<string> compartidas)
     {
         int profundidad = xml.Depth;
@@ -452,6 +504,11 @@ public sealed class LectorDeArchivosTabulares : ILectorDeArchivosTabulares
         }
     }
 
+    /// <summary>Lee el valor de la celda actual según su tipo.</summary>
+    /// <param name="xml">Lector situado en el elemento <c>c</c>.</param>
+    /// <param name="tipo">Atributo <c>t</c> de la celda: cadena compartida, en línea, booleano o error.</param>
+    /// <param name="compartidas">Cadenas compartidas del libro.</param>
+    /// <returns>El texto de la celda; <c>null</c> si está vacía o tiene un error.</returns>
     private static string? LeerValorDeCelda(XmlReader xml, string? tipo, List<string> compartidas)
     {
         int profundidad = xml.Depth;
@@ -496,6 +553,9 @@ public sealed class LectorDeArchivosTabulares : ILectorDeArchivosTabulares
     /// <summary>
     /// Convierte una referencia de celda (<c>AB12</c>) en índice de columna base cero.
     /// </summary>
+    /// <param name="referencia">Atributo <c>r</c> de la celda.</param>
+    /// <param name="siguiente">Columna que corresponde si la celda no trae referencia.</param>
+    /// <returns>El índice de la columna.</returns>
     private static int IndiceDeColumna(string? referencia, int siguiente)
     {
         if (string.IsNullOrEmpty(referencia))

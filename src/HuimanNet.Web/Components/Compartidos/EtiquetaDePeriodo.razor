@@ -8,6 +8,8 @@
     [Parameter]
     public EstadoPeriodo Estado { get; set; }
 
+    /// <summary>Obtiene la clase CSS del color del estado.</summary>
+    /// <value>Vacía para un período cerrado.</value>
     private string Clase => Estado switch
     {
         EstadoPeriodo.Abierto => "etiqueta-info",

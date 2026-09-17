@@ -139,22 +139,27 @@ else
     /// <summary>Sólo nómina y administración calculan; el resto consulta en solo lectura.</summary>
     private bool PuedeCalcular => ContextoDeUsuario.Puede(AccionDelSistema.CalcularNomina);
 
+    /// <summary>Obtiene el período elegido.</summary>
+    /// <value><c>null</c> si no hay períodos.</value>
     private PeriodoDto? PeriodoActual => _periodos.FirstOrDefault(p => p.Id == _periodoId);
 
     /// <summary>Si el período ya tiene corridas, calcular de nuevo es un reproceso.</summary>
     private bool EsReproceso => _corridas.Count > 0;
 
-    private int SiguienteNumero => _corridas.Count == 0 ? 1 : _corridas.Max(c => c.Numero) + 1;
+    /// <summary>Obtiene el número que tendrá la próxima corrida.</summary>
+    /// <value>Uno más que la última; 1 si no hay corridas.</value>
+    private int SiguienteNumero =>_corridas.Count == 0 ? 1 : _corridas.Max(c => c.Numero) + 1;
 
     /// <summary>
     /// Motivo por el que el período elegido no admite cálculo, o <c>null</c>.
-    /// Replica las reglas del servidor para explicarlas antes de pulsar.
+    /// Usa la regla del dominio para explicarla antes de pulsar; el servidor la
+    /// vuelve a aplicar al calcular.
     /// </summary>
     private string? MotivoSinCalculo => PeriodoActual switch
     {
         null => null,
-        { Estado: EstadoPeriodo.Abierto } => T["nomina.requiereArchivos"],
-        { Estado: EstadoPeriodo.Cerrado } => T["nomina.periodoCerrado"],
+        { Estado: var estado } when !estado.AdmiteCalculo()
+            => estado == EstadoPeriodo.Cerrado ? T["nomina.periodoCerrado"] : T["nomina.requiereArchivos"],
         _ => _corridas.FirstOrDefault(c => c.Estado == EstadoDeCorrida.Aprobada) is { } aprobada
             ? T.Formato("nomina.yaAprobada", aprobada.Numero)
             : null,
@@ -189,11 +194,16 @@ else
         return CargarDatosAsync();
     }
 
+    /// <summary>Carga las corridas del período elegido.</summary>
+    /// <returns>Tarea que finaliza al cargarlas.</returns>
     private async Task CargarCorridasAsync()
         => _corridas = _periodoId is { } periodoId
             ? await Casos.ConsultarAsync<ListarCorridasQuery, IReadOnlyList<CorridaDeNominaDto>>(new ListarCorridasQuery(periodoId, EmpresaDeConsulta))
             : [];
 
+    /// <summary>Cambia el período elegido y carga sus corridas.</summary>
+    /// <param name="argumentos">Evento del selector de período.</param>
+    /// <returns>Tarea que finaliza al cargar las corridas.</returns>
     private Task CambiarPeriodoAsync(ChangeEventArgs argumentos)
     {
         _periodoId = Guid.TryParse(argumentos.Value?.ToString(), out Guid id) ? id : null;
@@ -201,6 +211,8 @@ else
         return EjecutarAsync(CargarCorridasAsync);
     }
 
+    /// <summary>Calcula, o pide confirmación si ya hay corridas y es un reproceso.</summary>
+    /// <returns>Tarea que finaliza al calcular o al abrir la confirmación.</returns>
     private Task PedirCalculoAsync()
     {
         LimpiarMensajes();
@@ -214,6 +226,8 @@ else
         return CalcularAsync();
     }
 
+    /// <summary>Calcula la nómina del período y abre la corrida nueva.</summary>
+    /// <returns>Tarea que finaliza al navegar a la corrida.</returns>
     private Task CalcularAsync() => EjecutarAsync(async () =>
     {
         _confirmarReproceso = false;
@@ -229,5 +243,7 @@ else
         Abrir(corrida);
     });
 
-    private void Abrir(CorridaDeNominaDto corrida) => Navegacion.NavigateTo($"nomina/corridas/{corrida.Id}?empresaId={corrida.EmpresaId}");
+    /// <summary>Navega al detalle de una corrida.</summary>
+    /// <param name="corrida">Corrida elegida.</param>
+    private void Abrir(CorridaDeNominaDto corrida) =>Navegacion.NavigateTo($"nomina/corridas/{corrida.Id}?empresaId={corrida.EmpresaId}");
 }

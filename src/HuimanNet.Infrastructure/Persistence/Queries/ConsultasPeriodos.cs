@@ -16,22 +16,6 @@ namespace HuimanNet.Infrastructure.Persistence.Queries;
 public sealed class ConsultasPeriodos : RepositorioSqlBase, IConsultasPeriodos
 {
     /// <summary>
-    /// Proyección común: período, empresa y contadores de documentos disponibles.
-    /// </summary>
-    private const string Proyeccion = """
-        SELECT p.Id, p.EmpresaId, e.RazonSocial, p.Anio, p.Mes, p.Consecutivo,
-               p.Descripcion, p.Estado, p.FechaApertura, p.FechaLimiteCarga, p.FechaCierre,
-               (SELECT COUNT_BIG(1) FROM dbo.Documentos AS dc
-                 WHERE dc.PeriodoId = p.Id AND dc.Estado = @EstadoDisponible
-                   AND dc.Tipo IN (@Incidencia, @DatosEmpleado)) AS DocumentosCliente,
-               (SELECT COUNT_BIG(1) FROM dbo.Documentos AS dr
-                 WHERE dr.PeriodoId = p.Id AND dr.Estado = @EstadoDisponible
-                   AND dr.Tipo IN (@Resultado, @Ajuste)) AS DocumentosResultado
-        FROM   dbo.Periodos AS p
-        INNER JOIN dbo.Empresas AS e ON e.Id = p.EmpresaId
-        """;
-
-    /// <summary>
     /// Inicializa una nueva instancia de <see cref="ConsultasPeriodos"/>.
     /// </summary>
     /// <param name="sesion">Sesión de base de datos de la petición en curso.</param>
@@ -44,15 +28,10 @@ public sealed class ConsultasPeriodos : RepositorioSqlBase, IConsultasPeriodos
     public async Task<PeriodoDto?> ObtenerAsync(
         Guid periodoId, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            {Proyeccion}
-            WHERE p.Id = @PeriodoId AND p.EmpresaId = @EmpresaId;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
-        AgregarParametrosDeTipo(comando);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Periodos.ObtenerDetalle, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@PeriodoId", SqlDbType.UniqueIdentifier) { Value = periodoId });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
+        AgregarParametrosDeTipo(comando);
 
         await using SqlDataReader reader = await comando.ExecuteReaderAsync(cancellationToken);
 
@@ -63,21 +42,15 @@ public sealed class ConsultasPeriodos : RepositorioSqlBase, IConsultasPeriodos
     public async Task<IReadOnlyList<PeriodoDto>> ListarPorEmpresaAsync(
         Guid empresaId, bool incluirCerrados, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            {Proyeccion}
-            WHERE p.EmpresaId = @EmpresaId
-              AND (@IncluirCerrados = 1 OR p.Estado <> @EstadoCerrado)
-            ORDER BY p.Anio DESC, p.Mes DESC, p.Consecutivo DESC;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
-        AgregarParametrosDeTipo(comando);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Periodos.ListarDetallePorEmpresa, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
         comando.Parameters.Add(new SqlParameter("@IncluirCerrados", SqlDbType.Bit) { Value = incluirCerrados });
         comando.Parameters.Add(new SqlParameter("@EstadoCerrado", SqlDbType.TinyInt)
         {
             Value = (byte)EstadoPeriodo.Cerrado,
         });
+        AgregarParametrosDeTipo(comando);
 
         return await LeerVariosAsync(comando, cancellationToken);
     }
@@ -86,20 +59,20 @@ public sealed class ConsultasPeriodos : RepositorioSqlBase, IConsultasPeriodos
     public async Task<IReadOnlyList<PeriodoDto>> ListarBandejaDelOperadorAsync(
         CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            {Proyeccion}
-            WHERE p.Estado IN (@Recibido, @EnProceso)
-            ORDER BY p.FechaApertura ASC;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
-        AgregarParametrosDeTipo(comando);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Periodos.ListarDetalleBandeja, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Recibido", SqlDbType.TinyInt) { Value = (byte)EstadoPeriodo.Recibido });
         comando.Parameters.Add(new SqlParameter("@EnProceso", SqlDbType.TinyInt) { Value = (byte)EstadoPeriodo.EnProceso });
+        AgregarParametrosDeTipo(comando);
 
         return await LeerVariosAsync(comando, cancellationToken);
     }
 
+    /// <summary>
+    /// Agrega los parámetros con los que el procedimiento cuenta los documentos
+    /// disponibles del cliente y de resultados.
+    /// </summary>
+    /// <param name="comando">Comando de la consulta.</param>
     private static void AgregarParametrosDeTipo(SqlCommand comando)
     {
         comando.Parameters.Add(new SqlParameter("@EstadoDisponible", SqlDbType.TinyInt)
@@ -112,6 +85,10 @@ public sealed class ConsultasPeriodos : RepositorioSqlBase, IConsultasPeriodos
         comando.Parameters.Add(new SqlParameter("@Ajuste", SqlDbType.TinyInt) { Value = (byte)TipoDocumento.Ajuste });
     }
 
+    /// <summary>Ejecuta un procedimiento de períodos y proyecta cada fila.</summary>
+    /// <param name="comando">Comando ya preparado.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Los períodos.</returns>
     private static async Task<IReadOnlyList<PeriodoDto>> LeerVariosAsync(
         SqlCommand comando, CancellationToken cancellationToken)
     {
@@ -127,6 +104,9 @@ public sealed class ConsultasPeriodos : RepositorioSqlBase, IConsultasPeriodos
         return periodos;
     }
 
+    /// <summary>Proyecta una fila a su DTO, con la clave <c>AAAA-MM-NN</c> del período.</summary>
+    /// <param name="reader">Lector situado en la fila.</param>
+    /// <returns>El período.</returns>
     private static PeriodoDto Mapear(SqlDataReader reader)
     {
         string clave = string.Create(

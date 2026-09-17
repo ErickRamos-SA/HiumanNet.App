@@ -13,53 +13,6 @@ using HuimanNet.Domain.Enums;
 namespace HuimanNet.App.Services;
 
 /// <summary>
-/// Rechazo de la API con el mensaje que redactó el servidor.
-/// </summary>
-public sealed class ErrorDeApiException : Exception
-{
-    /// <summary>
-    /// Inicializa una nueva instancia de <see cref="ErrorDeApiException"/>.
-    /// </summary>
-    /// <param name="mensaje">Mensaje para el usuario.</param>
-    /// <param name="estado">Código HTTP de la respuesta.</param>
-    public ErrorDeApiException(string mensaje, HttpStatusCode estado)
-        : base(mensaje)
-        => Estado = estado;
-
-    /// <summary>Inicializa una nueva instancia de <see cref="ErrorDeApiException"/>.</summary>
-    public ErrorDeApiException()
-    {
-    }
-
-    /// <summary>Inicializa una nueva instancia de <see cref="ErrorDeApiException"/>.</summary>
-    /// <param name="message">Mensaje.</param>
-    public ErrorDeApiException(string message)
-        : base(message)
-    {
-    }
-
-    /// <summary>Inicializa una nueva instancia de <see cref="ErrorDeApiException"/>.</summary>
-    /// <param name="message">Mensaje.</param>
-    /// <param name="innerException">Excepción de origen.</param>
-    public ErrorDeApiException(string message, Exception innerException)
-        : base(message, innerException)
-    {
-    }
-
-    /// <summary>Obtiene el código HTTP de la respuesta.</summary>
-    /// <value>Por ejemplo <see cref="HttpStatusCode.BadRequest"/>.</value>
-    public HttpStatusCode Estado { get; }
-}
-
-/// <summary>
-/// Archivo generado por el servidor (por ejemplo, la exportación de una corrida).
-/// </summary>
-/// <param name="Nombre">Nombre sugerido.</param>
-/// <param name="TipoDeContenido">Tipo MIME.</param>
-/// <param name="Contenido">Bytes del archivo.</param>
-public sealed record ArchivoDescargado(string Nombre, string TipoDeContenido, byte[] Contenido);
-
-/// <summary>
 /// Cliente tipado de la API de HuimanNet para la app móvil.
 /// </summary>
 /// <remarks>

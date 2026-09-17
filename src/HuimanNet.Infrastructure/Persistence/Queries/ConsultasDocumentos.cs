@@ -13,9 +13,9 @@ namespace HuimanNet.Infrastructure.Persistence.Queries;
 /// <see cref="DocumentoDto"/> en una sola consulta.
 /// </summary>
 /// <remarks>
-/// Resuelve en SQL la unión con <c>dbo.Usuarios</c> que la interfaz necesita
-/// para mostrar quién cargó cada documento, sin obligar al dominio a conocer esa
-/// relación.
+/// El procedimiento resuelve la unión con <c>dbo.Usuarios</c> que la interfaz
+/// necesita para mostrar quién cargó cada documento, sin obligar al dominio a
+/// conocer esa relación.
 /// </remarks>
 public sealed class ConsultasDocumentos : RepositorioSqlBase, IConsultasDocumentos
 {
@@ -36,21 +36,8 @@ public sealed class ConsultasDocumentos : RepositorioSqlBase, IConsultasDocument
         bool soloDescargables,
         CancellationToken cancellationToken = default)
     {
-        const string sql = """
-            SELECT d.Id, d.PeriodoId, d.EmpresaId, d.Tipo, d.NombreOriginal, d.TamanoBytes,
-                   d.Estado, d.FechaSolicitud, d.FechaCargaConfirmada,
-                   ISNULL(u.NombreCompleto, N'(usuario desconocido)') AS CargadoPor
-            FROM   dbo.Documentos AS d
-            LEFT JOIN dbo.Usuarios AS u ON u.Id = d.CargadoPorUsuarioId
-            WHERE  d.PeriodoId = @PeriodoId
-              AND  d.EmpresaId = @EmpresaId
-              AND  d.Estado <> @EstadoDescartado
-              AND  (@Tipo IS NULL OR d.Tipo = @Tipo)
-              AND  (@SoloDescargables = 0 OR d.Estado = @EstadoDisponible)
-            ORDER BY d.FechaSolicitud DESC;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Documentos.ListarDetallePorPeriodo, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@PeriodoId", SqlDbType.UniqueIdentifier) { Value = periodoId });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
         comando.Parameters.Add(new SqlParameter("@Tipo", SqlDbType.TinyInt)

@@ -1,5 +1,6 @@
 @page "/periodos/{PeriodoId:guid}/documentos"
 @inherits ComponenteDelPortal
+@using HuimanNet.Domain.Services
 @inject IJSRuntime Js
 
 <PageTitle>@T["documentos.titulo"] · HuimanNet</PageTitle>
@@ -34,7 +35,7 @@
     </div>
 }
 
-@if (ContextoDeUsuario.Puede(AccionDelSistema.CargarDocumentos) || ContextoDeUsuario.Puede(AccionDelSistema.PublicarResultados))
+@if (TiposPermitidos().Count > 0)
 {
     <section class="tarjeta">
         <header class="tarjeta-cabecera">
@@ -144,6 +145,11 @@
             new ListarDocumentosPorPeriodoQuery(PeriodoId, Tipo: null, SoloDescargables: false, EmpresaDeConsulta));
     }
 
+    /// <summary>
+    /// Sube el archivo elegido en tres pasos: el servidor autoriza y firma, el
+    /// navegador sube directo al almacenamiento y el servidor confirma la huella.
+    /// </summary>
+    /// <returns>Tarea que finaliza al recargar la lista.</returns>
     private Task SubirAsync() => EjecutarAsync(async () =>
     {
         MensajeDeExito = null;
@@ -176,6 +182,9 @@
         await CargarDatosAsync();
     });
 
+    /// <summary>Pide un enlace temporal y lo abre en el navegador.</summary>
+    /// <param name="documento">Documento elegido.</param>
+    /// <returns>Tarea que finaliza al iniciar la descarga.</returns>
     private Task DescargarAsync(DocumentoDto documento) => EjecutarAsync(async () =>
     {
         EnlaceDescargaResponse enlace = await Casos.ConsultarAsync<ObtenerEnlaceDescargaQuery, EnlaceDescargaResponse>(
@@ -188,11 +197,16 @@
     /// Un archivo de incidencias disponible se puede importar al período sin
     /// volver a subirlo: el servidor lo lee del almacenamiento.
     /// </summary>
+    /// <param name="documento">Documento de la fila.</param>
+    /// <returns><c>true</c> si es un archivo de incidencias disponible y el usuario captura incidencias.</returns>
     private bool PuedeImportar(DocumentoDto documento)
         => documento.Tipo == TipoDocumento.Incidencia
            && documento.EsDescargable
            && ContextoDeUsuario.Puede(AccionDelSistema.CapturarIncidencias);
 
+    /// <summary>Importa las incidencias del documento y muestra el resumen.</summary>
+    /// <param name="documento">Archivo de incidencias disponible.</param>
+    /// <returns>Tarea que finaliza al importar.</returns>
     private Task ImportarAsync(DocumentoDto documento) => EjecutarAsync(async () =>
     {
         LimpiarMensajes();
@@ -205,12 +219,17 @@
         MensajeDeExito = T.Formato("incidencias.importadas", importacion.FilasLeidas, importacion.Creadas, importacion.Actualizadas);
     });
 
-    /// <summary>La empresa aporta incidencias y datos de empleados; nómina y administración, resultados y ajustes.</summary>
+    /// <summary>
+    /// Tipos que el usuario puede subir: los que admite su rol y para los que
+    /// tiene habilitada la acción de carga. Es la misma regla que aplica el servidor.
+    /// </summary>
+    /// <returns>Los tipos permitidos; vacía si no puede subir nada.</returns>
     private IReadOnlyList<TipoDocumento> TiposPermitidos()
-        => ContextoDeUsuario.Rol == RolUsuario.ClienteEmpresa
-            ? [TipoDocumento.Incidencia, TipoDocumento.DatosEmpleado]
-            : [TipoDocumento.Resultado, TipoDocumento.Ajuste];
+        => PoliticaDeAcceso.TiposQuePuedeCargar(ContextoDeUsuario.Rol, ContextoDeUsuario.Acciones);
 
+    /// <summary>Obtiene la clase CSS del color de un estado de documento.</summary>
+    /// <param name="estado">Estado del documento.</param>
+    /// <returns>La clase; vacía para un estado sin color.</returns>
     private static string ClaseDeEstado(EstadoDocumento estado) => estado switch
     {
         EstadoDocumento.Disponible => "etiqueta-ok",
@@ -220,6 +239,9 @@
         _ => string.Empty,
     };
 
+    /// <summary>Da formato a un tamaño en KB o MB con la cultura del usuario.</summary>
+    /// <param name="bytes">Tamaño en bytes.</param>
+    /// <returns>El texto a mostrar.</returns>
     private string FormatearTamano(long bytes)
         => bytes < 1_048_576
             ? string.Create(T.Cultura, $"{bytes / 1024d:N1} KB")

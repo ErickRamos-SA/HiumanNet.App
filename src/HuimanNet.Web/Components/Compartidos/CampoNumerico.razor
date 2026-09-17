@@ -44,6 +44,9 @@
     [Parameter]
     public bool Deshabilitado { get; set; }
 
+    /// <summary>Lee el valor escrito y lo notifica al enlace.</summary>
+    /// <param name="argumentos">Evento del control.</param>
+    /// <returns>Tarea que finaliza al notificar el cambio.</returns>
     private Task CambiarAsync(ChangeEventArgs argumentos)
     {
         // Un campo vacío equivale a cero: es lo que espera quien borra el valor.

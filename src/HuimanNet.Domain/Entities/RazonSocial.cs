@@ -4,30 +4,6 @@ using HuimanNet.Domain.Exceptions;
 namespace HuimanNet.Domain.Entities;
 
 /// <summary>
-/// Configuración de operación de una razón social: banderas que gobiernan
-/// el cálculo de todos sus trabajadores.
-/// </summary>
-/// <param name="TipoDeServicio">Nómina o Maquila.</param>
-/// <param name="SubsidioAbsorbido">Si la empresa absorbe el subsidio al empleo en el complemento sindical.</param>
-/// <param name="AplicaFaltasProporcionales">Si las faltas se castigan con el factor del séptimo día.</param>
-/// <param name="ModalidadDeComision">Base de la comisión al cliente.</param>
-/// <param name="PorcentajeComision">Porcentaje de comisión, como fracción.</param>
-/// <param name="ZonaIsn">Regla para la tasa del ISN.</param>
-/// <param name="TasaIva">Tasa de IVA de la factura, como fracción; cero si no aplica.</param>
-/// <param name="PorcentajeOtrosCostos">Porcentaje de otros costos sobre el neto pagado, como fracción.</param>
-/// <param name="PrimaDeRiesgo">Prima de riesgo de trabajo, como fracción; <c>null</c> para usar el parámetro general.</param>
-public sealed record ConfiguracionDeRazonSocial(
-    TipoDeServicio TipoDeServicio,
-    bool SubsidioAbsorbido,
-    bool AplicaFaltasProporcionales,
-    ModalidadDeComision ModalidadDeComision,
-    decimal PorcentajeComision,
-    ZonaIsn ZonaIsn,
-    decimal TasaIva,
-    decimal PorcentajeOtrosCostos,
-    decimal? PrimaDeRiesgo);
-
-/// <summary>
 /// Entidad pagadora (razón social, sindicato, cooperativa o prestador de
 /// honorarios) que pertenece a una empresa cliente y con la que se contrata a
 /// los trabajadores.
@@ -40,6 +16,11 @@ public sealed record ConfiguracionDeRazonSocial(
 /// </remarks>
 public sealed class RazonSocial
 {
+    /// <summary>
+    /// Inicializa una instancia con valores ya validados. Sólo la usan las
+    /// fábricas y <see cref="Rehidratar"/>.
+    /// </summary>
+    /// <inheritdoc cref="Rehidratar" path="/param"/>
     private RazonSocial(
         Guid id,
         Guid empresaId,
@@ -201,6 +182,18 @@ public sealed class RazonSocial
         Activa = activa;
     }
 
+    /// <summary>
+    /// Comprueba los datos obligatorios de la razón social y que sus porcentajes
+    /// sean fracciones.
+    /// </summary>
+    /// <param name="nombre">Nombre de la razón social.</param>
+    /// <param name="rfc">RFC.</param>
+    /// <param name="zona">Zona de salario mínimo.</param>
+    /// <param name="configuracion">Servicio, comisión, IVA y prima de riesgo.</param>
+    /// <exception cref="ArgumentNullException">Se lanza si <paramref name="configuracion"/> es <c>null</c>.</exception>
+    /// <exception cref="CatalogoInvalidoException">
+    /// Se lanza si falta un dato obligatorio o algún porcentaje no está entre 0 y 1.
+    /// </exception>
     private static void Validar(string nombre, string rfc, ZonaSalarioMinimo zona, ConfiguracionDeRazonSocial configuracion)
     {
         ArgumentNullException.ThrowIfNull(configuracion);
@@ -239,6 +232,9 @@ public sealed class RazonSocial
         }
     }
 
+    /// <summary>Normaliza un texto opcional.</summary>
+    /// <param name="valor">Texto capturado.</param>
+    /// <returns>El texto sin espacios en los extremos, o <c>null</c> si está vacío.</returns>
     private static string? Limpiar(string? valor)
         => string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 }

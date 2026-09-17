@@ -39,6 +39,11 @@
   <ItemGroup>
     <!-- Esquema y migraciones como scripts SQL versionados (sin migraciones de ORM). -->
     <EmbeddedResource Include="Persistence\Scripts\*.sql" />
+    <!--
+      Procedimientos almacenados: todo el acceso a datos pasa por ellos. Se
+      aplican con CREATE OR ALTER en cada arranque, no se numeran.
+    -->
+    <EmbeddedResource Include="Persistence\Procedimientos\*.sql" />
     <!-- Catalogo de calculo inicial: unica fuente para el sembrador y las pruebas. -->
     <EmbeddedResource Include="Persistence\Semillas\*.json" />
   </ItemGroup>

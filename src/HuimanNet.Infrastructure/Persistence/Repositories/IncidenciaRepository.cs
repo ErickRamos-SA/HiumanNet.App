@@ -24,9 +24,7 @@ public sealed class IncidenciaRepository : RepositorioSqlBase, IIncidenciaReposi
     /// <inheritdoc/>
     public async Task<Incidencia?> ObtenerAsync(Guid id, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"SELECT {LectorDeIncidencias.Columnas} FROM dbo.Incidencias AS i WHERE i.Id = @Id AND i.EmpresaId = @EmpresaId;";
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Incidencias.Obtener, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = id });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
 
@@ -38,13 +36,8 @@ public sealed class IncidenciaRepository : RepositorioSqlBase, IIncidenciaReposi
     public async Task<Incidencia?> ObtenerPorContratoAsync(
         Guid periodoId, Guid contratoId, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeIncidencias.Columnas}
-            FROM   dbo.Incidencias AS i
-            WHERE  i.PeriodoId = @PeriodoId AND i.ContratoId = @ContratoId AND i.EmpresaId = @EmpresaId;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Incidencias.ObtenerPorContrato, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@PeriodoId", SqlDbType.UniqueIdentifier) { Value = periodoId });
         comando.Parameters.Add(new SqlParameter("@ContratoId", SqlDbType.UniqueIdentifier) { Value = contratoId });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
@@ -57,13 +50,8 @@ public sealed class IncidenciaRepository : RepositorioSqlBase, IIncidenciaReposi
     public async Task<IReadOnlyList<Incidencia>> ListarPorPeriodoAsync(
         Guid periodoId, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeIncidencias.Columnas}
-            FROM   dbo.Incidencias AS i
-            WHERE  i.PeriodoId = @PeriodoId AND i.EmpresaId = @EmpresaId;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Incidencias.ListarPorPeriodo, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@PeriodoId", SqlDbType.UniqueIdentifier) { Value = periodoId });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
 
@@ -83,22 +71,7 @@ public sealed class IncidenciaRepository : RepositorioSqlBase, IIncidenciaReposi
     {
         ArgumentNullException.ThrowIfNull(incidencia);
 
-        const string sql = """
-            INSERT INTO dbo.Incidencias
-                (Id, EmpresaId, PeriodoId, ContratoId, DiasPeriodo, Vacaciones, Ausentismos, Incapacidades, Festivos,
-                 HorasDobles, HorasTriples, DomingosTrabajados, Gratificacion, Reembolsos, Teletrabajo, Finiquito,
-                 Cafeteria, HorasDescontadas, OtrosDescuentos, PrestamoPersonal, Aguinaldo, DescuentosFiscales,
-                 FonacotCapturado, DescuentoSindicalAdicional, AjusteSindical, IsrManual, TipoMovimiento,
-                 Observaciones, CapturadoPorUsuarioId, FechaCaptura)
-            VALUES
-                (@Id, @EmpresaId, @PeriodoId, @ContratoId, @DiasPeriodo, @Vacaciones, @Ausentismos, @Incapacidades, @Festivos,
-                 @HorasDobles, @HorasTriples, @Domingos, @Gratificacion, @Reembolsos, @Teletrabajo, @Finiquito,
-                 @Cafeteria, @HorasDescontadas, @OtrosDescuentos, @PrestamoPersonal, @Aguinaldo, @DescuentosFiscales,
-                 @FonacotCapturado, @DescuentoSindical, @AjusteSindical, @IsrManual, @TipoMovimiento,
-                 @Observaciones, @Usuario, @Fecha);
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Incidencias.Insertar, cancellationToken);
         AgregarParametros(comando, incidencia);
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = incidencia.EmpresaId });
         comando.Parameters.Add(new SqlParameter("@PeriodoId", SqlDbType.UniqueIdentifier) { Value = incidencia.PeriodoId });
@@ -111,21 +84,7 @@ public sealed class IncidenciaRepository : RepositorioSqlBase, IIncidenciaReposi
     {
         ArgumentNullException.ThrowIfNull(incidencia);
 
-        const string sql = """
-            UPDATE dbo.Incidencias
-            SET    DiasPeriodo = @DiasPeriodo, Vacaciones = @Vacaciones, Ausentismos = @Ausentismos,
-                   Incapacidades = @Incapacidades, Festivos = @Festivos, HorasDobles = @HorasDobles,
-                   HorasTriples = @HorasTriples, DomingosTrabajados = @Domingos, Gratificacion = @Gratificacion,
-                   Reembolsos = @Reembolsos, Teletrabajo = @Teletrabajo, Finiquito = @Finiquito, Cafeteria = @Cafeteria,
-                   HorasDescontadas = @HorasDescontadas, OtrosDescuentos = @OtrosDescuentos,
-                   PrestamoPersonal = @PrestamoPersonal, Aguinaldo = @Aguinaldo, DescuentosFiscales = @DescuentosFiscales,
-                   FonacotCapturado = @FonacotCapturado, DescuentoSindicalAdicional = @DescuentoSindical,
-                   AjusteSindical = @AjusteSindical, IsrManual = @IsrManual, TipoMovimiento = @TipoMovimiento,
-                   Observaciones = @Observaciones, CapturadoPorUsuarioId = @Usuario, FechaCaptura = @Fecha
-            WHERE  Id = @Id;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Incidencias.Actualizar, cancellationToken);
         AgregarParametros(comando, incidencia);
         await comando.ExecuteNonQueryAsync(cancellationToken);
     }
@@ -133,13 +92,15 @@ public sealed class IncidenciaRepository : RepositorioSqlBase, IIncidenciaReposi
     /// <inheritdoc/>
     public async Task EliminarAsync(Guid id, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        await using SqlCommand comando = await CrearComandoAsync(
-            "DELETE FROM dbo.Incidencias WHERE Id = @Id AND EmpresaId = @EmpresaId;", cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Incidencias.Eliminar, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = id });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
         await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    /// <summary>Agrega los valores de una incidencia al comando.</summary>
+    /// <param name="comando">Comando de inserción o actualización.</param>
+    /// <param name="incidencia">Incidencia.</param>
     private static void AgregarParametros(SqlCommand comando, Incidencia incidencia)
     {
         DatosDeIncidencia d = incidencia.Datos;
@@ -173,9 +134,17 @@ public sealed class IncidenciaRepository : RepositorioSqlBase, IIncidenciaReposi
         comando.Parameters.Add(new SqlParameter("@Fecha", SqlDbType.DateTimeOffset) { Value = incidencia.FechaCaptura });
     }
 
+    /// <summary>Crea un parámetro de días u horas con cuatro decimales.</summary>
+    /// <param name="nombre">Nombre del parámetro.</param>
+    /// <param name="valor">Cantidad.</param>
+    /// <returns>El parámetro.</returns>
     private static SqlParameter Dias(string nombre, decimal valor)
         => new(nombre, SqlDbType.Decimal) { Precision = 9, Scale = 4, Value = valor };
 
+    /// <summary>Crea un parámetro de importe opcional con cuatro decimales.</summary>
+    /// <param name="nombre">Nombre del parámetro.</param>
+    /// <param name="valor">Importe, o <c>null</c>.</param>
+    /// <returns>El parámetro.</returns>
     private static SqlParameter Importe(string nombre, decimal? valor)
         => new(nombre, SqlDbType.Decimal) { Precision = 18, Scale = 4, Value = (object?)valor ?? DBNull.Value };
 }

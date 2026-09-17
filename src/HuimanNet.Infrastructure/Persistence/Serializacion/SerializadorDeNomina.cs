@@ -152,6 +152,9 @@ public static class SerializadorDeNomina
         return lista;
     }
 
+    /// <summary>Escribe un número opcional en el JSON.</summary>
+    /// <param name="escritor">Escritor JSON.</param>
+    /// <param name="valor">Número, o <c>null</c> para escribir <c>null</c>.</param>
     private static void EscribirNumero(Utf8JsonWriter escritor, decimal? valor)
     {
         if (valor is { } v)

@@ -30,16 +30,7 @@ public sealed class AuditoriaRepository : RepositorioSqlBase, IAuditoriaReposito
     {
         ArgumentNullException.ThrowIfNull(registro);
 
-        const string sql = """
-            INSERT INTO dbo.Auditoria
-                (Id, Momento, Accion, UsuarioId, EmpresaId, RecursoTipo, RecursoId,
-                 Exito, Detalle, DireccionIp)
-            VALUES
-                (@Id, @Momento, @Accion, @UsuarioId, @EmpresaId, @RecursoTipo, @RecursoId,
-                 @Exito, @Detalle, @DireccionIp);
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Auditoria.Insertar, cancellationToken);
 
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = registro.Id });
         comando.Parameters.Add(new SqlParameter("@Momento", SqlDbType.DateTimeOffset) { Value = registro.Momento });

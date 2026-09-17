@@ -118,9 +118,18 @@ public sealed class Traductor
     /// <remarks>Lo usan las pruebas para comprobar que ambos idiomas están completos.</remarks>
     public static IReadOnlyCollection<string> ClavesDe(Idioma idioma) => TextosDe(idioma).Keys;
 
+    /// <summary>Obtiene los textos de un idioma; se cargan la primera vez que se piden.</summary>
+    /// <param name="idioma">Idioma consultado.</param>
+    /// <returns>Los textos por clave.</returns>
     private static FrozenDictionary<string, string> TextosDe(Idioma idioma)
         => idioma == Idioma.Ingles ? TextosEnIngles.Value : TextosEnEspanol.Value;
 
+    /// <summary>Obtiene la cultura con la que se formatean fechas, números y monedas.</summary>
+    /// <param name="idioma">Idioma elegido.</param>
+    /// <returns>
+    /// <c>es-MX</c> o <c>en-US</c>; la cultura invariante si el proceso no tiene
+    /// datos de globalización.
+    /// </returns>
     private static CultureInfo CulturaDe(Idioma idioma)
     {
         try
@@ -134,6 +143,13 @@ public sealed class Traductor
         }
     }
 
+    /// <summary>
+    /// Lee el recurso incrustado <c>textos_{codigo}.json</c> y aplana sus objetos
+    /// anidados en claves separadas por puntos.
+    /// </summary>
+    /// <param name="codigo">Código del idioma en el nombre del archivo.</param>
+    /// <returns>Los textos por clave.</returns>
+    /// <exception cref="InvalidOperationException">Se lanza si el recurso no está incrustado en el ensamblado.</exception>
     private static FrozenDictionary<string, string> Cargar(string codigo)
     {
         string recurso = $"HuimanNet.Textos.textos_{codigo}.json";
@@ -181,6 +197,10 @@ public sealed class Traductor
         return textos.ToFrozenDictionary(StringComparer.Ordinal);
     }
 
+    /// <summary>Forma la clave completa de una propiedad dentro de los objetos abiertos.</summary>
+    /// <param name="prefijos">Claves de los objetos abiertos; la cima es el más interno.</param>
+    /// <param name="propiedad">Nombre de la propiedad.</param>
+    /// <returns>La clave con el prefijo del objeto actual, unida por un punto.</returns>
     private static string Componer(Stack<string> prefijos, string propiedad)
         => prefijos.Count == 0 ? propiedad : prefijos.Peek() + "." + propiedad;
 }

@@ -136,10 +136,15 @@ public abstract partial class ViewModelBase : ObservableObject
     {
     }
 
+    /// <summary>Notifica <see cref="TieneError"/> al cambiar el mensaje de error.</summary>
+    /// <param name="value">Mensaje nuevo.</param>
     partial void OnMensajeDeErrorChanged(string? value) => OnPropertyChanged(nameof(TieneError));
 
+    /// <summary>Notifica <see cref="TieneExito"/> al cambiar el mensaje de éxito.</summary>
+    /// <param name="value">Mensaje nuevo.</param>
     partial void OnMensajeDeExitoChanged(string? value) => OnPropertyChanged(nameof(TieneExito));
 
+    /// <summary>Refresca el traductor enlazado y los textos armados en código tras un cambio de idioma.</summary>
     private void AlCambiarIdiomaInterno()
     {
         OnPropertyChanged(nameof(T));

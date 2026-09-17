@@ -1,12 +1,11 @@
 using System.Data;
-using System.Globalization;
-using System.Text;
 using HuimanNet.Domain.Enums;
 using HuimanNet.Domain.Nomina;
 using HuimanNet.Domain.Repositories;
 using HuimanNet.Infrastructure.Persistence.Connections;
 using HuimanNet.Infrastructure.Persistence.Mappers;
 using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient.Server;
 
 namespace HuimanNet.Infrastructure.Persistence.Repositories;
 
@@ -17,10 +16,21 @@ namespace HuimanNet.Infrastructure.Persistence.Repositories;
 /// Las lecturas devuelven las entradas globales y las de la empresa indicada;
 /// la resolución de vigencias y prioridades la hace la capa de aplicación.
 /// Los catálogos son pequeños (decenas o cientos de filas), así que cada lectura
-/// es una sola sentencia sin paginación.
+/// es una sola llamada sin paginación.
 /// </remarks>
 public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoDeCalculoRepository
 {
+    /// <summary>Columnas del parámetro de tabla con el que viajan los rangos de una tabla.</summary>
+    private static readonly SqlMetaData[] ColumnasDeRango =
+    [
+        new("Orden", SqlDbType.Int),
+        new("LimiteInferior", SqlDbType.Decimal, 18, 4),
+        new("LimiteSuperior", SqlDbType.Decimal, 18, 4),
+        new("CuotaFija", SqlDbType.Decimal, 18, 4),
+        new("Porcentaje", SqlDbType.Decimal, 19, 8),
+        new("Valor", SqlDbType.Decimal, 18, 4),
+    ];
+
     /// <summary>
     /// Inicializa una nueva instancia de <see cref="CatalogoDeCalculoRepository"/>.
     /// </summary>
@@ -35,14 +45,8 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     /// <inheritdoc/>
     public async Task<IReadOnlyList<ParametroDeCalculo>> ListarParametrosAsync(Guid? empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeCatalogos.ColumnasDeParametro}
-            FROM   dbo.ParametrosDeCalculo AS p
-            WHERE  p.EmpresaId IS NULL OR p.EmpresaId = @EmpresaId
-            ORDER BY p.Grupo, p.Clave, p.VigenteDesde;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.ParametrosListar, cancellationToken);
         comando.Parameters.Add(Empresa(empresaId));
 
         var lista = new List<ParametroDeCalculo>();
@@ -59,9 +63,8 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     /// <inheritdoc/>
     public async Task<ParametroDeCalculo?> ObtenerParametroAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        string sql = $"SELECT {LectorDeCatalogos.ColumnasDeParametro} FROM dbo.ParametrosDeCalculo AS p WHERE p.Id = @Id;";
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.ParametroObtener, cancellationToken);
         comando.Parameters.Add(Id(id));
 
         await using SqlDataReader reader = await comando.ExecuteReaderAsync(cancellationToken);
@@ -73,13 +76,8 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     {
         ArgumentNullException.ThrowIfNull(parametro);
 
-        const string sql = """
-            INSERT INTO dbo.ParametrosDeCalculo
-                (Id, Clave, Descripcion, Grupo, Valor, Unidad, EmpresaId, VigenteDesde, VigenteHasta, FechaModificacion)
-            VALUES (@Id, @Clave, @Descripcion, @Grupo, @Valor, @Unidad, @EmpresaId, @Desde, @Hasta, @Fecha);
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.ParametroInsertar, cancellationToken);
         AgregarParametros(comando, parametro);
         comando.Parameters.Add(new SqlParameter("@Clave", SqlDbType.NVarChar, 64) { Value = parametro.Clave });
         comando.Parameters.Add(Empresa(parametro.EmpresaId));
@@ -91,41 +89,23 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     {
         ArgumentNullException.ThrowIfNull(parametro);
 
-        const string sql = """
-            UPDATE dbo.ParametrosDeCalculo
-            SET    Descripcion = @Descripcion, Grupo = @Grupo, Valor = @Valor, Unidad = @Unidad,
-                   VigenteDesde = @Desde, VigenteHasta = @Hasta, FechaModificacion = @Fecha
-            WHERE  Id = @Id;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.ParametroActualizar, cancellationToken);
         AgregarParametros(comando, parametro);
         await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 
     /// <inheritdoc/>
     public Task EliminarParametroAsync(Guid id, CancellationToken cancellationToken = default)
-        => EjecutarAsync("DELETE FROM dbo.ParametrosDeCalculo WHERE Id = @Id;", id, cancellationToken);
+        => EjecutarAsync(Procedimientos.Catalogos.ParametroEliminar, id, cancellationToken);
 
     // -------------------------------------------------------------- Tablas ----
 
     /// <inheritdoc/>
     public async Task<IReadOnlyList<TablaDeRangos>> ListarTablasAsync(Guid? empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeCatalogos.ColumnasDeTabla}
-            FROM   dbo.TablasDeRangos AS t
-            WHERE  t.EmpresaId IS NULL OR t.EmpresaId = @EmpresaId
-            ORDER BY t.Clave, t.VigenteDesde;
-
-            SELECT {LectorDeCatalogos.ColumnasDeRango}
-            FROM   dbo.RangosDeTabla AS r
-            INNER JOIN dbo.TablasDeRangos AS t ON t.Id = r.TablaId
-            WHERE  t.EmpresaId IS NULL OR t.EmpresaId = @EmpresaId
-            ORDER BY r.TablaId, r.Orden;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.TablasListar, cancellationToken);
         comando.Parameters.Add(Empresa(empresaId));
 
         return await LeerTablasAsync(comando, cancellationToken);
@@ -134,12 +114,8 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     /// <inheritdoc/>
     public async Task<TablaDeRangos?> ObtenerTablaAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeCatalogos.ColumnasDeTabla} FROM dbo.TablasDeRangos AS t WHERE t.Id = @Id;
-            SELECT {LectorDeCatalogos.ColumnasDeRango} FROM dbo.RangosDeTabla AS r WHERE r.TablaId = @Id ORDER BY r.Orden;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.TablaObtener, cancellationToken);
         comando.Parameters.Add(Id(id));
 
         IReadOnlyList<TablaDeRangos> tablas = await LeerTablasAsync(comando, cancellationToken);
@@ -151,20 +127,13 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     {
         ArgumentNullException.ThrowIfNull(tabla);
 
-        const string sql = """
-            INSERT INTO dbo.TablasDeRangos (Id, Clave, Descripcion, EmpresaId, VigenteDesde, VigenteHasta, FechaModificacion)
-            VALUES (@Id, @Clave, @Descripcion, @EmpresaId, @Desde, @Hasta, @Fecha);
-            """;
-
-        await using (SqlCommand comando = await CrearComandoAsync(sql, cancellationToken))
-        {
-            AgregarParametros(comando, tabla);
-            comando.Parameters.Add(new SqlParameter("@Clave", SqlDbType.NVarChar, 64) { Value = tabla.Clave });
-            comando.Parameters.Add(Empresa(tabla.EmpresaId));
-            await comando.ExecuteNonQueryAsync(cancellationToken);
-        }
-
-        await GuardarRangosAsync(tabla, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.TablaInsertar, cancellationToken);
+        AgregarParametros(comando, tabla);
+        comando.Parameters.Add(new SqlParameter("@Clave", SqlDbType.NVarChar, 64) { Value = tabla.Clave });
+        comando.Parameters.Add(Empresa(tabla.EmpresaId));
+        comando.Parameters.Add(RangosComoParametro(tabla));
+        await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -172,38 +141,24 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     {
         ArgumentNullException.ThrowIfNull(tabla);
 
-        const string sql = """
-            UPDATE dbo.TablasDeRangos
-            SET    Descripcion = @Descripcion, VigenteDesde = @Desde, VigenteHasta = @Hasta, FechaModificacion = @Fecha
-            WHERE  Id = @Id;
-            """;
-
-        await using (SqlCommand comando = await CrearComandoAsync(sql, cancellationToken))
-        {
-            AgregarParametros(comando, tabla);
-            await comando.ExecuteNonQueryAsync(cancellationToken);
-        }
-
-        await GuardarRangosAsync(tabla, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.TablaActualizar, cancellationToken);
+        AgregarParametros(comando, tabla);
+        comando.Parameters.Add(RangosComoParametro(tabla));
+        await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 
     /// <inheritdoc/>
     public Task EliminarTablaAsync(Guid id, CancellationToken cancellationToken = default)
-        => EjecutarAsync("DELETE FROM dbo.TablasDeRangos WHERE Id = @Id;", id, cancellationToken);
+        => EjecutarAsync(Procedimientos.Catalogos.TablaEliminar, id, cancellationToken);
 
     // ----------------------------------------------------------- Conceptos ----
 
     /// <inheritdoc/>
     public async Task<IReadOnlyList<ConceptoDeNomina>> ListarConceptosAsync(Guid? empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeCatalogos.ColumnasDeConcepto}
-            FROM   dbo.ConceptosDeNomina AS c
-            WHERE  c.EmpresaId IS NULL OR c.EmpresaId = @EmpresaId
-            ORDER BY c.Orden, c.Clave;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.ConceptosListar, cancellationToken);
         comando.Parameters.Add(Empresa(empresaId));
 
         var lista = new List<ConceptoDeNomina>();
@@ -220,9 +175,8 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     /// <inheritdoc/>
     public async Task<ConceptoDeNomina?> ObtenerConceptoAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        string sql = $"SELECT {LectorDeCatalogos.ColumnasDeConcepto} FROM dbo.ConceptosDeNomina AS c WHERE c.Id = @Id;";
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.ConceptoObtener, cancellationToken);
         comando.Parameters.Add(Id(id));
 
         await using SqlDataReader reader = await comando.ExecuteReaderAsync(cancellationToken);
@@ -234,13 +188,8 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     {
         ArgumentNullException.ThrowIfNull(concepto);
 
-        const string sql = """
-            INSERT INTO dbo.ConceptosDeNomina
-                (Id, Clave, Nombre, Descripcion, Tipo, Esquemas, Orden, Formula, VisibleEnRecibo, Activo, EmpresaId, FechaModificacion)
-            VALUES (@Id, @Clave, @Nombre, @Descripcion, @Tipo, @Esquemas, @Orden, @Formula, @Visible, @Activo, @EmpresaId, @Fecha);
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.ConceptoInsertar, cancellationToken);
         AgregarParametros(comando, concepto);
         comando.Parameters.Add(new SqlParameter("@Clave", SqlDbType.NVarChar, 64) { Value = concepto.Clave });
         comando.Parameters.Add(Empresa(concepto.EmpresaId));
@@ -252,21 +201,15 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     {
         ArgumentNullException.ThrowIfNull(concepto);
 
-        const string sql = """
-            UPDATE dbo.ConceptosDeNomina
-            SET    Nombre = @Nombre, Descripcion = @Descripcion, Tipo = @Tipo, Esquemas = @Esquemas, Orden = @Orden,
-                   Formula = @Formula, VisibleEnRecibo = @Visible, Activo = @Activo, FechaModificacion = @Fecha
-            WHERE  Id = @Id;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.ConceptoActualizar, cancellationToken);
         AgregarParametros(comando, concepto);
         await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 
     /// <inheritdoc/>
     public Task EliminarConceptoAsync(Guid id, CancellationToken cancellationToken = default)
-        => EjecutarAsync("DELETE FROM dbo.ConceptosDeNomina WHERE Id = @Id;", id, cancellationToken);
+        => EjecutarAsync(Procedimientos.Catalogos.ConceptoEliminar, id, cancellationToken);
 
     // ------------------------------------------------------- Explicaciones ----
 
@@ -274,14 +217,8 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     public async Task<IReadOnlyList<ExplicacionDeCalculo>> ListarExplicacionesAsync(
         EsquemaDePago? esquema, Idioma? idioma, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeCatalogos.ColumnasDeExplicacion}
-            FROM   dbo.ExplicacionesDeCalculo AS x
-            WHERE  (@Esquema IS NULL OR x.Esquema = @Esquema) AND (@Idioma IS NULL OR x.Idioma = @Idioma)
-            ORDER BY x.Esquema, x.Idioma, x.Orden;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.ExplicacionesListar, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Esquema", SqlDbType.TinyInt) { Value = esquema is null ? DBNull.Value : (byte)esquema.Value });
         comando.Parameters.Add(new SqlParameter("@Idioma", SqlDbType.TinyInt) { Value = idioma is null ? DBNull.Value : (byte)idioma.Value });
 
@@ -299,9 +236,8 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     /// <inheritdoc/>
     public async Task<ExplicacionDeCalculo?> ObtenerExplicacionAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        string sql = $"SELECT {LectorDeCatalogos.ColumnasDeExplicacion} FROM dbo.ExplicacionesDeCalculo AS x WHERE x.Id = @Id;";
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.ExplicacionObtener, cancellationToken);
         comando.Parameters.Add(Id(id));
 
         await using SqlDataReader reader = await comando.ExecuteReaderAsync(cancellationToken);
@@ -313,12 +249,8 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     {
         ArgumentNullException.ThrowIfNull(explicacion);
 
-        const string sql = """
-            INSERT INTO dbo.ExplicacionesDeCalculo (Id, Esquema, Idioma, Orden, Titulo, Cuerpo, FechaModificacion)
-            VALUES (@Id, @Esquema, @Idioma, @Orden, @Titulo, @Cuerpo, @Fecha);
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.ExplicacionInsertar, cancellationToken);
         AgregarParametros(comando, explicacion);
         comando.Parameters.Add(new SqlParameter("@Esquema", SqlDbType.TinyInt) { Value = (byte)explicacion.Esquema });
         comando.Parameters.Add(new SqlParameter("@Idioma", SqlDbType.TinyInt) { Value = (byte)explicacion.Idioma });
@@ -330,23 +262,21 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     {
         ArgumentNullException.ThrowIfNull(explicacion);
 
-        const string sql = """
-            UPDATE dbo.ExplicacionesDeCalculo
-            SET    Orden = @Orden, Titulo = @Titulo, Cuerpo = @Cuerpo, FechaModificacion = @Fecha
-            WHERE  Id = @Id;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Catalogos.ExplicacionActualizar, cancellationToken);
         AgregarParametros(comando, explicacion);
         await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 
     /// <inheritdoc/>
     public Task EliminarExplicacionAsync(Guid id, CancellationToken cancellationToken = default)
-        => EjecutarAsync("DELETE FROM dbo.ExplicacionesDeCalculo WHERE Id = @Id;", id, cancellationToken);
+        => EjecutarAsync(Procedimientos.Catalogos.ExplicacionEliminar, id, cancellationToken);
 
     // ------------------------------------------------------------ Auxiliar ----
 
+    /// <summary>Agrega los valores de un parámetro de cálculo al comando.</summary>
+    /// <param name="comando">Comando de inserción o actualización.</param>
+    /// <param name="p">Parámetro de cálculo.</param>
     private static void AgregarParametros(SqlCommand comando, ParametroDeCalculo p)
     {
         comando.Parameters.Add(Id(p.Id));
@@ -359,6 +289,9 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
         comando.Parameters.Add(new SqlParameter("@Fecha", SqlDbType.DateTimeOffset) { Value = p.FechaModificacion });
     }
 
+    /// <summary>Agrega los valores del encabezado de una tabla al comando.</summary>
+    /// <param name="comando">Comando de inserción o actualización.</param>
+    /// <param name="t">Tabla de rangos.</param>
     private static void AgregarParametros(SqlCommand comando, TablaDeRangos t)
     {
         comando.Parameters.Add(Id(t.Id));
@@ -368,6 +301,9 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
         comando.Parameters.Add(new SqlParameter("@Fecha", SqlDbType.DateTimeOffset) { Value = t.FechaModificacion });
     }
 
+    /// <summary>Agrega los valores de un concepto al comando.</summary>
+    /// <param name="comando">Comando de inserción o actualización.</param>
+    /// <param name="c">Concepto de nómina.</param>
     private static void AgregarParametros(SqlCommand comando, ConceptoDeNomina c)
     {
         comando.Parameters.Add(Id(c.Id));
@@ -380,8 +316,17 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
         comando.Parameters.Add(new SqlParameter("@Visible", SqlDbType.Bit) { Value = c.VisibleEnRecibo });
         comando.Parameters.Add(new SqlParameter("@Activo", SqlDbType.Bit) { Value = c.Activo });
         comando.Parameters.Add(new SqlParameter("@Fecha", SqlDbType.DateTimeOffset) { Value = c.FechaModificacion });
+        comando.Parameters.Add(new SqlParameter("@Alias", SqlDbType.NVarChar, 1000)
+        {
+            Value = c.AliasDeCotejo.Count == 0
+                ? DBNull.Value
+                : string.Join(LectorDeCatalogos.SeparadorDeAlias, c.AliasDeCotejo),
+        });
     }
 
+    /// <summary>Agrega los valores de una sección de la explicación al comando.</summary>
+    /// <param name="comando">Comando de inserción o actualización.</param>
+    /// <param name="x">Sección de la explicación.</param>
     private static void AgregarParametros(SqlCommand comando, ExplicacionDeCalculo x)
     {
         comando.Parameters.Add(Id(x.Id));
@@ -392,37 +337,46 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
     }
 
     /// <summary>
-    /// Sustituye los rangos de una tabla en un solo comando.
+    /// Crea el parámetro de tabla con los rangos, numerados desde 1 en el orden
+    /// en el que los define la tabla.
     /// </summary>
-    private async Task GuardarRangosAsync(TablaDeRangos tabla, CancellationToken cancellationToken)
+    /// <param name="tabla">Tabla con sus rangos.</param>
+    /// <returns>El parámetro.</returns>
+    private static SqlParameter RangosComoParametro(TablaDeRangos tabla)
     {
-        var sql = new StringBuilder("DELETE FROM dbo.RangosDeTabla WHERE TablaId = @Id;");
-        sql.Append(" INSERT INTO dbo.RangosDeTabla (TablaId, Orden, LimiteInferior, LimiteSuperior, CuotaFija, Porcentaje, Valor) VALUES ");
+        var filas = tabla.Rangos
+            .Select(static (rango, indice) => (Orden: indice + 1, Rango: rango))
+            .ToList();
 
-        for (int i = 0; i < tabla.Rangos.Count; i++)
-        {
-            sql.Append(i == 0 ? string.Empty : ", ")
-               .Append(CultureInfo.InvariantCulture, $"(@Id, {i + 1}, @Li{i}, @Ls{i}, @Cf{i}, @Pc{i}, @Va{i})");
-        }
+        return ParametrosDeTabla.Crear(
+            "@Rangos", "dbo.RangosDeTablaTipo", ColumnasDeRango, filas,
+            static (registro, fila) =>
+            {
+                registro.SetInt32(0, fila.Orden);
+                registro.SetDecimal(1, fila.Rango.LimiteInferior);
 
-        sql.Append(';');
+                if (fila.Rango.LimiteSuperior is { } superior)
+                {
+                    registro.SetDecimal(2, superior);
+                }
+                else
+                {
+                    registro.SetDBNull(2);
+                }
 
-        await using SqlCommand comando = await CrearComandoAsync(sql.ToString(), cancellationToken);
-        comando.Parameters.Add(Id(tabla.Id));
-
-        for (int i = 0; i < tabla.Rangos.Count; i++)
-        {
-            RangoDeTabla r = tabla.Rangos[i];
-            comando.Parameters.Add(Importe($"@Li{i}", r.LimiteInferior));
-            comando.Parameters.Add(Importe($"@Ls{i}", r.LimiteSuperior));
-            comando.Parameters.Add(Importe($"@Cf{i}", r.CuotaFija));
-            comando.Parameters.Add(new SqlParameter(Nombre($"@Pc{i}"), SqlDbType.Decimal) { Precision = 19, Scale = 8, Value = r.Porcentaje });
-            comando.Parameters.Add(Importe($"@Va{i}", r.Valor));
-        }
-
-        await comando.ExecuteNonQueryAsync(cancellationToken);
+                registro.SetDecimal(3, fila.Rango.CuotaFija);
+                registro.SetDecimal(4, fila.Rango.Porcentaje);
+                registro.SetDecimal(5, fila.Rango.Valor);
+            });
     }
 
+    /// <summary>
+    /// Lee las tablas de un procedimiento con dos resultados: primero los
+    /// encabezados y después los rangos.
+    /// </summary>
+    /// <param name="comando">Comando ya preparado.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Las tablas que tienen al menos un rango.</returns>
     private static async Task<IReadOnlyList<TablaDeRangos>> LeerTablasAsync(SqlCommand comando, CancellationToken cancellationToken)
     {
         var encabezados = new List<(Guid Id, string Clave, string Descripcion, Guid? EmpresaId, DateOnly Desde, DateOnly? Hasta, DateTimeOffset Fecha)>();
@@ -467,20 +421,26 @@ public sealed class CatalogoDeCalculoRepository : RepositorioSqlBase, ICatalogoD
         return tablas;
     }
 
-    private async Task EjecutarAsync(string sql, Guid id, CancellationToken cancellationToken)
+    /// <summary>Ejecuta un procedimiento que sólo recibe el identificador.</summary>
+    /// <param name="procedimiento">Procedimiento con el parámetro <c>@Id</c>.</param>
+    /// <param name="id">Identificador del elemento.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Tarea que finaliza al ejecutarlo.</returns>
+    private async Task EjecutarAsync(string procedimiento, Guid id, CancellationToken cancellationToken)
     {
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(procedimiento, cancellationToken);
         comando.Parameters.Add(Id(id));
         await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    /// <summary>Crea el parámetro <c>@Id</c>.</summary>
+    /// <param name="id">Identificador.</param>
+    /// <returns>El parámetro.</returns>
     private static SqlParameter Id(Guid id) => new("@Id", SqlDbType.UniqueIdentifier) { Value = id };
 
+    /// <summary>Crea el parámetro <c>@EmpresaId</c>.</summary>
+    /// <param name="empresaId">Empresa, o <c>null</c> para el catálogo general.</param>
+    /// <returns>El parámetro.</returns>
     private static SqlParameter Empresa(Guid? empresaId)
         => new("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = (object?)empresaId ?? DBNull.Value };
-
-    private static SqlParameter Importe(string nombre, decimal? valor)
-        => new(Nombre(nombre), SqlDbType.Decimal) { Precision = 18, Scale = 4, Value = (object?)valor ?? DBNull.Value };
-
-    private static string Nombre(string nombre) => nombre;
 }

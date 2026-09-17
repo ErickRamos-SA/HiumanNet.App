@@ -7,6 +7,7 @@ using HuimanNet.Application;
 using HuimanNet.Application.Interfaces;
 using HuimanNet.Contracts;
 using HuimanNet.Contracts.Serialization;
+using HuimanNet.Hosting.Endpoints;
 using HuimanNet.Infrastructure;
 using HuimanNet.Infrastructure.Configuracion;
 using HuimanNet.Infrastructure.Identity;

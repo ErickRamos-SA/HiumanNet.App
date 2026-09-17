@@ -1,11 +1,8 @@
 using System.Security.Claims;
 using HuimanNet.Application.Common;
 using HuimanNet.Application.Usuarios;
-using HuimanNet.Contracts.Common;
-using HuimanNet.Domain.Entities;
 using HuimanNet.Domain.Enums;
 using HuimanNet.Domain.Exceptions;
-using HuimanNet.Domain.Repositories;
 using HuimanNet.Web.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -19,9 +16,11 @@ namespace HuimanNet.Web.Endpoints;
 /// </summary>
 /// <remarks>
 /// En modo local el formulario de <see cref="RutaDeEntrada"/> publica aquí el
-/// correo y la contraseña; se validan con el <b>mismo caso de uso</b> que usa la
-/// API para la app móvil y, si son correctos, se emite la cookie de sesión. En
-/// modo Entra se delega en OpenID Connect.
+/// correo y la contraseña; los valida el caso de uso de sesión
+/// (<see cref="ValidarCredencialesLocalesCommand"/>, el mismo manejador que
+/// emite el token de la app móvil) y, si son correctos, se emite la cookie de
+/// sesión. En modo Entra se delega en OpenID Connect. Esta clase no accede a
+/// datos: sólo traduce HTTP y la cookie.
 /// </remarks>
 public static class AutenticacionEndpoints
 {
@@ -95,25 +94,35 @@ public static class AutenticacionEndpoints
             ? ruta
             : "/";
 
+    /// <summary>
+    /// Valida el formulario de acceso local y, si las credenciales son correctas,
+    /// emite la cookie de sesión.
+    /// </summary>
+    /// <param name="correo">Correo escrito en el formulario.</param>
+    /// <param name="contrasena">Contraseña escrita en el formulario.</param>
+    /// <param name="volverA">Página a la que volver tras entrar.</param>
+    /// <param name="contexto">Contexto HTTP de la petición.</param>
+    /// <param name="manejador">Caso de uso que valida las credenciales.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>
+    /// Una redirección a la página pedida (o al perfil si debe cambiar la
+    /// contraseña); de vuelta al acceso con error si las credenciales no valen.
+    /// </returns>
     private static async Task<IResult> IniciarSesionLocalAsync(
         [FromForm] string correo,
         [FromForm] string contrasena,
         [FromForm] string? volverA,
         HttpContext contexto,
-        IManejadorDeComando<IniciarSesionLocalCommand, IniciarSesionResponse> manejador,
-        IUsuarioRepository usuarios,
+        IManejadorDeComando<ValidarCredencialesLocalesCommand, SesionLocalValidada> manejador,
         CancellationToken cancellationToken)
     {
         string destino = RutaLocalSegura(volverA);
 
         try
         {
-            IniciarSesionResponse respuesta = await manejador.EjecutarAsync(
-                new IniciarSesionLocalCommand(correo, contrasena, contexto.Connection.RemoteIpAddress?.ToString()),
+            SesionLocalValidada usuario = await manejador.EjecutarAsync(
+                new ValidarCredencialesLocalesCommand(correo, contrasena, contexto.Connection.RemoteIpAddress?.ToString()),
                 cancellationToken);
-
-            Usuario usuario = await usuarios.ObtenerPorIdAsync(respuesta.Usuario.UsuarioId, cancellationToken)
-                ?? throw new AccesoNoAutorizadoException("El usuario autenticado ya no existe.");
 
             // La cookie sólo identifica: rol, empresa y permisos se leen de la
             // base de datos en cada circuito.

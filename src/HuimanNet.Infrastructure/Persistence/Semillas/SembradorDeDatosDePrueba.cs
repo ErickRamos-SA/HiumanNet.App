@@ -45,14 +45,17 @@ public sealed class SembradorDeDatosDePrueba
     /// <summary>Correo del usuario de prueba con rol de empresa cliente.</summary>
     public const string CorreoCliente = "cliente@huimannet.local";
 
+    /// <summary>Salario diario de los contratos de prueba con salario mínimo en la zona B.</summary>
     private const decimal SalarioMinimoZonaB = 440.87m;
+
+    /// <summary>Salario diario integrado correspondiente a <see cref="SalarioMinimoZonaB"/>.</summary>
     private const decimal SdiMinimoZonaB = 465.03m;
 
     private static readonly DateOnly AltaDeContratos = new(2021, 1, 4);
 
     private static readonly ConfiguracionDeRazonSocial Configuracion = new(
         TipoDeServicio.Nomina, SubsidioAbsorbido: false, AplicaFaltasProporcionales: false,
-        ModalidadDeComision.SobreCosto, 0.08m, ZonaIsn.SegunZonaDelTrabajador, 0.16m, 0m, null);
+        ModalidadDeComision.SobreCosto, 0.08m, ZonaIsn.SegunZonaDelTrabajador, TasaIva: null, 0m, null);
 
     /// <summary>Empresa principal del usuario cliente de prueba.</summary>
     private static readonly EmpresaDePrueba Principal = new(
@@ -206,6 +209,7 @@ public sealed class SembradorDeDatosDePrueba
     /// Obtiene el <i>hash</i> de la contraseña del administrador, dando
     /// preferencia al administrador inicial de la configuración.
     /// </summary>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
     /// <returns>El <i>hash</i>, o <c>null</c> si ningún administrador activo tiene contraseña local (modo Entra).</returns>
     private async Task<string?> HashDelAdministradorAsync(CancellationToken cancellationToken)
     {
@@ -228,6 +232,20 @@ public sealed class SembradorDeDatosDePrueba
         return administrador?.HashContrasena;
     }
 
+    /// <summary>
+    /// Crea un usuario de prueba o, si ya existe, sólo sincroniza su contraseña
+    /// con la del administrador.
+    /// </summary>
+    /// <param name="existente">Usuario con ese correo, o <c>null</c>.</param>
+    /// <param name="nombreCompleto">Nombre del usuario nuevo.</param>
+    /// <param name="correo">Correo del usuario.</param>
+    /// <param name="rol">Rol del usuario nuevo.</param>
+    /// <param name="empresaId">Empresa principal del usuario nuevo.</param>
+    /// <param name="empresasAdicionales">Empresas adicionales del usuario nuevo.</param>
+    /// <param name="hash">Hash de la contraseña del administrador, o <c>null</c> para no asignar contraseña.</param>
+    /// <param name="ahora">Instante actual, en UTC.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Tarea que finaliza al guardar el usuario.</returns>
     private async Task GarantizarUsuarioAsync(
         Usuario? existente,
         string nombreCompleto,
@@ -263,6 +281,14 @@ public sealed class SembradorDeDatosDePrueba
         }
     }
 
+    /// <summary>
+    /// Crea una empresa de prueba con sus razones sociales, empleados, un
+    /// contrato por empleado y un período abierto en el mes actual.
+    /// </summary>
+    /// <param name="datos">Datos de la empresa.</param>
+    /// <param name="ahora">Instante actual, en UTC.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>El identificador de la empresa creada.</returns>
     private async Task<Guid> CrearEmpresaAsync(EmpresaDePrueba datos, DateTimeOffset ahora, CancellationToken cancellationToken)
     {
         Empresa empresa = Empresa.Crear(datos.RazonSocial, datos.Rfc, ahora);
@@ -306,12 +332,35 @@ public sealed class SembradorDeDatosDePrueba
         return empresa.Id;
     }
 
+    /// <summary>Empresa de prueba con sus razones sociales y empleados.</summary>
+    /// <param name="RazonSocial">Razón social de la empresa.</param>
+    /// <param name="Rfc">RFC de la empresa.</param>
+    /// <param name="Razones">Razones sociales pagadoras.</param>
+    /// <param name="Empleados">Empleados, cada uno con un contrato.</param>
     private sealed record EmpresaDePrueba(
         string RazonSocial, string Rfc, IReadOnlyList<RazonDePrueba> Razones, IReadOnlyList<EmpleadoDePrueba> Empleados);
 
+    /// <summary>Razón social de prueba.</summary>
+    /// <param name="Nombre">Nombre de la razón social.</param>
+    /// <param name="Rfc">RFC.</param>
+    /// <param name="RegistroPatronal">Registro patronal ante el IMSS, o <c>null</c>.</param>
     private sealed record RazonDePrueba(string Nombre, string Rfc, string? RegistroPatronal);
 
     /// <summary>Empleado con un único contrato; <see cref="Razon"/> es el índice en la lista de razones de su empresa.</summary>
+    /// <param name="Clave">Clave del empleado.</param>
+    /// <param name="Nombre">Nombre.</param>
+    /// <param name="Paterno">Apellido paterno.</param>
+    /// <param name="Materno">Apellido materno, o <c>null</c>.</param>
+    /// <param name="Razon">Índice de la razón social pagadora en <see cref="EmpresaDePrueba.Razones"/>.</param>
+    /// <param name="Esquema">Esquema de pago del contrato.</param>
+    /// <param name="Noi">Número de trabajador en NOI.</param>
+    /// <param name="Puesto">Puesto.</param>
+    /// <param name="SueldoReal">Sueldo real del período.</param>
+    /// <param name="SalarioDiarioFiscal">Salario diario fiscal.</param>
+    /// <param name="Sdi">Salario diario integrado.</param>
+    /// <param name="Zona">Zona de salario mínimo.</param>
+    /// <param name="PagaComplemento">Si recibe complemento sindical.</param>
+    /// <param name="HonorariosConIva">Si sus honorarios causan IVA.</param>
     private sealed record EmpleadoDePrueba(
         string Clave,
         string Nombre,

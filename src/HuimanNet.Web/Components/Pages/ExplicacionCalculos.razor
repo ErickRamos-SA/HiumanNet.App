@@ -193,6 +193,9 @@ else if (!Inicializado || EstaCargando)
         => _explicacion = await Casos.ConsultarAsync<ObtenerExplicacionCompletaQuery, ExplicacionCompletaDto>(
             new ObtenerExplicacionCompletaQuery(_esquema, T.Idioma, EmpresaDeConsulta, _fecha));
 
+    /// <summary>Muestra la explicación de otro esquema.</summary>
+    /// <param name="esquema">Esquema elegido.</param>
+    /// <returns>Tarea que finaliza al cargar la explicación.</returns>
     private Task SeleccionarAsync(EsquemaDePago esquema)
     {
         _esquema = esquema;

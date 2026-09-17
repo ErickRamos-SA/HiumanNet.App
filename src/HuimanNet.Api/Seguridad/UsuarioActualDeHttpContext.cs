@@ -64,6 +64,11 @@ public sealed class UsuarioActualDeHttpContext : IUsuarioActual
         DireccionIp = direccionIp;
     }
 
+    /// <summary>Obtiene el usuario resuelto para la petición.</summary>
+    /// <returns>El usuario.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Se lanza si no se resolvió ninguno, lo que indica un endpoint sin <c>RequireAuthorization</c>.
+    /// </exception>
     private Usuario Requerido()
         => _usuario ?? throw new InvalidOperationException(
             "No hay usuario resuelto en la petición actual. ¿Falta RequireAuthorization en el endpoint?");

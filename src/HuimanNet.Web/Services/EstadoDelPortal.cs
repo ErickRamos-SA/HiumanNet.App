@@ -54,6 +54,12 @@ public sealed class EstadoDelPortal
     /// <returns>Una tarea que termina cuando todos los suscriptores recargaron.</returns>
     public Task NotificarEmpresasModificadasAsync() => NotificarAsync(EmpresasModificadas);
 
+    /// <summary>
+    /// Invoca a los suscriptores de un evento de uno en uno, porque las páginas
+    /// comparten la sesión SQL del circuito.
+    /// </summary>
+    /// <param name="evento">Evento a notificar, o <c>null</c> si no tiene suscriptores.</param>
+    /// <returns>Tarea que finaliza cuando todos terminaron.</returns>
     private static async Task NotificarAsync(Func<Task>? evento)
     {
         if (evento is null)

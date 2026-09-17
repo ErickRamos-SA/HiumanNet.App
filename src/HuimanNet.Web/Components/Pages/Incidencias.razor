@@ -263,7 +263,8 @@ else
 </Dialogo>
 
 @code {
-    private const int TamanoPagina = 100;
+    /// <summary>Filas por página.</summary>
+    private const int TamanoPagina = Paginacion.TamanoDeTablaEnPantalla;
 
     private IReadOnlyList<PeriodoDto> _periodos = [];
     private IReadOnlyList<IncidenciaDto> _filas = [];
@@ -313,6 +314,8 @@ else
     /// <summary>Importa quien captura incidencias: la empresa (lo suyo) y nómina.</summary>
     private bool PuedeImportar => ContextoDeUsuario.Puede(AccionDelSistema.CapturarIncidencias);
 
+    /// <summary>Carga las filas del período elegido y sus archivos importables.</summary>
+    /// <returns>Tarea que finaliza al cargarlas.</returns>
     private async Task CargarFilasAsync()
     {
         _pagina = 1;
@@ -337,6 +340,8 @@ else
         }
     }
 
+    /// <summary>Filtra las filas por clave, nombre o razón social.</summary>
+    /// <returns>Las filas visibles.</returns>
     private IReadOnlyList<IncidenciaDto> Filtradas()
     {
         if (string.IsNullOrWhiteSpace(_texto))
@@ -352,6 +357,9 @@ else
             .ToList();
     }
 
+    /// <summary>Cambia el período elegido y carga sus filas.</summary>
+    /// <param name="argumentos">Evento del selector de período.</param>
+    /// <returns>Tarea que finaliza al cargar las filas.</returns>
     private Task CambiarPeriodoAsync(ChangeEventArgs argumentos)
     {
         _periodoId = Guid.TryParse(argumentos.Value?.ToString(), out Guid id) ? id : null;
@@ -360,12 +368,16 @@ else
         return EjecutarAsync(CargarFilasAsync);
     }
 
+    /// <summary>Abre el formulario con las cantidades de una fila.</summary>
+    /// <param name="fila">Fila elegida.</param>
     private void Editar(IncidenciaDto fila)
     {
         LimpiarMensajes();
         _edicion = ModeloIncidencia.Desde(fila);
     }
 
+    /// <summary>Guarda la incidencia del formulario y recarga sin perder la página.</summary>
+    /// <returns>Tarea que finaliza al recargar.</returns>
     private Task GuardarAsync() => EjecutarAsync(async () =>
     {
         if (_edicion is not { } modelo || _periodoId is not { } periodoId)
@@ -383,6 +395,11 @@ else
         _pagina = pagina;
     });
 
+    /// <summary>
+    /// Elimina la incidencia confirmada; el contrato vuelve a calcularse con el
+    /// período completo sin novedades.
+    /// </summary>
+    /// <returns>Tarea que finaliza al recargar.</returns>
     private Task EliminarAsync() => EjecutarAsync(async () =>
     {
         if (_porEliminar is not { Id: { } incidenciaId } fila)
@@ -396,6 +413,8 @@ else
         await CargarFilasAsync();
     });
 
+    /// <summary>Importa las incidencias del archivo elegido y recarga las filas.</summary>
+    /// <returns>Tarea que finaliza al recargar.</returns>
     private Task ImportarAsync() => EjecutarAsync(async () =>
     {
         LimpiarMensajes();
@@ -416,34 +435,117 @@ else
     /// <summary>Estado editable de una incidencia.</summary>
     private sealed class ModeloIncidencia
     {
+        /// <summary>Obtiene el contrato de la fila.</summary>
+        /// <value>Identificador del contrato.</value>
         public Guid ContratoId { get; init; }
+
+        /// <summary>Obtiene la clave y el nombre del empleado, para el título del formulario.</summary>
+        /// <value>Texto a mostrar.</value>
         public string Empleado { get; init; } = string.Empty;
+
+        /// <summary>Obtiene el esquema del contrato.</summary>
+        /// <value>Decide qué campos se muestran.</value>
         public EsquemaDePago Esquema { get; init; }
+
+        /// <summary>Obtiene o establece los días del período.</summary>
+        /// <value>Mayor que cero.</value>
         public decimal DiasPeriodo { get; set; }
+
+        /// <summary>Obtiene o establece los días de vacaciones.</summary>
+        /// <value>Cantidad de días.</value>
         public decimal Vacaciones { get; set; }
+
+        /// <summary>Obtiene o establece los días de ausentismo.</summary>
+        /// <value>Cantidad de días.</value>
         public decimal Ausentismos { get; set; }
+
+        /// <summary>Obtiene o establece los días de incapacidad.</summary>
+        /// <value>Cantidad de días.</value>
         public decimal Incapacidades { get; set; }
+
+        /// <summary>Obtiene o establece los festivos laborados.</summary>
+        /// <value>Cantidad de días.</value>
         public decimal Festivos { get; set; }
+
+        /// <summary>Obtiene o establece las horas extra dobles.</summary>
+        /// <value>Cantidad de horas.</value>
         public decimal HorasDobles { get; set; }
+
+        /// <summary>Obtiene o establece las horas extra triples.</summary>
+        /// <value>Cantidad de horas.</value>
         public decimal HorasTriples { get; set; }
+
+        /// <summary>Obtiene o establece los domingos trabajados.</summary>
+        /// <value>Cantidad de domingos.</value>
         public decimal DomingosTrabajados { get; set; }
+
+        /// <summary>Obtiene o establece las gratificaciones y bonos del período.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal Gratificacion { get; set; }
+
+        /// <summary>Obtiene o establece los reembolsos.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal Reembolsos { get; set; }
+
+        /// <summary>Obtiene o establece el apoyo por teletrabajo.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal Teletrabajo { get; set; }
+
+        /// <summary>Obtiene o establece el importe de finiquito.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal Finiquito { get; set; }
+
+        /// <summary>Obtiene o establece los gastos de cafetería.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal Cafeteria { get; set; }
+
+        /// <summary>Obtiene o establece las horas a descontar.</summary>
+        /// <value>Cantidad de horas.</value>
         public decimal HorasDescontadas { get; set; }
+
+        /// <summary>Obtiene o establece otros descuentos personales.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal OtrosDescuentos { get; set; }
+
+        /// <summary>Obtiene o establece el descuento de préstamo personal del período.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal PrestamoPersonal { get; set; }
+
+        /// <summary>Obtiene o establece el aguinaldo pagado en el período.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal Aguinaldo { get; set; }
+
+        /// <summary>Obtiene o establece otros descuentos del recibo fiscal.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal DescuentosFiscales { get; set; }
+
+        /// <summary>Obtiene o establece el descuento FONACOT capturado.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal FonacotCapturado { get; set; }
+
+        /// <summary>Obtiene o establece el descuento adicional del complemento sindical.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal DescuentoSindicalAdicional { get; set; }
+
+        /// <summary>Obtiene o establece el ajuste manual al complemento sindical.</summary>
+        /// <value>Importe positivo o negativo.</value>
         public decimal AjusteSindical { get; set; }
+
+        /// <summary>Obtiene o establece la retención manual de ISR.</summary>
+        /// <value><c>null</c> para calcularla.</value>
         public decimal? IsrManual { get; set; }
+
+        /// <summary>Obtiene o establece el tipo de movimiento.</summary>
+        /// <value>Ordinaria o finiquito.</value>
         public TipoDeMovimiento TipoDeMovimiento { get; set; }
+
+        /// <summary>Obtiene o establece las observaciones.</summary>
+        /// <value>Nota libre sobre los ajustes manuales.</value>
         public string? Observaciones { get; set; }
 
+        /// <summary>Crea el modelo con las cantidades de una fila.</summary>
+        /// <param name="d">Fila de incidencias.</param>
+        /// <returns>El modelo editable.</returns>
         public static ModeloIncidencia Desde(IncidenciaDto d) => new()
         {
             ContratoId = d.ContratoId,
@@ -475,6 +577,10 @@ else
             Observaciones = d.Observaciones,
         };
 
+        /// <summary>Arma la petición de guardado.</summary>
+        /// <param name="periodoId">Período de la incidencia.</param>
+        /// <param name="empresaId">Empresa de consulta; <c>null</c> para la empresa cliente.</param>
+        /// <returns>La petición.</returns>
         public GuardarIncidenciaRequest ARequest(Guid periodoId, Guid? empresaId) => new(
             periodoId, ContratoId, empresaId, DiasPeriodo, Vacaciones, Ausentismos, Incapacidades, Festivos,
             HorasDobles, HorasTriples, DomingosTrabajados, Gratificacion, Reembolsos, Teletrabajo, Finiquito,

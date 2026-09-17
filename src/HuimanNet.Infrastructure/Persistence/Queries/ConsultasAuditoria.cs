@@ -31,29 +31,7 @@ public sealed class ConsultasAuditoria : RepositorioSqlBase, IConsultasAuditoria
         ArgumentNullException.ThrowIfNull(filtro);
 
         // Dos conjuntos de resultados en un único viaje de red: el total y la página.
-        const string sql = """
-            SELECT COUNT_BIG(1)
-            FROM   dbo.Auditoria AS a
-            WHERE  a.Momento >= @Desde AND a.Momento < @Hasta
-              AND  (@EmpresaId IS NULL OR a.EmpresaId = @EmpresaId)
-              AND  (@Accion IS NULL OR a.Accion = @Accion)
-              AND  (@UsuarioId IS NULL OR a.UsuarioId = @UsuarioId);
-
-            SELECT a.Id, a.Momento, a.Accion,
-                   ISNULL(u.NombreCompleto, N'(usuario desconocido)') AS UsuarioNombre,
-                   e.RazonSocial, a.RecursoTipo, a.RecursoId, a.Exito, a.Detalle
-            FROM   dbo.Auditoria AS a
-            LEFT JOIN dbo.Usuarios AS u ON u.Id = a.UsuarioId
-            LEFT JOIN dbo.Empresas AS e ON e.Id = a.EmpresaId
-            WHERE  a.Momento >= @Desde AND a.Momento < @Hasta
-              AND  (@EmpresaId IS NULL OR a.EmpresaId = @EmpresaId)
-              AND  (@Accion IS NULL OR a.Accion = @Accion)
-              AND  (@UsuarioId IS NULL OR a.UsuarioId = @UsuarioId)
-            ORDER BY a.Momento DESC
-            OFFSET @Omitir ROWS FETCH NEXT @Tomar ROWS ONLY;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Auditoria.Consultar, cancellationToken);
 
         comando.Parameters.Add(new SqlParameter("@Desde", SqlDbType.DateTimeOffset) { Value = filtro.Desde });
         comando.Parameters.Add(new SqlParameter("@Hasta", SqlDbType.DateTimeOffset) { Value = filtro.Hasta });

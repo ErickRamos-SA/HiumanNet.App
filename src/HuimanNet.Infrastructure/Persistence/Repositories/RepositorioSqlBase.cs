@@ -1,3 +1,4 @@
+using System.Data;
 using HuimanNet.Infrastructure.Persistence.Connections;
 using Microsoft.Data.SqlClient;
 
@@ -9,8 +10,8 @@ namespace HuimanNet.Infrastructure.Persistence.Repositories;
 /// </summary>
 /// <remarks>
 /// Compatible con Native AOT: no usa reflexión, emisión de IL ni convenciones
-/// de mapeo automáticas. Todo el SQL es explícito y todos los parámetros van
-/// tipados (ESPECIFICACION.md §6.1).
+/// de mapeo automáticas. Todos los parámetros van tipados y el SQL vive en
+/// procedimientos almacenados (ESPECIFICACION.md §6.1).
 /// </remarks>
 public abstract class RepositorioSqlBase
 {
@@ -36,21 +37,31 @@ public abstract class RepositorioSqlBase
     protected ISesionSql Sesion => _sesion;
 
     /// <summary>
-    /// Crea un comando enlazado a la conexión y a la transacción de la petición.
+    /// Crea un comando que invoca un procedimiento almacenado, enlazado a la
+    /// conexión y a la transacción de la petición.
     /// </summary>
-    /// <param name="sql">Sentencia a ejecutar. Siempre con parámetros: nunca concatenada.</param>
+    /// <param name="nombre">
+    /// Nombre completo del procedimiento, tomado de <see cref="Procedimientos"/>.
+    /// </param>
     /// <param name="cancellationToken">Token de cancelación de la operación.</param>
     /// <returns>El comando listo para añadirle parámetros y ejecutarse.</returns>
-    protected async Task<SqlCommand> CrearComandoAsync(
-        string sql, CancellationToken cancellationToken)
+    /// <remarks>
+    /// Es la única vía de acceso a datos de la solución: ningún repositorio
+    /// arma SQL por su cuenta. El plan de ejecución lo reutiliza el servidor y
+    /// la base de datos puede conceder sólo permiso de <c>EXECUTE</c>.
+    /// </remarks>
+    protected async Task<SqlCommand> CrearProcedimientoAsync(
+        string nombre, CancellationToken cancellationToken)
     {
         SqlConnection conexion = await _sesion.ObtenerConexionAsync(cancellationToken);
 
         SqlCommand comando = conexion.CreateCommand();
-        comando.CommandText = sql;
+        comando.CommandType = CommandType.StoredProcedure;
+        comando.CommandText = nombre;
         comando.CommandTimeout = _sesion.TiempoDeEsperaComandoSegundos;
         comando.Transaction = _sesion.TransaccionActual;
 
         return comando;
     }
+
 }

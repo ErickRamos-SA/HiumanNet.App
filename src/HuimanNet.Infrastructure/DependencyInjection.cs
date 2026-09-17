@@ -67,6 +67,11 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>
+    /// Registra la sesión SQL por petición, los repositorios, las consultas, el
+    /// inicializador de la base de datos y los sembradores.
+    /// </summary>
+    /// <param name="services">Contenedor de servicios.</param>
     private static void AgregarPersistencia(this IServiceCollection services)
     {
         services.AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
@@ -104,9 +109,14 @@ public static class DependencyInjection
         services.AddScoped<SembradorDeDatosDePrueba>();
     }
 
+    /// <summary>
+    /// Registra la resolución de usuarios por claims, el hash de contraseñas y
+    /// la emisión de tokens del modo local.
+    /// </summary>
+    /// <param name="services">Contenedor de servicios.</param>
     private static void AgregarIdentidad(this IServiceCollection services)
     {
-        services.AddScoped<ResolutorDeUsuarioPorClaims>();
+        services.AddSingleton<LectorDeIdentidadPorClaims>();
         services.AddSingleton<IHasherDeContrasenas, HasherDeContrasenasPbkdf2>();
         services.AddSingleton<MaterialDeFirmaLocal>();
         services.AddSingleton<IEmisorDeTokens, EmisorDeTokensLocal>();
@@ -120,6 +130,8 @@ public static class DependencyInjection
     /// cambia durante la vida del proceso y así el proveedor que no se usa ni
     /// siquiera se construye (en local no se crea ningún cliente de Azure).
     /// </remarks>
+    /// <param name="services">Contenedor de servicios.</param>
+    /// <param name="configuration">Configuración de la aplicación, para leer el proveedor.</param>
     private static void AgregarAlmacenamiento(this IServiceCollection services, IConfiguration configuration)
     {
         string? proveedor = configuration[$"{OpcionesDeAlmacenamiento.Seccion}:{nameof(OpcionesDeAlmacenamiento.Proveedor)}"];
@@ -149,6 +161,11 @@ public static class DependencyInjection
         services.AddSingleton<InicializadorDeAlmacenamiento>();
     }
 
+    /// <summary>
+    /// Registra el cliente de la cola de avisos y el publicador: el real si las
+    /// notificaciones están habilitadas, uno inactivo si no.
+    /// </summary>
+    /// <param name="services">Contenedor de servicios.</param>
     private static void AgregarNotificaciones(this IServiceCollection services)
     {
         services.AddSingleton(sp =>
@@ -176,6 +193,11 @@ public static class DependencyInjection
         });
     }
 
+    /// <summary>
+    /// Registra la política de carga con las extensiones y el tamaño máximo de
+    /// la configuración.
+    /// </summary>
+    /// <param name="services">Contenedor de servicios.</param>
     private static void AgregarPoliticaDeCarga(this IServiceCollection services)
     {
         // Sobrescribe el valor por defecto que registró la capa de aplicación:

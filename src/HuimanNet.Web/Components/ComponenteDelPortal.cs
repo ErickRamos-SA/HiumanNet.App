@@ -1,5 +1,5 @@
 using HuimanNet.Application.Common;
-using HuimanNet.Application.Interfaces;
+using HuimanNet.Application.Empresas.Queries;
 using HuimanNet.Contracts.Empresas;
 using HuimanNet.Contracts.Localizacion;
 using HuimanNet.Domain.Exceptions;
@@ -48,6 +48,8 @@ public abstract class ComponenteDelPortal : ComponentBase, IDisposable
     [Inject]
     protected NavigationManager Navegacion { get; set; } = default!;
 
+    /// <summary>Obtiene o establece el registro de eventos.</summary>
+    /// <value>Inyectado por el contenedor; registra los errores inesperados.</value>
     [Inject]
     private ILogger<ComponenteDelPortal> Logger { get; set; } = default!;
 
@@ -245,9 +247,11 @@ public abstract class ComponenteDelPortal : ComponentBase, IDisposable
 
         if (EmpresaIdDeRuta is { } empresaId && empresaId != Estado.EmpresaId)
         {
-            EmpresaDto? empresa = ContextoDeUsuario.EsTransversal
-                ? await Casos.UsarAsync<IConsultasEmpresas, EmpresaDto?>(c => c.ObtenerAsync(empresaId))
-                : ContextoDeUsuario.EmpresasDelUsuario.FirstOrDefault(e => e.Id == empresaId);
+            IReadOnlyList<EmpresaDto> elegibles = ContextoDeUsuario.EsTransversal
+                ? await Casos.ConsultarAsync<ListarEmpresasQuery, IReadOnlyList<EmpresaDto>>(new ListarEmpresasQuery(SoloActivas: false))
+                : ContextoDeUsuario.EmpresasDelUsuario;
+
+            EmpresaDto? empresa = elegibles.FirstOrDefault(e => e.Id == empresaId);
 
             if (empresa is not null)
             {
@@ -263,6 +267,10 @@ public abstract class ComponenteDelPortal : ComponentBase, IDisposable
         }
     }
 
+    /// <summary>
+    /// Recarga la página cuando cambia la empresa de trabajo, si depende de ella.
+    /// </summary>
+    /// <returns>Tarea que finaliza al recargar y volver a dibujar.</returns>
     private Task AlCambiarEmpresa()
         => !DependeDeEmpresa
             ? Task.CompletedTask

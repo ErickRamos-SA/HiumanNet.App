@@ -27,13 +27,7 @@ public sealed class PeriodoRepository : RepositorioSqlBase, IPeriodoRepository
     public async Task<PeriodoCarga?> ObtenerPorIdAsync(
         Guid id, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDePeriodos.Columnas}
-            FROM   dbo.Periodos AS p
-            WHERE  p.Id = @Id AND p.EmpresaId = @EmpresaId;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Periodos.Obtener, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = id });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
 
@@ -44,14 +38,7 @@ public sealed class PeriodoRepository : RepositorioSqlBase, IPeriodoRepository
     public async Task<PeriodoCarga?> ObtenerPorCalendarioAsync(
         Guid empresaId, PeriodoCalendario calendario, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDePeriodos.Columnas}
-            FROM   dbo.Periodos AS p
-            WHERE  p.EmpresaId = @EmpresaId
-              AND  p.Anio = @Anio AND p.Mes = @Mes AND p.Consecutivo = @Consecutivo;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Periodos.ObtenerPorCalendario, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
         comando.Parameters.Add(new SqlParameter("@Anio", SqlDbType.SmallInt) { Value = (short)calendario.Anio });
         comando.Parameters.Add(new SqlParameter("@Mes", SqlDbType.TinyInt) { Value = (byte)calendario.Mes });
@@ -64,15 +51,7 @@ public sealed class PeriodoRepository : RepositorioSqlBase, IPeriodoRepository
     public async Task<IReadOnlyList<PeriodoCarga>> ListarPorEmpresaAsync(
         Guid empresaId, bool incluirCerrados = true, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDePeriodos.Columnas}
-            FROM   dbo.Periodos AS p
-            WHERE  p.EmpresaId = @EmpresaId
-              AND  (@IncluirCerrados = 1 OR p.Estado <> @EstadoCerrado)
-            ORDER BY p.Anio DESC, p.Mes DESC, p.Consecutivo DESC;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Periodos.ListarPorEmpresa, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
         comando.Parameters.Add(new SqlParameter("@IncluirCerrados", SqlDbType.Bit) { Value = incluirCerrados });
         comando.Parameters.Add(new SqlParameter("@EstadoCerrado", SqlDbType.TinyInt)
@@ -87,14 +66,7 @@ public sealed class PeriodoRepository : RepositorioSqlBase, IPeriodoRepository
     public async Task<IReadOnlyList<PeriodoCarga>> ListarBandejaDelOperadorAsync(
         CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDePeriodos.Columnas}
-            FROM   dbo.Periodos AS p
-            WHERE  p.Estado IN (@Recibido, @EnProceso)
-            ORDER BY p.FechaApertura ASC;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Periodos.ListarBandeja, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Recibido", SqlDbType.TinyInt) { Value = (byte)EstadoPeriodo.Recibido });
         comando.Parameters.Add(new SqlParameter("@EnProceso", SqlDbType.TinyInt) { Value = (byte)EstadoPeriodo.EnProceso });
 
@@ -106,16 +78,7 @@ public sealed class PeriodoRepository : RepositorioSqlBase, IPeriodoRepository
     {
         ArgumentNullException.ThrowIfNull(periodo);
 
-        const string sql = """
-            INSERT INTO dbo.Periodos
-                (Id, EmpresaId, Anio, Mes, Consecutivo, Descripcion, Estado,
-                 FechaApertura, FechaLimiteCarga, FechaCierre)
-            VALUES
-                (@Id, @EmpresaId, @Anio, @Mes, @Consecutivo, @Descripcion, @Estado,
-                 @FechaApertura, @FechaLimiteCarga, @FechaCierre);
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Periodos.Insertar, cancellationToken);
 
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = periodo.Id });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = periodo.EmpresaId });
@@ -136,16 +99,7 @@ public sealed class PeriodoRepository : RepositorioSqlBase, IPeriodoRepository
     {
         ArgumentNullException.ThrowIfNull(periodo);
 
-        const string sql = """
-            UPDATE dbo.Periodos
-            SET    Descripcion = @Descripcion,
-                   Estado = @Estado,
-                   FechaLimiteCarga = @FechaLimiteCarga,
-                   FechaCierre = @FechaCierre
-            WHERE  Id = @Id;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Periodos.Actualizar, cancellationToken);
 
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = periodo.Id });
         comando.Parameters.Add(new SqlParameter("@Descripcion", SqlDbType.NVarChar, 200) { Value = periodo.Descripcion });
@@ -156,9 +110,17 @@ public sealed class PeriodoRepository : RepositorioSqlBase, IPeriodoRepository
         await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    /// <summary>Crea un parámetro de fecha opcional.</summary>
+    /// <param name="nombre">Nombre del parámetro.</param>
+    /// <param name="valor">Fecha, o <c>null</c>.</param>
+    /// <returns>El parámetro.</returns>
     private static SqlParameter FechaOpcional(string nombre, DateTimeOffset? valor)
         => new(nombre, SqlDbType.DateTimeOffset) { Value = (object?)valor ?? DBNull.Value };
 
+    /// <summary>Ejecuta un procedimiento y rehidrata la primera fila.</summary>
+    /// <param name="comando">Comando ya preparado.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>El período, o <c>null</c> si no hay filas.</returns>
     private static async Task<PeriodoCarga?> LeerUnoAsync(
         SqlCommand comando, CancellationToken cancellationToken)
     {
@@ -169,6 +131,10 @@ public sealed class PeriodoRepository : RepositorioSqlBase, IPeriodoRepository
             : null;
     }
 
+    /// <summary>Ejecuta un procedimiento y rehidrata cada fila.</summary>
+    /// <param name="comando">Comando ya preparado.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Los períodos.</returns>
     private static async Task<IReadOnlyList<PeriodoCarga>> LeerVariosAsync(
         SqlCommand comando, CancellationToken cancellationToken)
     {

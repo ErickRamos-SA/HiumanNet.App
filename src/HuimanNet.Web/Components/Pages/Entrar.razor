@@ -57,6 +57,8 @@
 </div>
 
 @code {
+    /// <summary>Obtiene o establece el contexto de la petición.</summary>
+    /// <value>Lo aporta el servidor: la página se sirve estática.</value>
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
@@ -68,11 +70,16 @@
     [SupplyParameterFromQuery(Name = "error")]
     public string? Error { get; set; }
 
-    private string Destino => HuimanNet.Web.Endpoints.AutenticacionEndpoints.RutaLocalSegura(VolverA);
+    /// <summary>Obtiene la página a la que se vuelve, validada como ruta local.</summary>
+    /// <value>La ruta pedida si es local; si no, el inicio.</value>
+    private string Destino =>HuimanNet.Web.Endpoints.AutenticacionEndpoints.RutaLocalSegura(VolverA);
 
     /// <inheritdoc/>
     protected override void OnInitialized() => T.Cambiar(IdiomaDeLaPeticion.Detectar(HttpContext));
 
+    /// <summary>Arma el enlace que cambia el idioma y vuelve a esta página.</summary>
+    /// <param name="codigo">Código del idioma.</param>
+    /// <returns>La ruta relativa del cambio de idioma.</returns>
     private string EnlaceDeIdioma(string codigo)
         => $"autenticacion/idioma?codigo={codigo}&volverA={Uri.EscapeDataString("/entrar?volverA=" + Uri.EscapeDataString(Destino))}";
 }

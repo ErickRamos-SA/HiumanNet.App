@@ -10,22 +10,12 @@ namespace HuimanNet.Infrastructure.Persistence.Mappers;
 /// </summary>
 /// <remarks>
 /// Mapeo escrito a mano y por <b>ordinal</b>: sin reflexión y sin buscar
-/// columnas por nombre en cada fila. El orden de <see cref="Columnas"/> y el de
-/// las lecturas de <see cref="Mapear"/> deben mantenerse sincronizados; por eso
-/// viven juntos en el mismo archivo.
+/// columnas por nombre en cada fila. Las columnas y su orden los fijan los
+/// procedimientos de <c>Procedimientos/Documentos.sql</c> que alimentan este
+/// lector: cambiarlas allí obliga a cambiar este mapeo.
 /// </remarks>
 public static class LectorDeDocumentos
 {
-    /// <summary>
-    /// Obtiene la lista de columnas que debe proyectar cualquier consulta que
-    /// alimente a <see cref="Mapear"/>.
-    /// </summary>
-    /// <value>Fragmento SQL con los nombres de columna en el orden esperado.</value>
-    public const string Columnas =
-        "d.Id, d.EmpresaId, d.PeriodoId, d.Tipo, d.NombreOriginal, d.RutaBlob, " +
-        "d.TamanoBytes, d.Estado, d.HuellaSha256, d.CargadoPorUsuarioId, " +
-        "d.FechaSolicitud, d.FechaCargaConfirmada, d.FechaEscaneo, d.MotivoCuarentena";
-
     /// <summary>
     /// Construye una entidad a partir de la fila actual del lector.
     /// </summary>

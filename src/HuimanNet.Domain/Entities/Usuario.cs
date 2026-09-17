@@ -3,14 +3,6 @@ using HuimanNet.Domain.Enums;
 namespace HuimanNet.Domain.Entities;
 
 /// <summary>
-/// Permiso personalizado de un usuario: habilita o deshabilita una acción con
-/// independencia de lo que su rol concede por defecto.
-/// </summary>
-/// <param name="Accion">Acción afectada.</param>
-/// <param name="Habilitado"><c>true</c> para conceder; <c>false</c> para retirar.</param>
-public sealed record PermisoDeUsuario(AccionDelSistema Accion, bool Habilitado);
-
-/// <summary>
 /// Usuario del portal. Se autentica con Microsoft Entra o, cuando la
 /// instalación opera en modo local, con usuario y contraseña gestionados por el
 /// administrador.
@@ -32,6 +24,11 @@ public sealed class Usuario
     private readonly List<PermisoDeUsuario> _permisos;
     private readonly List<Guid> _empresasAdicionales;
 
+    /// <summary>
+    /// Inicializa una instancia con valores ya validados. Sólo la usan las
+    /// fábricas y <see cref="Rehidratar"/>.
+    /// </summary>
+    /// <inheritdoc cref="Rehidratar" path="/param"/>
     private Usuario(
         Guid id,
         string identificadorExterno,
@@ -293,15 +290,6 @@ public sealed class Usuario
     }
 
     /// <summary>
-    /// Cambia el rol funcional del usuario conservando su empresa.
-    /// </summary>
-    /// <param name="rol">Nuevo rol.</param>
-    /// <exception cref="InvalidOperationException">
-    /// Se lanza al asignar <see cref="RolUsuario.ClienteEmpresa"/> a un usuario sin empresa.
-    /// </exception>
-    public void CambiarRol(RolUsuario rol) => AsignarRol(rol, EmpresaId);
-
-    /// <summary>
     /// Sustituye las empresas adicionales de un usuario de empresa cliente.
     /// </summary>
     /// <param name="empresas">Empresas, además de la principal, en las que opera.</param>
@@ -381,11 +369,24 @@ public sealed class Usuario
     /// </summary>
     public void Activar() => Activo = true;
 
+    /// <summary>Depura la lista de empresas adicionales de un usuario.</summary>
+    /// <param name="rol">Rol del usuario; sólo el cliente de empresa tiene empresas adicionales.</param>
+    /// <param name="principal">Empresa principal, que no se repite en la lista.</param>
+    /// <param name="empresas">Empresas adicionales indicadas.</param>
+    /// <returns>Las empresas sin vacíos, duplicados ni la principal; vacía para los demás roles.</returns>
     private static List<Guid> Normalizar(RolUsuario rol, Guid? principal, IEnumerable<Guid>? empresas)
         => rol != RolUsuario.ClienteEmpresa || empresas is null
             ? []
             : [.. empresas.Where(e => e != Guid.Empty && e != principal).Distinct()];
 
+    /// <summary>
+    /// Comprueba que el rol sea válido y que un cliente de empresa tenga empresa.
+    /// </summary>
+    /// <param name="rol">Rol asignado.</param>
+    /// <param name="empresaId">Empresa principal.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Se lanza si el rol no es válido o un cliente de empresa no tiene empresa.
+    /// </exception>
     private static void ValidarRolYEmpresa(RolUsuario rol, Guid? empresaId)
     {
         if (rol == RolUsuario.NoEspecificado || !Enum.IsDefined(rol))

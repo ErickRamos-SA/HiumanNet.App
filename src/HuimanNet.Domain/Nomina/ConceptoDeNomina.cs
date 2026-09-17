@@ -21,6 +21,17 @@ public sealed class ConceptoDeNomina
     /// <summary>Longitud máxima de la fórmula.</summary>
     public const int LongitudMaximaFormula = 4000;
 
+    /// <summary>Longitud máxima de cada alias de cotejo.</summary>
+    public const int LongitudMaximaAlias = 100;
+
+    /// <summary>Número máximo de alias de cotejo por concepto.</summary>
+    public const int MaximoDeAlias = 20;
+
+    /// <summary>
+    /// Inicializa una instancia con valores ya validados. Sólo la usan las
+    /// fábricas y <see cref="Rehidratar"/>.
+    /// </summary>
+    /// <inheritdoc cref="Rehidratar" path="/param"/>
     private ConceptoDeNomina(
         Guid id,
         string clave,
@@ -33,7 +44,8 @@ public sealed class ConceptoDeNomina
         bool visibleEnRecibo,
         bool activo,
         Guid? empresaId,
-        DateTimeOffset fechaModificacion)
+        DateTimeOffset fechaModificacion,
+        IReadOnlyList<string> aliasDeCotejo)
     {
         Id = id;
         Clave = clave;
@@ -47,6 +59,7 @@ public sealed class ConceptoDeNomina
         Activo = activo;
         EmpresaId = empresaId;
         FechaModificacion = fechaModificacion;
+        AliasDeCotejo = aliasDeCotejo;
     }
 
     /// <summary>Obtiene el identificador único.</summary>
@@ -98,6 +111,16 @@ public sealed class ConceptoDeNomina
     public DateTimeOffset FechaModificacion { get; private set; }
 
     /// <summary>
+    /// Obtiene otros encabezados con los que el concepto aparece en el archivo
+    /// de resultados del cálculo manual.
+    /// </summary>
+    /// <value>
+    /// Lista de sólo lectura, sin repetidos; vacía si el archivo usa la clave.
+    /// El cotejo los compara sin distinguir mayúsculas, acentos ni espacios.
+    /// </value>
+    public IReadOnlyList<string> AliasDeCotejo { get; private set; }
+
+    /// <summary>
     /// Crea un concepto nuevo, validando su clave y compilando su fórmula.
     /// </summary>
     /// <param name="clave">Clave del concepto.</param>
@@ -110,8 +133,11 @@ public sealed class ConceptoDeNomina
     /// <param name="visibleEnRecibo">Si se muestra en el recibo.</param>
     /// <param name="empresaId">Empresa a la que aplica, o <c>null</c>.</param>
     /// <param name="momento">Instante de creación, en UTC.</param>
+    /// <param name="aliasDeCotejo">Otros encabezados del concepto en el archivo manual, o <c>null</c>.</param>
     /// <returns>El concepto creado y activo.</returns>
-    /// <exception cref="CatalogoInvalidoException">Se lanza si la clave, el tipo o los esquemas no son válidos.</exception>
+    /// <exception cref="CatalogoInvalidoException">
+    /// Se lanza si la clave, el tipo, los esquemas o los alias no son válidos.
+    /// </exception>
     /// <exception cref="ErrorDeFormulaException">Se lanza si la fórmula tiene errores de sintaxis.</exception>
     public static ConceptoDeNomina Crear(
         string clave,
@@ -123,7 +149,8 @@ public sealed class ConceptoDeNomina
         string formula,
         bool visibleEnRecibo,
         Guid? empresaId,
-        DateTimeOffset momento)
+        DateTimeOffset momento,
+        IEnumerable<string>? aliasDeCotejo = null)
     {
         string claveNormalizada = NormalizarClave(clave);
         ValidarTipoYEsquemas(tipo, esquemas);
@@ -141,7 +168,8 @@ public sealed class ConceptoDeNomina
             visibleEnRecibo,
             activo: true,
             empresaId,
-            momento);
+            momento,
+            NormalizarAlias(aliasDeCotejo));
     }
 
     /// <summary>
@@ -159,6 +187,7 @@ public sealed class ConceptoDeNomina
     /// <param name="activo">Estado.</param>
     /// <param name="empresaId">Empresa, si aplica.</param>
     /// <param name="fechaModificacion">Última modificación.</param>
+    /// <param name="aliasDeCotejo">Alias de cotejo guardados.</param>
     /// <returns>La entidad rehidratada.</returns>
     /// <remarks>Uso exclusivo de la capa de persistencia.</remarks>
     public static ConceptoDeNomina Rehidratar(
@@ -173,8 +202,10 @@ public sealed class ConceptoDeNomina
         bool visibleEnRecibo,
         bool activo,
         Guid? empresaId,
-        DateTimeOffset fechaModificacion)
-        => new(id, clave, nombre, descripcion, tipo, esquemas, orden, formula, visibleEnRecibo, activo, empresaId, fechaModificacion);
+        DateTimeOffset fechaModificacion,
+        IReadOnlyList<string> aliasDeCotejo)
+        => new(id, clave, nombre, descripcion, tipo, esquemas, orden, formula, visibleEnRecibo, activo, empresaId, fechaModificacion,
+            aliasDeCotejo ?? []);
 
     /// <summary>
     /// Actualiza el concepto, validando la nueva fórmula.
@@ -187,8 +218,9 @@ public sealed class ConceptoDeNomina
     /// <param name="formula">Texto de la fórmula.</param>
     /// <param name="visibleEnRecibo">Si se muestra en el recibo.</param>
     /// <param name="activo">Si participa en el cálculo.</param>
+    /// <param name="aliasDeCotejo">Otros encabezados del concepto en el archivo manual; <c>null</c> los retira.</param>
     /// <param name="momento">Instante de la modificación, en UTC.</param>
-    /// <exception cref="CatalogoInvalidoException">Se lanza si el tipo o los esquemas no son válidos.</exception>
+    /// <exception cref="CatalogoInvalidoException">Se lanza si el tipo, los esquemas o los alias no son válidos.</exception>
     /// <exception cref="ErrorDeFormulaException">Se lanza si la fórmula tiene errores de sintaxis.</exception>
     public void Actualizar(
         string nombre,
@@ -199,11 +231,13 @@ public sealed class ConceptoDeNomina
         string formula,
         bool visibleEnRecibo,
         bool activo,
+        IEnumerable<string>? aliasDeCotejo,
         DateTimeOffset momento)
     {
         ValidarTipoYEsquemas(tipo, esquemas);
         string formulaValidada = ValidarFormula(formula);
 
+        AliasDeCotejo = NormalizarAlias(aliasDeCotejo);
         Nombre = Requerido(nombre, "nombre");
         Descripcion = descripcion?.Trim() ?? string.Empty;
         Tipo = tipo;
@@ -250,6 +284,12 @@ public sealed class ConceptoDeNomina
         return normalizada;
     }
 
+    /// <summary>
+    /// Comprueba que el concepto tenga tipo y aplique al menos a un esquema.
+    /// </summary>
+    /// <param name="tipo">Tipo del concepto.</param>
+    /// <param name="esquemas">Esquemas a los que aplica.</param>
+    /// <exception cref="CatalogoInvalidoException">Se lanza si falta el tipo o no aplica a ningún esquema.</exception>
     private static void ValidarTipoYEsquemas(TipoDeConcepto tipo, EsquemasDePago esquemas)
     {
         if (tipo == TipoDeConcepto.NoEspecificado || !Enum.IsDefined(tipo))
@@ -263,6 +303,12 @@ public sealed class ConceptoDeNomina
         }
     }
 
+    /// <summary>
+    /// Comprueba que la fórmula exista, no exceda <see cref="LongitudMaximaFormula"/> y compile.
+    /// </summary>
+    /// <param name="formula">Texto capturado.</param>
+    /// <returns>La fórmula sin espacios en los extremos.</returns>
+    /// <exception cref="ErrorDeFormulaException">Se lanza si está vacía, es demasiado larga o no compila.</exception>
     private static string ValidarFormula(string? formula)
     {
         if (string.IsNullOrWhiteSpace(formula))
@@ -281,6 +327,50 @@ public sealed class ConceptoDeNomina
         return texto;
     }
 
+    /// <summary>
+    /// Depura los alias de cotejo: recorta espacios, descarta vacíos y
+    /// repetidos, y comprueba longitud y cantidad.
+    /// </summary>
+    /// <param name="alias">Alias capturados, o <c>null</c>.</param>
+    /// <returns>Los alias depurados; vacía si no hay.</returns>
+    /// <exception cref="CatalogoInvalidoException">
+    /// Se lanza si un alias excede <see cref="LongitudMaximaAlias"/>, contiene
+    /// una barra vertical o hay más de <see cref="MaximoDeAlias"/>.
+    /// </exception>
+    private static string[] NormalizarAlias(IEnumerable<string>? alias)
+    {
+        if (alias is null)
+        {
+            return [];
+        }
+
+        string[] depurados = [.. alias
+            .Where(static a => !string.IsNullOrWhiteSpace(a))
+            .Select(static a => a.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
+
+        if (depurados.Length > MaximoDeAlias)
+        {
+            throw new CatalogoInvalidoException($"Un concepto admite a lo sumo {MaximoDeAlias} alias de cotejo.");
+        }
+
+        foreach (string a in depurados)
+        {
+            if (a.Length > LongitudMaximaAlias || a.Contains('|', StringComparison.Ordinal))
+            {
+                throw new CatalogoInvalidoException(
+                    $"El alias '{a}' no es válido: admite hasta {LongitudMaximaAlias} caracteres y no puede contener '|'.");
+            }
+        }
+
+        return depurados;
+    }
+
+    /// <summary>Exige un texto obligatorio.</summary>
+    /// <param name="valor">Texto capturado.</param>
+    /// <param name="nombre">Nombre del dato, para el mensaje de error.</param>
+    /// <returns>El texto sin espacios en los extremos.</returns>
+    /// <exception cref="CatalogoInvalidoException">Se lanza si el texto está vacío.</exception>
     private static string Requerido(string? valor, string nombre)
         => string.IsNullOrWhiteSpace(valor)
             ? throw new CatalogoInvalidoException($"El {nombre} es obligatorio.")

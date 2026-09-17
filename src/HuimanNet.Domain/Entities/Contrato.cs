@@ -4,52 +4,6 @@ using HuimanNet.Domain.Exceptions;
 namespace HuimanNet.Domain.Entities;
 
 /// <summary>
-/// Crédito INFONAVIT vigente de un trabajador.
-/// </summary>
-/// <param name="Tipo">Modalidad del aviso de retención.</param>
-/// <param name="Valor">Importe mensual, factor VSM o porcentaje (como fracción), según la modalidad.</param>
-/// <param name="SeguroDeVivienda">Seguro de vivienda bimestral.</param>
-public sealed record CreditoInfonavit(TipoDeCreditoInfonavit Tipo, decimal Valor, decimal SeguroDeVivienda)
-{
-    /// <summary>Obtiene la instancia que representa la ausencia de crédito.</summary>
-    /// <value>Tipo <see cref="TipoDeCreditoInfonavit.Ninguno"/> con importes en cero.</value>
-    public static CreditoInfonavit Ninguno { get; } = new(TipoDeCreditoInfonavit.Ninguno, 0m, 0m);
-}
-
-/// <summary>
-/// Condiciones económicas de un contrato.
-/// </summary>
-/// <param name="SueldoPeriodoReal">Sueldo real pactado por período de pago.</param>
-/// <param name="SalarioDiarioFiscal">Salario diario registrado ante el IMSS. Para un contrato IMSS puro coincide con el sueldo real entre los días del período.</param>
-/// <param name="SalarioDiarioIntegrado">Salario diario integrado registrado ante el IMSS.</param>
-/// <param name="Zona">Zona de salario mínimo del centro de trabajo.</param>
-/// <param name="Infonavit">Crédito INFONAVIT, o <see cref="CreditoInfonavit.Ninguno"/>.</param>
-/// <param name="FonacotMensual">Importe mensual del crédito FONACOT; cero si no hay.</param>
-/// <param name="PensionAlimenticiaImporte">Importe fijo de pensión alimenticia por período.</param>
-/// <param name="PensionAlimenticiaPorcentaje">Porcentaje de pensión alimenticia sobre percepciones, como fracción.</param>
-/// <param name="PrestamoPersonalFijo">Descuento fijo de préstamo personal por período.</param>
-/// <param name="BonoFijo">Bono fijo por período.</param>
-/// <param name="HonorariosAplicaIva">Si el contrato por honorarios traslada IVA.</param>
-/// <param name="PagaComplementoSindical">
-/// Sueldo mixto IMSS + sindicato: si es <c>true</c>, la diferencia entre el
-/// sueldo real y el neto fiscal se entrega vía sindicato o cooperativa, como en
-/// el modelo de referencia. En un contrato IMSS puro debe ser <c>false</c>.
-/// </param>
-public sealed record CondicionesDeContrato(
-    decimal SueldoPeriodoReal,
-    decimal SalarioDiarioFiscal,
-    decimal SalarioDiarioIntegrado,
-    ZonaSalarioMinimo Zona,
-    CreditoInfonavit Infonavit,
-    decimal FonacotMensual,
-    decimal PensionAlimenticiaImporte,
-    decimal PensionAlimenticiaPorcentaje,
-    decimal PrestamoPersonalFijo,
-    decimal BonoFijo,
-    bool HonorariosAplicaIva,
-    bool PagaComplementoSindical);
-
-/// <summary>
 /// Vínculo entre un empleado y una razón social bajo un esquema de pago.
 /// </summary>
 /// <remarks>
@@ -59,6 +13,11 @@ public sealed record CondicionesDeContrato(
 /// </remarks>
 public sealed class Contrato
 {
+    /// <summary>
+    /// Inicializa una instancia con valores ya validados. Sólo la usan las
+    /// fábricas y <see cref="Rehidratar"/>.
+    /// </summary>
+    /// <inheritdoc cref="Rehidratar" path="/param"/>
     private Contrato(
         Guid id,
         Guid empleadoId,
@@ -273,14 +232,6 @@ public sealed class Contrato
     }
 
     /// <summary>
-    /// Indica si el contrato está vigente en una fecha.
-    /// </summary>
-    /// <param name="fecha">Fecha de referencia del período.</param>
-    /// <returns><c>true</c> si la fecha está entre el alta y la baja (inclusive).</returns>
-    public bool EstaVigenteEn(DateOnly fecha)
-        => fecha >= FechaAlta && (FechaBaja is null || fecha <= FechaBaja.Value);
-
-    /// <summary>
     /// Calcula la antigüedad en años completos a una fecha.
     /// </summary>
     /// <param name="fecha">Fecha de referencia.</param>
@@ -302,6 +253,16 @@ public sealed class Contrato
         return anios;
     }
 
+    /// <summary>
+    /// Comprueba que el esquema y las condiciones del contrato sean coherentes.
+    /// </summary>
+    /// <param name="esquema">Esquema de pago.</param>
+    /// <param name="condiciones">Salarios, zona y datos de INFONAVIT del contrato.</param>
+    /// <exception cref="ArgumentNullException">Se lanza si faltan las condiciones o sus datos de INFONAVIT.</exception>
+    /// <exception cref="CatalogoInvalidoException">
+    /// Se lanza si falta el esquema o la zona, algún salario es negativo o la
+    /// pensión alimenticia no es una fracción entre 0 y 1.
+    /// </exception>
     private static void Validar(EsquemaDePago esquema, CondicionesDeContrato condiciones)
     {
         ArgumentNullException.ThrowIfNull(condiciones);
@@ -328,6 +289,9 @@ public sealed class Contrato
         }
     }
 
+    /// <summary>Normaliza un texto opcional.</summary>
+    /// <param name="valor">Texto capturado.</param>
+    /// <returns>El texto sin espacios en los extremos, o <c>null</c> si está vacío.</returns>
     private static string? Limpiar(string? valor)
         => string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 }

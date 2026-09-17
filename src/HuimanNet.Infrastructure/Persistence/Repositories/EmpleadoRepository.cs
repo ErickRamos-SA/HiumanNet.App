@@ -11,9 +11,9 @@ namespace HuimanNet.Infrastructure.Persistence.Repositories;
 /// Repositorio de empleados y contratos basado en ADO.NET sobre SQL Server.
 /// </summary>
 /// <remarks>
-/// Toda lectura filtra por empresa en la cláusula <c>WHERE</c>. La consulta de
-/// contratos vigentes —la entrada del cálculo— se resuelve en una sola
-/// sentencia apoyada en el índice <c>IX_Contratos_Empresa_Vigencia</c>.
+/// Toda lectura filtra por empresa. La consulta de contratos vigentes —la
+/// entrada del cálculo— la resuelve <c>Contratos_ListarVigentes</c> en una sola
+/// sentencia apoyada en <c>IX_Contratos_Empresa_Vigencia</c>.
 /// </remarks>
 public sealed class EmpleadoRepository : RepositorioSqlBase, IEmpleadoRepository
 {
@@ -29,9 +29,7 @@ public sealed class EmpleadoRepository : RepositorioSqlBase, IEmpleadoRepository
     /// <inheritdoc/>
     public async Task<Empleado?> ObtenerPorIdAsync(Guid id, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"SELECT {LectorDeEmpleados.Columnas} FROM dbo.Empleados AS e WHERE e.Id = @Id AND e.EmpresaId = @EmpresaId;";
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Empleados.Obtener, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = id });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
 
@@ -44,9 +42,8 @@ public sealed class EmpleadoRepository : RepositorioSqlBase, IEmpleadoRepository
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(clave);
 
-        string sql = $"SELECT {LectorDeEmpleados.Columnas} FROM dbo.Empleados AS e WHERE e.EmpresaId = @EmpresaId AND e.Clave = @Clave;";
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Empleados.ObtenerPorClave, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
         comando.Parameters.Add(new SqlParameter("@Clave", SqlDbType.NVarChar, 20) { Value = clave.Trim() });
 
@@ -58,14 +55,8 @@ public sealed class EmpleadoRepository : RepositorioSqlBase, IEmpleadoRepository
     public async Task<IReadOnlyList<Empleado>> ListarPorEmpresaAsync(
         Guid empresaId, bool soloActivos, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeEmpleados.Columnas}
-            FROM   dbo.Empleados AS e
-            WHERE  e.EmpresaId = @EmpresaId AND (@SoloActivos = 0 OR e.Activo = 1)
-            ORDER BY LEN(e.Clave), e.Clave;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Empleados.ListarPorEmpresa, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
         comando.Parameters.Add(new SqlParameter("@SoloActivos", SqlDbType.Bit) { Value = soloActivos });
 
@@ -85,16 +76,7 @@ public sealed class EmpleadoRepository : RepositorioSqlBase, IEmpleadoRepository
     {
         ArgumentNullException.ThrowIfNull(empleado);
 
-        const string sql = """
-            INSERT INTO dbo.Empleados
-                (Id, EmpresaId, Clave, Nombre, ApellidoPaterno, ApellidoMaterno, Rfc, Curp, Nss, FechaNacimiento,
-                 Correo, Telefono, Activo, FechaAlta)
-            VALUES
-                (@Id, @EmpresaId, @Clave, @Nombre, @ApellidoPaterno, @ApellidoMaterno, @Rfc, @Curp, @Nss, @FechaNacimiento,
-                 @Correo, @Telefono, @Activo, @FechaAlta);
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Empleados.Insertar, cancellationToken);
         AgregarParametros(comando, empleado);
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empleado.EmpresaId });
         comando.Parameters.Add(new SqlParameter("@FechaAlta", SqlDbType.DateTimeOffset) { Value = empleado.FechaAlta });
@@ -106,15 +88,7 @@ public sealed class EmpleadoRepository : RepositorioSqlBase, IEmpleadoRepository
     {
         ArgumentNullException.ThrowIfNull(empleado);
 
-        const string sql = """
-            UPDATE dbo.Empleados
-            SET    Clave = @Clave, Nombre = @Nombre, ApellidoPaterno = @ApellidoPaterno, ApellidoMaterno = @ApellidoMaterno,
-                   Rfc = @Rfc, Curp = @Curp, Nss = @Nss, FechaNacimiento = @FechaNacimiento, Correo = @Correo,
-                   Telefono = @Telefono, Activo = @Activo
-            WHERE  Id = @Id;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Empleados.Actualizar, cancellationToken);
         AgregarParametros(comando, empleado);
         await comando.ExecuteNonQueryAsync(cancellationToken);
     }
@@ -122,9 +96,8 @@ public sealed class EmpleadoRepository : RepositorioSqlBase, IEmpleadoRepository
     /// <inheritdoc/>
     public async Task<Contrato?> ObtenerContratoAsync(Guid contratoId, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"SELECT {LectorDeContratos.Columnas} FROM dbo.Contratos AS c WHERE c.Id = @Id AND c.EmpresaId = @EmpresaId;";
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Empleados.ObtenerContrato, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = contratoId });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
 
@@ -136,14 +109,8 @@ public sealed class EmpleadoRepository : RepositorioSqlBase, IEmpleadoRepository
     public async Task<IReadOnlyList<Contrato>> ListarContratosDeEmpleadoAsync(
         Guid empleadoId, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeContratos.Columnas}
-            FROM   dbo.Contratos AS c
-            WHERE  c.EmpleadoId = @EmpleadoId AND c.EmpresaId = @EmpresaId
-            ORDER BY c.FechaAlta DESC;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Empleados.ListarContratosDeEmpleado, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@EmpleadoId", SqlDbType.UniqueIdentifier) { Value = empleadoId });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
 
@@ -160,17 +127,8 @@ public sealed class EmpleadoRepository : RepositorioSqlBase, IEmpleadoRepository
     public async Task<IReadOnlyList<Contrato>> ListarContratosVigentesAsync(
         Guid empresaId, DateOnly fecha, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeContratos.Columnas}
-            FROM   dbo.Contratos AS c
-            INNER JOIN dbo.Empleados AS e ON e.Id = c.EmpleadoId AND e.Activo = 1
-            WHERE  c.EmpresaId = @EmpresaId
-              AND  c.FechaAlta <= @Fecha
-              AND  (c.FechaBaja IS NULL OR c.FechaBaja >= @InicioDeMes)
-            ORDER BY LEN(e.Clave), e.Clave, c.Esquema;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Empleados.ListarContratosVigentes, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
         comando.Parameters.Add(new SqlParameter("@Fecha", SqlDbType.Date) { Value = fecha });
         comando.Parameters.Add(new SqlParameter("@InicioDeMes", SqlDbType.Date) { Value = new DateOnly(fecha.Year, fecha.Month, 1) });
@@ -183,22 +141,8 @@ public sealed class EmpleadoRepository : RepositorioSqlBase, IEmpleadoRepository
     {
         ArgumentNullException.ThrowIfNull(contrato);
 
-        const string sql = """
-            INSERT INTO dbo.Contratos
-                (Id, EmpleadoId, EmpresaId, RazonSocialId, Esquema, NumeroTrabajador, Puesto, Departamento, TipoContrato,
-                 SueldoPeriodoReal, SalarioDiarioFiscal, SalarioDiarioIntegrado, Zona, InfonavitTipo, InfonavitValor,
-                 InfonavitSeguroVivienda, FonacotMensual, PensionAlimenticiaImporte, PensionAlimenticiaPorcentaje,
-                 PrestamoPersonalFijo, BonoFijo, HonorariosAplicaIva, PagaComplementoSindical, FechaAlta, FechaBaja,
-                 FechaModificacion)
-            VALUES
-                (@Id, @EmpleadoId, @EmpresaId, @RazonSocialId, @Esquema, @NumeroTrabajador, @Puesto, @Departamento, @TipoContrato,
-                 @SueldoPeriodoReal, @SalarioDiarioFiscal, @SalarioDiarioIntegrado, @Zona, @InfonavitTipo, @InfonavitValor,
-                 @InfonavitSeguroVivienda, @FonacotMensual, @PensionImporte, @PensionPorcentaje,
-                 @PrestamoPersonalFijo, @BonoFijo, @HonorariosAplicaIva, @PagaComplemento, @FechaAlta, @FechaBaja,
-                 @FechaModificacion);
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Empleados.InsertarContrato, cancellationToken);
         AgregarParametros(comando, contrato);
         comando.Parameters.Add(new SqlParameter("@EmpleadoId", SqlDbType.UniqueIdentifier) { Value = contrato.EmpleadoId });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = contrato.EmpresaId });
@@ -210,26 +154,15 @@ public sealed class EmpleadoRepository : RepositorioSqlBase, IEmpleadoRepository
     {
         ArgumentNullException.ThrowIfNull(contrato);
 
-        const string sql = """
-            UPDATE dbo.Contratos
-            SET    RazonSocialId = @RazonSocialId, Esquema = @Esquema, NumeroTrabajador = @NumeroTrabajador,
-                   Puesto = @Puesto, Departamento = @Departamento, TipoContrato = @TipoContrato,
-                   SueldoPeriodoReal = @SueldoPeriodoReal, SalarioDiarioFiscal = @SalarioDiarioFiscal,
-                   SalarioDiarioIntegrado = @SalarioDiarioIntegrado, Zona = @Zona, InfonavitTipo = @InfonavitTipo,
-                   InfonavitValor = @InfonavitValor, InfonavitSeguroVivienda = @InfonavitSeguroVivienda,
-                   FonacotMensual = @FonacotMensual, PensionAlimenticiaImporte = @PensionImporte,
-                   PensionAlimenticiaPorcentaje = @PensionPorcentaje, PrestamoPersonalFijo = @PrestamoPersonalFijo,
-                   BonoFijo = @BonoFijo, HonorariosAplicaIva = @HonorariosAplicaIva,
-                   PagaComplementoSindical = @PagaComplemento, FechaAlta = @FechaAlta, FechaBaja = @FechaBaja,
-                   FechaModificacion = @FechaModificacion
-            WHERE  Id = @Id;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Empleados.ActualizarContrato, cancellationToken);
         AgregarParametros(comando, contrato);
         await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    /// <summary>Agrega los valores de un empleado al comando.</summary>
+    /// <param name="comando">Comando de inserción o actualización.</param>
+    /// <param name="empleado">Empleado.</param>
     private static void AgregarParametros(SqlCommand comando, Empleado empleado)
     {
         DatosPersonales d = empleado.Datos;
@@ -248,6 +181,9 @@ public sealed class EmpleadoRepository : RepositorioSqlBase, IEmpleadoRepository
         comando.Parameters.Add(new SqlParameter("@Activo", SqlDbType.Bit) { Value = empleado.Activo });
     }
 
+    /// <summary>Agrega los valores de un contrato al comando.</summary>
+    /// <param name="comando">Comando de inserción o actualización.</param>
+    /// <param name="contrato">Contrato.</param>
     private static void AgregarParametros(SqlCommand comando, Contrato contrato)
     {
         CondicionesDeContrato c = contrato.Condiciones;
@@ -278,15 +214,32 @@ public sealed class EmpleadoRepository : RepositorioSqlBase, IEmpleadoRepository
         comando.Parameters.Add(new SqlParameter("@FechaModificacion", SqlDbType.DateTimeOffset) { Value = contrato.FechaModificacion });
     }
 
+    /// <summary>Crea un parámetro de texto opcional.</summary>
+    /// <param name="nombre">Nombre del parámetro.</param>
+    /// <param name="tamano">Longitud de la columna.</param>
+    /// <param name="valor">Texto, o <c>null</c>.</param>
+    /// <returns>El parámetro.</returns>
     private static SqlParameter Texto(string nombre, int tamano, string? valor)
         => new(nombre, SqlDbType.NVarChar, tamano) { Value = (object?)valor ?? DBNull.Value };
 
+    /// <summary>Crea un parámetro de importe con cuatro decimales.</summary>
+    /// <param name="nombre">Nombre del parámetro.</param>
+    /// <param name="valor">Importe.</param>
+    /// <returns>El parámetro.</returns>
     private static SqlParameter Importe(string nombre, decimal valor)
         => new(nombre, SqlDbType.Decimal) { Precision = 18, Scale = 4, Value = valor };
 
+    /// <summary>Crea un parámetro de tasa con ocho decimales.</summary>
+    /// <param name="nombre">Nombre del parámetro.</param>
+    /// <param name="valor">Tasa o factor.</param>
+    /// <returns>El parámetro.</returns>
     private static SqlParameter Tasa(string nombre, decimal valor)
         => new(nombre, SqlDbType.Decimal) { Precision = 19, Scale = 8, Value = valor };
 
+    /// <summary>Ejecuta un procedimiento de contratos y rehidrata cada fila.</summary>
+    /// <param name="comando">Comando ya preparado.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Los contratos.</returns>
     private static async Task<IReadOnlyList<Contrato>> LeerContratosAsync(SqlCommand comando, CancellationToken cancellationToken)
     {
         var lista = new List<Contrato>();

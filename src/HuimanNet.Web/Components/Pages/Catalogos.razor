@@ -465,6 +465,11 @@
                     <textarea id="co-formula" class="entrada-formula" spellcheck="false" @bind="k.Formula"></textarea>
                     <span class="ayuda">@T["catalogos.sintaxisAyuda"]</span>
                 </div>
+                <div class="campo campo-ancho">
+                    <label for="co-alias">@T["catalogos.aliasDeCotejo"]</label>
+                    <input id="co-alias" type="text" maxlength="1000" @bind="k.Alias" />
+                    <span class="ayuda">@T["catalogos.aliasDeCotejoAyuda"]</span>
+                </div>
                 <SelectorDeAmbito @bind-EmpresaId="k.EmpresaId" />
             </div>
             <div class="acciones" style="margin-top:.75rem">
@@ -557,12 +562,22 @@
     private ProbarFormulaResponse? _respuestaConcepto;
     private ExplicacionCompletaDto? _referencia;
 
+    /// <summary>Pestañas de la página.</summary>
     private enum Pestana
     {
+        /// <summary>Parámetros de cálculo.</summary>
         Parametros,
+
+        /// <summary>Tablas de rangos.</summary>
         Tablas,
+
+        /// <summary>Conceptos de nómina.</summary>
         Conceptos,
+
+        /// <summary>Secciones de la explicación de los cálculos.</summary>
         Explicaciones,
+
+        /// <summary>Prueba de fórmulas con valores de ejemplo.</summary>
         Probar,
     }
 
@@ -583,6 +598,8 @@
         return CargarPestanaAsync();
     }
 
+    /// <summary>Carga los datos de la pestaña activa en el ámbito elegido.</summary>
+    /// <returns>Tarea que finaliza al cargarlos.</returns>
     private async Task CargarPestanaAsync()
     {
         switch (_pestana)
@@ -605,6 +622,9 @@
         }
     }
 
+    /// <summary>Cambia de pestaña, limpia la búsqueda y carga sus datos.</summary>
+    /// <param name="pestana">Pestaña elegida.</param>
+    /// <returns>Tarea que finaliza al cargar la pestaña.</returns>
     private Task CambiarPestanaAsync(Pestana pestana)
     {
         _pestana = pestana;
@@ -613,22 +633,35 @@
         return EjecutarAsync(CargarPestanaAsync);
     }
 
+    /// <summary>Alterna entre el catálogo global y el propio de la empresa de trabajo.</summary>
+    /// <param name="argumentos">Evento del selector de ámbito.</param>
+    /// <returns>Tarea que finaliza al recargar la pestaña.</returns>
     private Task CambiarAmbitoAsync(ChangeEventArgs argumentos)
     {
         _ambitoEmpresa = string.Equals(argumentos.Value?.ToString(), "empresa", StringComparison.Ordinal) && Estado.EmpresaId is not null;
         return EjecutarAsync(CargarPestanaAsync);
     }
 
+    /// <summary>
+    /// Carga la explicación completa del esquema de la prueba, que sirve de
+    /// referencia de variables, parámetros y funciones.
+    /// </summary>
+    /// <returns>Tarea que finaliza al cargarla.</returns>
     private async Task CargarReferenciaAsync()
     {
         _referencia = await Casos.ConsultarAsync<ObtenerExplicacionCompletaQuery, ExplicacionCompletaDto>(
             new ObtenerExplicacionCompletaQuery(_prueba.Esquema, T.Idioma, EmpresaDelAmbito, null));
     }
 
+    /// <summary>Indica si algún texto contiene la búsqueda.</summary>
+    /// <param name="textos">Textos del elemento.</param>
+    /// <returns><c>true</c> si no hay búsqueda o alguno la contiene.</returns>
     private bool Coincide(params string?[] textos)
         => string.IsNullOrWhiteSpace(_texto)
            || textos.Any(t => t is not null && t.Contains(_texto.Trim(), StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>Filtra los conceptos por esquema y búsqueda, en orden de presentación.</summary>
+    /// <returns>Los conceptos visibles.</returns>
     private IEnumerable<ConceptoDeNominaDto> ConceptosFiltrados()
         => _conceptos
             .Where(k => _esquemaFiltro == EsquemaDePago.NoEspecificado || k.Esquemas.Incluye(_esquemaFiltro))
@@ -636,18 +669,30 @@
             .OrderBy(k => k.Orden)
             .ThenBy(k => k.Clave, StringComparer.Ordinal);
 
+    /// <summary>Separa una combinación de esquemas en sus esquemas.</summary>
+    /// <param name="esquemas">Combinación de esquemas.</param>
+    /// <returns>Los esquemas incluidos.</returns>
     private static IEnumerable<EsquemaDePago> EsquemasDe(EsquemasDePago esquemas)
         => new[] { EsquemaDePago.Imss, EsquemaDePago.Sindicato, EsquemaDePago.Honorarios }.Where(e => esquemas.Incluye(e));
 
+    /// <summary>Da formato a una vigencia.</summary>
+    /// <param name="desde">Inicio.</param>
+    /// <param name="hasta">Fin, o <c>null</c> si sigue vigente.</param>
+    /// <returns>El intervalo, o «desde» si no tiene fin.</returns>
     private string Vigencia(DateOnly desde, DateOnly? hasta)
         => hasta is { } h ? $"{Fecha(desde)} – {Fecha(h)}" : T.Formato("catalogos.desde", Fecha(desde));
 
+    /// <summary>Pide confirmación antes de una eliminación.</summary>
+    /// <param name="mensaje">Pregunta a mostrar.</param>
+    /// <param name="accion">Eliminación a ejecutar si se confirma.</param>
     private void Confirmar(string mensaje, Func<Task> accion)
     {
         LimpiarMensajes();
         _confirmacion = (mensaje, accion);
     }
 
+    /// <summary>Ejecuta la eliminación confirmada y recarga la pestaña.</summary>
+    /// <returns>Tarea que finaliza al recargar.</returns>
     private Task EjecutarConfirmacionAsync() => EjecutarAsync(async () =>
     {
         if (_confirmacion is not { } confirmacion)
@@ -663,12 +708,15 @@
 
     // ---- Parámetros -------------------------------------------------------
 
+    /// <summary>Abre el formulario de un parámetro nuevo en el ámbito elegido.</summary>
     private void NuevoParametro()
     {
         LimpiarMensajes();
         _parametro = new ModeloParametro { EmpresaId = EmpresaDelAmbito };
     }
 
+    /// <summary>Abre el formulario con los datos de un parámetro.</summary>
+    /// <param name="p">Parámetro a editar.</param>
     private void EditarParametro(ParametroDeCalculoDto p)
     {
         LimpiarMensajes();
@@ -686,6 +734,8 @@
         };
     }
 
+    /// <summary>Guarda el parámetro del formulario y recarga la pestaña.</summary>
+    /// <returns>Tarea que finaliza al recargar.</returns>
     private Task GuardarParametroAsync() => EjecutarAsync(async () =>
     {
         if (_parametro is not { } p)
@@ -704,6 +754,7 @@
 
     // ---- Tablas -----------------------------------------------------------
 
+    /// <summary>Abre el formulario de una tabla nueva con un primer rango.</summary>
     private void NuevaTabla()
     {
         LimpiarMensajes();
@@ -711,6 +762,8 @@
         _tabla.AgregarRango();
     }
 
+    /// <summary>Abre el formulario con los datos y rangos de una tabla.</summary>
+    /// <param name="t">Tabla a editar.</param>
     private void EditarTabla(TablaDeRangosDto t)
     {
         LimpiarMensajes();
@@ -734,6 +787,8 @@
         }));
     }
 
+    /// <summary>Guarda la tabla del formulario, con los rangos ordenados, y recarga la pestaña.</summary>
+    /// <returns>Tarea que finaliza al recargar.</returns>
     private Task GuardarTablaAsync() => EjecutarAsync(async () =>
     {
         if (_tabla is not { } t)
@@ -757,6 +812,7 @@
 
     // ---- Conceptos --------------------------------------------------------
 
+    /// <summary>Abre el formulario de un concepto nuevo, ordenado después del último.</summary>
     private void NuevoConcepto()
     {
         LimpiarMensajes();
@@ -768,6 +824,8 @@
         };
     }
 
+    /// <summary>Abre el formulario con los datos de un concepto.</summary>
+    /// <param name="k">Concepto a editar.</param>
     private void EditarConcepto(ConceptoDeNominaDto k)
     {
         LimpiarMensajes();
@@ -784,12 +842,15 @@
             Honorarios = k.Esquemas.Incluye(EsquemaDePago.Honorarios),
             Orden = k.Orden,
             Formula = k.Formula,
+            Alias = string.Join(", ", k.AliasDeCotejo),
             VisibleEnRecibo = k.VisibleEnRecibo,
             Activo = k.Activo,
             EmpresaId = k.EmpresaId,
         };
     }
 
+    /// <summary>Prueba la fórmula del formulario con el primer esquema marcado.</summary>
+    /// <returns>Tarea que finaliza al mostrar el resultado.</returns>
     private Task ProbarConceptoAsync() => EjecutarAsync(async () =>
     {
         if (_concepto is not { } k)
@@ -802,6 +863,8 @@
             new ProbarFormulaQuery(new ProbarFormulaRequest(k.Formula, esquema, k.EmpresaId, [])));
     });
 
+    /// <summary>Guarda el concepto del formulario y recarga la pestaña.</summary>
+    /// <returns>Tarea que finaliza al recargar.</returns>
     private Task GuardarConceptoAsync() => EjecutarAsync(async () =>
     {
         if (_concepto is not { } k)
@@ -815,7 +878,10 @@
 
         ConceptoDeNominaDto guardado = await Casos.EjecutarAsync<GuardarConceptoCommand, ConceptoDeNominaDto>(new GuardarConceptoCommand(
             k.Id,
-            new GuardarConceptoRequest(k.Clave.Trim().ToUpperInvariant(), k.Nombre.Trim(), k.Descripcion.Trim(), k.Tipo, esquemas, k.Orden, k.Formula.Trim(), k.VisibleEnRecibo, k.Activo, k.EmpresaId)));
+            new GuardarConceptoRequest(
+                k.Clave.Trim().ToUpperInvariant(), k.Nombre.Trim(), k.Descripcion.Trim(), k.Tipo, esquemas, k.Orden, k.Formula.Trim(),
+                k.VisibleEnRecibo, k.Activo, k.EmpresaId,
+                k.Alias.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))));
 
         _concepto = null;
         MensajeDeExito = T.Formato("catalogos.guardado", guardado.Clave);
@@ -824,6 +890,7 @@
 
     // ---- Explicaciones ----------------------------------------------------
 
+    /// <summary>Abre el formulario de una sección nueva en el esquema filtrado y el idioma actual.</summary>
     private void NuevaExplicacion()
     {
         LimpiarMensajes();
@@ -835,12 +902,16 @@
         };
     }
 
+    /// <summary>Abre el formulario con los datos de una sección.</summary>
+    /// <param name="x">Sección a editar.</param>
     private void EditarExplicacion(ExplicacionDeCalculoDto x)
     {
         LimpiarMensajes();
         _explicacion = new ModeloExplicacion { Id = x.Id, Esquema = x.Esquema, Idioma = x.Idioma, Orden = x.Orden, Titulo = x.Titulo, Cuerpo = x.Cuerpo };
     }
 
+    /// <summary>Guarda la sección del formulario y recarga la pestaña.</summary>
+    /// <returns>Tarea que finaliza al recargar.</returns>
     private Task GuardarExplicacionAsync() => EjecutarAsync(async () =>
     {
         if (_explicacion is not { } x)
@@ -858,6 +929,8 @@
 
     // ---- Probar fórmula ---------------------------------------------------
 
+    /// <summary>Prueba la fórmula de la pestaña de prueba con los valores capturados.</summary>
+    /// <returns>Tarea que finaliza al mostrar el resultado.</returns>
     private Task ProbarAsync() => EjecutarAsync(async () =>
     {
         List<ValorDto> valores = _prueba.Valores
@@ -869,36 +942,99 @@
             new ProbarFormulaQuery(new ProbarFormulaRequest(_prueba.Formula, _prueba.Esquema, EmpresaDelAmbito, valores)));
     });
 
+    /// <summary>Estado editable de un parámetro de cálculo.</summary>
     private sealed class ModeloParametro
     {
+        /// <summary>Obtiene el identificador.</summary>
+        /// <value><c>null</c> para un parámetro nuevo.</value>
         public Guid? Id { get; init; }
+
+        /// <summary>Obtiene o establece la clave que usan las fórmulas.</summary>
+        /// <value>Se guarda en mayúsculas.</value>
         public string Clave { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece la descripción.</summary>
+        /// <value>Texto libre.</value>
         public string Descripcion { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece el grupo en que se presenta.</summary>
+        /// <value>Por ejemplo, IMSS o ISR.</value>
         public string Grupo { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece el valor.</summary>
+        /// <value>Importe, tasa o factor.</value>
         public decimal Valor { get; set; }
+
+        /// <summary>Obtiene o establece la unidad del valor.</summary>
+        /// <value>Por ejemplo, pesos o porcentaje.</value>
         public string Unidad { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece la empresa propietaria.</summary>
+        /// <value><c>null</c> para el catálogo global.</value>
         public Guid? EmpresaId { get; set; }
+
+        /// <summary>Obtiene o establece el inicio de vigencia.</summary>
+        /// <value>El 1 de enero del año actual para un parámetro nuevo.</value>
         public DateOnly VigenteDesde { get; set; } = new(DateTime.Today.Year, 1, 1);
+
+        /// <summary>Obtiene o establece el fin de vigencia.</summary>
+        /// <value><c>null</c> si sigue vigente.</value>
         public DateOnly? VigenteHasta { get; set; }
     }
 
+    /// <summary>Estado editable de un rango de tabla.</summary>
     private sealed class ModeloRango
     {
+        /// <summary>Obtiene o establece el límite inferior.</summary>
+        /// <value>Importe desde el que aplica el rango.</value>
         public decimal LimiteInferior { get; set; }
+
+        /// <summary>Obtiene o establece el límite superior.</summary>
+        /// <value><c>null</c> para el último rango.</value>
         public decimal? LimiteSuperior { get; set; }
+
+        /// <summary>Obtiene o establece la cuota fija.</summary>
+        /// <value>Importe fijo del rango.</value>
         public decimal CuotaFija { get; set; }
+
+        /// <summary>Obtiene o establece el porcentaje sobre el excedente.</summary>
+        /// <value>Fracción entre 0 y 1.</value>
         public decimal Porcentaje { get; set; }
+
+        /// <summary>Obtiene o establece un valor adicional del rango.</summary>
+        /// <value>Uso libre según la tabla.</value>
         public decimal Valor { get; set; }
     }
 
+    /// <summary>Estado editable de una tabla de rangos.</summary>
     private sealed class ModeloTabla
     {
+        /// <summary>Obtiene el identificador.</summary>
+        /// <value><c>null</c> para una tabla nueva.</value>
         public Guid? Id { get; init; }
+
+        /// <summary>Obtiene o establece la clave que usan las fórmulas.</summary>
+        /// <value>Se guarda en mayúsculas.</value>
         public string Clave { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece la descripción.</summary>
+        /// <value>Texto libre.</value>
         public string Descripcion { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece la empresa propietaria.</summary>
+        /// <value><c>null</c> para el catálogo global.</value>
         public Guid? EmpresaId { get; set; }
+
+        /// <summary>Obtiene o establece el inicio de vigencia.</summary>
+        /// <value>El 1 de enero del año actual para una tabla nueva.</value>
         public DateOnly VigenteDesde { get; set; } = new(DateTime.Today.Year, 1, 1);
+
+        /// <summary>Obtiene o establece el fin de vigencia.</summary>
+        /// <value><c>null</c> si sigue vigente.</value>
         public DateOnly? VigenteHasta { get; set; }
+
+        /// <summary>Obtiene los rangos de la tabla.</summary>
+        /// <value>Se ordenan por límite inferior al guardar.</value>
         public List<ModeloRango> Rangos { get; } = [];
 
         /// <summary>Agrega un renglón que continúa donde terminó el anterior.</summary>
@@ -909,43 +1045,119 @@
         }
     }
 
+    /// <summary>Estado editable de un concepto de nómina.</summary>
     private sealed class ModeloConcepto
     {
+        /// <summary>Obtiene el identificador.</summary>
+        /// <value><c>null</c> para un concepto nuevo.</value>
         public Guid? Id { get; init; }
+
+        /// <summary>Obtiene o establece la clave que usan las fórmulas.</summary>
+        /// <value>Se guarda en mayúsculas.</value>
         public string Clave { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece el nombre visible.</summary>
+        /// <value>Texto del recibo y de los reportes.</value>
         public string Nombre { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece la descripción.</summary>
+        /// <value>Texto libre.</value>
         public string Descripcion { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece el tipo de concepto.</summary>
+        /// <value>Percepción para un concepto nuevo.</value>
         public TipoDeConcepto Tipo { get; set; } = TipoDeConcepto.Percepcion;
+
+        /// <summary>Obtiene o establece si aplica al esquema IMSS.</summary>
+        /// <value><c>true</c> para un concepto nuevo.</value>
         public bool Imss { get; set; } = true;
+
+        /// <summary>Obtiene o establece si aplica al esquema sindicato.</summary>
+        /// <value><c>true</c> si aplica.</value>
         public bool Sindicato { get; set; }
+
+        /// <summary>Obtiene o establece si aplica al esquema honorarios.</summary>
+        /// <value><c>true</c> si aplica.</value>
         public bool Honorarios { get; set; }
+
+        /// <summary>Obtiene o establece el orden de presentación.</summary>
+        /// <value>El cálculo se ordena por dependencias, no por este valor.</value>
         public int Orden { get; set; }
+
+        /// <summary>Obtiene o establece la fórmula.</summary>
+        /// <value><c>0</c> para un concepto nuevo.</value>
         public string Formula { get; set; } = "0";
+
+        /// <summary>Obtiene o establece si se muestra en el recibo.</summary>
+        /// <value><c>true</c> para un concepto nuevo.</value>
         public bool VisibleEnRecibo { get; set; } = true;
+
+        /// <summary>Obtiene o establece si participa en el cálculo.</summary>
+        /// <value><c>true</c> para un concepto nuevo.</value>
         public bool Activo { get; set; } = true;
+
+        /// <summary>Obtiene o establece la empresa propietaria.</summary>
+        /// <value><c>null</c> para el catálogo global.</value>
         public Guid? EmpresaId { get; set; }
+
+        /// <summary>Obtiene o establece los alias de cotejo, separados por comas.</summary>
+        /// <value>Otros encabezados del concepto en el archivo de resultados manual.</value>
+        public string Alias { get; set; } = string.Empty;
     }
 
+    /// <summary>Estado editable de una sección de la explicación de los cálculos.</summary>
     private sealed class ModeloExplicacion
     {
+        /// <summary>Obtiene el identificador.</summary>
+        /// <value><c>null</c> para una sección nueva.</value>
         public Guid? Id { get; init; }
+
+        /// <summary>Obtiene o establece el esquema que explica.</summary>
+        /// <value>IMSS para una sección nueva sin filtro.</value>
         public EsquemaDePago Esquema { get; set; } = EsquemaDePago.Imss;
+
+        /// <summary>Obtiene o establece el idioma del texto.</summary>
+        /// <value>Español o inglés.</value>
         public Idioma Idioma { get; set; } = Idioma.Espanol;
+
+        /// <summary>Obtiene o establece el orden dentro del esquema.</summary>
+        /// <value>Desde 1.</value>
         public int Orden { get; set; } = 1;
+
+        /// <summary>Obtiene o establece el título.</summary>
+        /// <value>Texto del encabezado.</value>
         public string Titulo { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece el cuerpo.</summary>
+        /// <value>Texto de la sección.</value>
         public string Cuerpo { get; set; } = string.Empty;
     }
 
+    /// <summary>Variable de ejemplo para probar una fórmula.</summary>
     private sealed class ModeloValor
     {
+        /// <summary>Obtiene o establece la clave de la variable.</summary>
+        /// <value>Se envía en mayúsculas.</value>
         public string Clave { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece el valor de ejemplo.</summary>
+        /// <value>Importe, cantidad o tasa.</value>
         public decimal Valor { get; set; }
     }
 
+    /// <summary>Estado de la pestaña de prueba de fórmulas.</summary>
     private sealed class ModeloPrueba
     {
+        /// <summary>Obtiene o establece el esquema con que se evalúa.</summary>
+        /// <value>Determina los parámetros y tablas disponibles.</value>
         public EsquemaDePago Esquema { get; set; } = EsquemaDePago.Imss;
+
+        /// <summary>Obtiene o establece la fórmula a probar.</summary>
+        /// <value>Trae un ejemplo para orientar al usuario; no se guarda.</value>
         public string Formula { get; set; } = "REDONDEAR(SUELDO_PERIODO_REAL * 1.16; 2)";
+
+        /// <summary>Obtiene las variables de ejemplo.</summary>
+        /// <value>Trae una variable de ejemplo.</value>
         public List<ModeloValor> Valores { get; } = [new() { Clave = "SUELDO_PERIODO_REAL", Valor = 3500m }];
     }
 }

@@ -2,52 +2,9 @@ using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using HuimanNet.Domain.Enums;
 using HuimanNet.Domain.Nomina;
 
 namespace HuimanNet.Infrastructure.Persistence.Semillas;
-
-/// <summary>Parámetro del catálogo inicial.</summary>
-/// <param name="Clave">Clave.</param>
-/// <param name="Descripcion">Descripción.</param>
-/// <param name="Grupo">Grupo.</param>
-/// <param name="Valor">Valor.</param>
-/// <param name="Unidad">Unidad.</param>
-public sealed record ParametroInicial(string Clave, string Descripcion, string Grupo, decimal Valor, string Unidad);
-
-/// <summary>Rango de una tabla del catálogo inicial.</summary>
-/// <param name="LimiteInferior">Límite inferior.</param>
-/// <param name="LimiteSuperior">Límite superior, o <c>null</c>.</param>
-/// <param name="CuotaFija">Cuota fija.</param>
-/// <param name="Porcentaje">Porcentaje como fracción.</param>
-/// <param name="Valor">Valor directo.</param>
-public sealed record RangoInicial(decimal LimiteInferior, decimal? LimiteSuperior, decimal CuotaFija, decimal Porcentaje, decimal Valor);
-
-/// <summary>Tabla del catálogo inicial.</summary>
-/// <param name="Clave">Clave.</param>
-/// <param name="Descripcion">Descripción.</param>
-/// <param name="Rangos">Renglones.</param>
-public sealed record TablaInicial(string Clave, string Descripcion, IReadOnlyList<RangoInicial> Rangos);
-
-/// <summary>Concepto del catálogo inicial.</summary>
-/// <param name="Clave">Clave.</param>
-/// <param name="Nombre">Nombre corto.</param>
-/// <param name="Descripcion">Explicación.</param>
-/// <param name="Tipo">Naturaleza.</param>
-/// <param name="Esquemas">Esquemas a los que aplica.</param>
-/// <param name="Orden">Orden.</param>
-/// <param name="Formula">Fórmula.</param>
-/// <param name="VisibleEnRecibo">Si se muestra en el recibo.</param>
-public sealed record ConceptoInicial(
-    string Clave, string Nombre, string Descripcion, TipoDeConcepto Tipo, EsquemasDePago Esquemas, int Orden, string Formula, bool VisibleEnRecibo);
-
-/// <summary>Sección de explicación del catálogo inicial.</summary>
-/// <param name="Esquema">Esquema.</param>
-/// <param name="Idioma">Idioma.</param>
-/// <param name="Orden">Orden.</param>
-/// <param name="Titulo">Título.</param>
-/// <param name="Cuerpo">Cuerpo.</param>
-public sealed record ExplicacionInicial(EsquemaDePago Esquema, Idioma Idioma, int Orden, string Titulo, string Cuerpo);
 
 /// <summary>
 /// Catálogo de cálculo con el que arranca una instalación nueva.
@@ -59,6 +16,10 @@ public sealed record ExplicacionInicial(EsquemaDePago Esquema, Idioma Idioma, in
 /// <param name="Tablas">Tablas por rangos.</param>
 /// <param name="Conceptos">Conceptos y fórmulas.</param>
 /// <param name="Explicaciones">Explicación narrativa por esquema e idioma.</param>
+/// <param name="AliasDeCotejo">
+/// Alias de cotejo por clave de concepto; se aplican a todas las definiciones
+/// de esa clave, sea cual sea su esquema.
+/// </param>
 /// <remarks>
 /// Vive en <c>Persistence/Semillas/catalogo-inicial.json</c>, incrustado en el
 /// ensamblado. Es la <b>única</b> fuente de los valores iniciales: el sembrador
@@ -73,9 +34,11 @@ public sealed record CatalogoInicial(
     IReadOnlyList<ParametroInicial> Parametros,
     IReadOnlyList<TablaInicial> Tablas,
     IReadOnlyList<ConceptoInicial> Conceptos,
-    IReadOnlyList<ExplicacionInicial> Explicaciones)
+    IReadOnlyList<ExplicacionInicial> Explicaciones,
+    IReadOnlyDictionary<string, IReadOnlyList<string>>? AliasDeCotejo = null)
 {
-    private const string NombreDelRecurso = "HuimanNet.Infrastructure.Persistence.Semillas.catalogo-inicial.json";
+    /// <summary>Nombre del recurso JSON incrustado con el catálogo inicial.</summary>
+    private const string NombreDelRecurso ="HuimanNet.Infrastructure.Persistence.Semillas.catalogo-inicial.json";
 
     /// <summary>
     /// Lee el catálogo incrustado en el ensamblado.
@@ -125,7 +88,8 @@ public sealed record CatalogoInicial(
     /// <returns>Los conceptos.</returns>
     public IReadOnlyList<ConceptoDeNomina> ConstruirConceptos(DateTimeOffset momento)
         => Conceptos.Select(c => ConceptoDeNomina.Crear(
-            c.Clave, c.Nombre, c.Descripcion, c.Tipo, c.Esquemas, c.Orden, c.Formula, c.VisibleEnRecibo, null, momento)).ToList();
+            c.Clave, c.Nombre, c.Descripcion, c.Tipo, c.Esquemas, c.Orden, c.Formula, c.VisibleEnRecibo, null, momento,
+            AliasDeCotejo?.GetValueOrDefault(c.Clave))).ToList();
 
     /// <summary>
     /// Construye las secciones de explicación.
@@ -135,15 +99,3 @@ public sealed record CatalogoInicial(
     public IReadOnlyList<ExplicacionDeCalculo> ConstruirExplicaciones(DateTimeOffset momento)
         => Explicaciones.Select(e => ExplicacionDeCalculo.Crear(e.Esquema, e.Idioma, e.Orden, e.Titulo, e.Cuerpo, momento)).ToList();
 }
-
-/// <summary>
-/// Contexto de serialización generado en compilación para el catálogo inicial.
-/// </summary>
-[JsonSourceGenerationOptions(
-    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
-    PropertyNameCaseInsensitive = true,
-    UseStringEnumConverter = true,
-    ReadCommentHandling = JsonCommentHandling.Skip,
-    AllowTrailingCommas = true)]
-[JsonSerializable(typeof(CatalogoInicial))]
-internal sealed partial class CatalogoInicialJsonContext : JsonSerializerContext;

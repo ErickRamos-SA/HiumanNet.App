@@ -38,6 +38,7 @@ public sealed class SolicitarCargaDocumentoHandler
     private readonly IUnitOfWork _unitOfWork;
     private readonly PoliticaDeAcceso _politicaDeAcceso;
     private readonly ValidadorDeDocumento _validador;
+    private readonly IValidadorDeEntrada<SolicitarCargaDocumentoCommand> _validadorDeEntrada;
     private readonly TimeProvider _reloj;
     private readonly ILogger<SolicitarCargaDocumentoHandler> _logger;
 
@@ -52,6 +53,7 @@ public sealed class SolicitarCargaDocumentoHandler
     /// <param name="unitOfWork">Coordinador de transacciones.</param>
     /// <param name="politicaDeAcceso">Matriz de permisos por rol y tipo.</param>
     /// <param name="validador">Validador de la política de carga.</param>
+    /// <param name="validadorDeEntrada">Validador de la forma del comando.</param>
     /// <param name="reloj">Proveedor de tiempo del sistema.</param>
     /// <param name="logger">Registro de eventos.</param>
     public SolicitarCargaDocumentoHandler(
@@ -63,6 +65,7 @@ public sealed class SolicitarCargaDocumentoHandler
         IUnitOfWork unitOfWork,
         PoliticaDeAcceso politicaDeAcceso,
         ValidadorDeDocumento validador,
+        IValidadorDeEntrada<SolicitarCargaDocumentoCommand> validadorDeEntrada,
         TimeProvider reloj,
         ILogger<SolicitarCargaDocumentoHandler> logger)
     {
@@ -74,15 +77,18 @@ public sealed class SolicitarCargaDocumentoHandler
         _unitOfWork = unitOfWork;
         _politicaDeAcceso = politicaDeAcceso;
         _validador = validador;
+        _validadorDeEntrada = validadorDeEntrada;
         _reloj = reloj;
         _logger = logger;
     }
 
     /// <inheritdoc/>
     /// <exception cref="ArgumentNullException">Se lanza si <paramref name="comando"/> es <c>null</c>.</exception>
+    /// <exception cref="EntradaInvalidaException">Se lanza si el comando está incompleto o mal formado.</exception>
     /// <exception cref="AccesoNoAutorizadoException">
-    /// Se lanza si el rol no puede cargar ese tipo de documento o si el período
-    /// no pertenece a la empresa del solicitante.
+    /// Se lanza si el rol no puede cargar ese tipo de documento, si el usuario no
+    /// tiene habilitada la acción de carga o si el período no pertenece a la
+    /// empresa del solicitante.
     /// </exception>
     /// <exception cref="DocumentoInvalidoException">
     /// Se lanza si la extensión no está permitida o se excede el tamaño máximo.
@@ -95,7 +101,10 @@ public sealed class SolicitarCargaDocumentoHandler
     {
         ArgumentNullException.ThrowIfNull(comando);
 
-        _politicaDeAcceso.GarantizarPuedeCargar(_usuarioActual.Rol, comando.Tipo);
+        // La validación vive en el caso de uso: la web y la API la aplican igual.
+        _validadorDeEntrada.Validar(comando).GarantizarValido();
+
+        _politicaDeAcceso.GarantizarPuedeCargar(_usuarioActual.Rol, _usuarioActual.Permisos, comando.Tipo);
 
         Guid empresaId = _politicaDeAcceso.ResolverEmpresaObjetivo(
             _usuarioActual.Rol, _usuarioActual.EmpresaId, _usuarioActual.Empresas, comando.EmpresaId);

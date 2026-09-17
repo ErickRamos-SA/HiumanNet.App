@@ -1,3 +1,4 @@
+using HuimanNet.Application.Usuarios;
 using HuimanNet.Domain.Entities;
 using HuimanNet.Domain.Exceptions;
 using HuimanNet.Infrastructure.Identity;
@@ -28,24 +29,29 @@ public sealed class MiddlewareDeUsuarioActual
     /// Resuelve el usuario de la petición, si está autenticada.
     /// </summary>
     /// <param name="context">Contexto HTTP.</param>
-    /// <param name="resolutor">Resolutor de usuarios por <i>claims</i>.</param>
+    /// <param name="lector">Lector de la identidad en los <i>claims</i>.</param>
+    /// <param name="resolutor">Caso de uso que traduce la identidad a un usuario del portal.</param>
     /// <param name="usuarioActual">Contenedor del usuario de la petición.</param>
     /// <param name="logger">Registro de eventos.</param>
     /// <returns>Una tarea que representa la operación asíncrona.</returns>
     public async Task InvokeAsync(
         HttpContext context,
-        ResolutorDeUsuarioPorClaims resolutor,
+        LectorDeIdentidadPorClaims lector,
+        ResolutorDeUsuarioAutenticado resolutor,
         UsuarioActualDeHttpContext usuarioActual,
         ILogger<MiddlewareDeUsuarioActual> logger)
     {
         ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(lector);
+        ArgumentNullException.ThrowIfNull(resolutor);
 
         if (context.User.Identity?.IsAuthenticated == true)
         {
             try
             {
-                Usuario usuario = await resolutor.ResolverAsync(context.User, context.RequestAborted);
-                usuarioActual.Establecer(usuario, context.Connection.RemoteIpAddress?.ToString());
+                string? direccionIp = context.Connection.RemoteIpAddress?.ToString();
+                Usuario usuario = await resolutor.ResolverAsync(lector.Leer(context.User), direccionIp, context.RequestAborted);
+                usuarioActual.Establecer(usuario, direccionIp);
             }
             catch (AccesoNoAutorizadoException excepcion)
             {
@@ -56,22 +62,5 @@ public sealed class MiddlewareDeUsuarioActual
         }
 
         await _siguiente(context);
-    }
-}
-
-/// <summary>
-/// Extensiones de registro de <see cref="MiddlewareDeUsuarioActual"/>.
-/// </summary>
-public static class MiddlewareDeUsuarioActualExtensions
-{
-    /// <summary>
-    /// Agrega la resolución del usuario actual a la canalización.
-    /// </summary>
-    /// <param name="app">Constructor de la aplicación.</param>
-    /// <returns>El mismo constructor, para encadenar llamadas.</returns>
-    public static IApplicationBuilder UsarUsuarioActual(this IApplicationBuilder app)
-    {
-        ArgumentNullException.ThrowIfNull(app);
-        return app.UseMiddleware<MiddlewareDeUsuarioActual>();
     }
 }

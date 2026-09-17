@@ -1,15 +1,7 @@
 using HuimanNet.Domain.Enums;
 using HuimanNet.Domain.Exceptions;
-using HuimanNet.Domain.Formulas;
 
 namespace HuimanNet.Domain.Nomina;
-
-/// <summary>
-/// Concepto con su fórmula ya compilada, listo para evaluarse.
-/// </summary>
-/// <param name="Concepto">Definición del catálogo.</param>
-/// <param name="Formula">Fórmula compilada.</param>
-public sealed record ConceptoCompilado(ConceptoDeNomina Concepto, FormulaCompilada Formula);
 
 /// <summary>
 /// Conjunto cerrado y validado de todo lo que hace falta para calcular un
@@ -24,6 +16,13 @@ public sealed record ConceptoCompilado(ConceptoDeNomina Concepto, FormulaCompila
 /// </remarks>
 public sealed class PlanDeCalculo
 {
+    /// <summary>
+    /// Inicializa un plan ya validado. Sólo lo usa <see cref="Construir"/>.
+    /// </summary>
+    /// <param name="esquema">Esquema de pago que calcula el plan.</param>
+    /// <param name="conceptos">Conceptos compilados en orden de evaluación.</param>
+    /// <param name="parametros">Parámetros vigentes por clave.</param>
+    /// <param name="tablas">Tablas vigentes por clave.</param>
     private PlanDeCalculo(
         EsquemaDePago esquema,
         IReadOnlyList<ConceptoCompilado> conceptos,
@@ -104,6 +103,16 @@ public sealed class PlanDeCalculo
         return new PlanDeCalculo(esquema, OrdenarPorDependencias(aplicables, porClave), parametros, tablas);
     }
 
+    /// <summary>
+    /// Comprueba que cada variable y tabla que usan las fórmulas exista: otro
+    /// concepto, un parámetro vigente, una variable de entrada o una tabla vigente.
+    /// </summary>
+    /// <param name="esquema">Esquema del plan, para el mensaje de error.</param>
+    /// <param name="conceptos">Conceptos aplicables.</param>
+    /// <param name="porClave">Los mismos conceptos indexados por clave.</param>
+    /// <param name="parametros">Parámetros vigentes.</param>
+    /// <param name="tablas">Tablas vigentes.</param>
+    /// <exception cref="CatalogoInvalidoException">Se lanza con todas las referencias que faltan.</exception>
     private static void ValidarReferencias(
         EsquemaDePago esquema,
         List<ConceptoCompilado> conceptos,
@@ -150,6 +159,12 @@ public sealed class PlanDeCalculo
     /// de modo que dos catálogos equivalentes producen siempre la misma
     /// secuencia y los resultados son reproducibles.
     /// </remarks>
+    /// <param name="conceptos">Conceptos aplicables, en orden de presentación.</param>
+    /// <param name="porClave">Los mismos conceptos indexados por clave.</param>
+    /// <returns>Los conceptos en orden de evaluación.</returns>
+    /// <exception cref="CatalogoInvalidoException">
+    /// Se lanza si un concepto se referencia a sí mismo o hay una dependencia circular.
+    /// </exception>
     private static IReadOnlyList<ConceptoCompilado> OrdenarPorDependencias(
         List<ConceptoCompilado> conceptos, Dictionary<string, ConceptoCompilado> porClave)
     {
@@ -231,10 +246,16 @@ public sealed class PlanDeCalculo
         return resultado;
     }
 
+    /// <summary>
+    /// Ordena conceptos por <see cref="ConceptoDeNomina.Orden"/> y, a igualdad,
+    /// por clave, para que el orden de evaluación sea estable.
+    /// </summary>
     private sealed class ComparadorDeOrden : IComparer<ConceptoCompilado>
     {
+        /// <summary>Instancia única, sin estado.</summary>
         public static readonly ComparadorDeOrden Instancia = new();
 
+        /// <inheritdoc/>
         public int Compare(ConceptoCompilado? x, ConceptoCompilado? y)
         {
             if (ReferenceEquals(x, y))

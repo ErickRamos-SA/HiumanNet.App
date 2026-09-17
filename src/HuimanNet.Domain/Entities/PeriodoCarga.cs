@@ -14,6 +14,11 @@ namespace HuimanNet.Domain.Entities;
 /// </remarks>
 public sealed class PeriodoCarga
 {
+    /// <summary>
+    /// Inicializa una instancia con valores ya validados. Sólo la usan las
+    /// fábricas y <see cref="Rehidratar"/>.
+    /// </summary>
+    /// <inheritdoc cref="Rehidratar" path="/param"/>
     private PeriodoCarga(
         Guid id,
         Guid empresaId,
@@ -74,7 +79,7 @@ public sealed class PeriodoCarga
     /// Obtiene la fecha límite para que el cliente cargue documentos.
     /// </summary>
     /// <value>Instante en UTC, o <c>null</c> si no se fijó un límite.</value>
-    public DateTimeOffset? FechaLimiteCarga { get; private set; }
+    public DateTimeOffset? FechaLimiteCarga { get; }
 
     /// <summary>
     /// Obtiene el instante de cierre del período.
@@ -103,8 +108,18 @@ public sealed class PeriodoCarga
     /// <c>true</c> desde que hay al menos un archivo disponible de la empresa
     /// (<c>Recibido</c>) hasta que el período se cierra.
     /// </value>
-    public bool AdmiteCalculo
-        => Estado is EstadoPeriodo.Recibido or EstadoPeriodo.EnProceso or EstadoPeriodo.ResultadosDisponibles;
+    public bool AdmiteCalculo => Estado.AdmiteCalculo();
+
+    /// <summary>
+    /// Obtiene la fecha con la que se calcula la nómina del período.
+    /// </summary>
+    /// <value>
+    /// El <b>último día del mes</b> del período: las tablas y parámetros fiscales
+    /// cambian por ejercicio o por mes, nunca a mitad de semana, y ese día
+    /// garantiza que un contrato dado de alta durante el mes entre en el cálculo.
+    /// Con ella se resuelven las vigencias del catálogo y de los contratos.
+    /// </value>
+    public DateOnly FechaDeReferencia => Calendario.UltimoDiaDelMes;
 
     /// <summary>
     /// Abre un nuevo período de carga para una empresa.
@@ -159,12 +174,6 @@ public sealed class PeriodoCarga
         DateTimeOffset? fechaLimiteCarga,
         DateTimeOffset? fechaCierre)
         => new(id, empresaId, calendario, descripcion, estado, fechaApertura, fechaLimiteCarga, fechaCierre);
-
-    /// <summary>
-    /// Ajusta la fecha límite de carga del cliente.
-    /// </summary>
-    /// <param name="fechaLimite">Nueva fecha límite en UTC, o <c>null</c> para retirarla.</param>
-    public void FijarFechaLimite(DateTimeOffset? fechaLimite) => FechaLimiteCarga = fechaLimite;
 
     /// <summary>
     /// Registra que llegó el primer documento del cliente y avanza a <c>Recibido</c>.

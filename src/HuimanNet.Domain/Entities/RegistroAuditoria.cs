@@ -17,6 +17,11 @@ namespace HuimanNet.Domain.Entities;
 /// </remarks>
 public sealed class RegistroAuditoria
 {
+    /// <summary>
+    /// Inicializa una instancia con valores ya validados. Sólo la usan las
+    /// fábricas y <see cref="Rehidratar"/>.
+    /// </summary>
+    /// <inheritdoc cref="Rehidratar" path="/param"/>
     private RegistroAuditoria(
         Guid id,
         DateTimeOffset momento,

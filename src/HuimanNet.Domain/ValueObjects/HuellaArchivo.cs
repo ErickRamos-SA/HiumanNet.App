@@ -21,6 +21,8 @@ public readonly record struct HuellaArchivo
 
     private readonly string? _valorHex;
 
+    /// <summary>Inicializa una huella ya validada.</summary>
+    /// <param name="valorHex">Hash en hexadecimal y minúsculas.</param>
     private HuellaArchivo(string valorHex) => _valorHex = valorHex;
 
     /// <summary>

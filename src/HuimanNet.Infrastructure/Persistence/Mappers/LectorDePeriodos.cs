@@ -8,18 +8,13 @@ namespace HuimanNet.Infrastructure.Persistence.Mappers;
 /// <summary>
 /// Traduce filas de <c>dbo.Periodos</c> a entidades <see cref="PeriodoCarga"/>.
 /// </summary>
-/// <remarks>Mapeo manual por ordinal, sin reflexión.</remarks>
+/// <remarks>
+/// Mapeo manual por ordinal, sin reflexión. Las columnas y su orden los fijan
+/// los procedimientos de <c>Procedimientos/Periodos.sql</c> que alimentan este
+/// lector: cambiarlas allí obliga a cambiar este mapeo.
+/// </remarks>
 public static class LectorDePeriodos
 {
-    /// <summary>
-    /// Obtiene la lista de columnas que debe proyectar cualquier consulta que
-    /// alimente a <see cref="Mapear"/>.
-    /// </summary>
-    /// <value>Fragmento SQL con los nombres de columna en el orden esperado.</value>
-    public const string Columnas =
-        "p.Id, p.EmpresaId, p.Anio, p.Mes, p.Consecutivo, p.Descripcion, p.Estado, " +
-        "p.FechaApertura, p.FechaLimiteCarga, p.FechaCierre";
-
     /// <summary>
     /// Construye una entidad a partir de la fila actual del lector.
     /// </summary>

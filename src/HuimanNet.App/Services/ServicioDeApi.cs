@@ -231,6 +231,13 @@ public sealed class ServicioDeApi : IServicioDeApi
 
     // ---- Infraestructura ----------------------------------------------------
 
+    /// <summary>Hace un GET y lee la respuesta JSON.</summary>
+    /// <typeparam name="TRespuesta">Tipo de la respuesta.</typeparam>
+    /// <param name="ruta">Ruta relativa, con la cadena de consulta.</param>
+    /// <param name="tipo">Metadatos de serialización de la respuesta.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>La respuesta deserializada.</returns>
+    /// <exception cref="ErrorDeApiException">Se lanza si la API responde con error o sin cuerpo.</exception>
     private async Task<TRespuesta> ObtenerAsync<TRespuesta>(
         string ruta, JsonTypeInfo<TRespuesta> tipo, CancellationToken cancellationToken)
     {
@@ -241,6 +248,17 @@ public sealed class ServicioDeApi : IServicioDeApi
             ?? throw new ErrorDeApiException("La API devolvió una respuesta vacía.", respuesta.StatusCode);
     }
 
+    /// <summary>Envía una petición JSON y lee la respuesta JSON.</summary>
+    /// <typeparam name="TPeticion">Tipo del cuerpo.</typeparam>
+    /// <typeparam name="TRespuesta">Tipo de la respuesta.</typeparam>
+    /// <param name="metodo">Método HTTP.</param>
+    /// <param name="ruta">Ruta relativa.</param>
+    /// <param name="peticion">Cuerpo de la petición.</param>
+    /// <param name="tipoPeticion">Metadatos de serialización del cuerpo.</param>
+    /// <param name="tipoRespuesta">Metadatos de serialización de la respuesta.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>La respuesta deserializada.</returns>
+    /// <exception cref="ErrorDeApiException">Se lanza si la API responde con error o sin cuerpo.</exception>
     private async Task<TRespuesta> EnviarAsync<TPeticion, TRespuesta>(
         HttpMethod metodo, string ruta, TPeticion peticion, JsonTypeInfo<TPeticion> tipoPeticion,
         JsonTypeInfo<TRespuesta> tipoRespuesta, CancellationToken cancellationToken)
@@ -253,6 +271,15 @@ public sealed class ServicioDeApi : IServicioDeApi
             ?? throw new ErrorDeApiException("La API devolvió una respuesta vacía.", respuesta.StatusCode);
     }
 
+    /// <summary>Envía una petición JSON que no devuelve cuerpo.</summary>
+    /// <typeparam name="TPeticion">Tipo del cuerpo.</typeparam>
+    /// <param name="metodo">Método HTTP.</param>
+    /// <param name="ruta">Ruta relativa.</param>
+    /// <param name="peticion">Cuerpo de la petición.</param>
+    /// <param name="tipoPeticion">Metadatos de serialización del cuerpo.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Tarea que finaliza al recibir la respuesta.</returns>
+    /// <exception cref="ErrorDeApiException">Se lanza si la API responde con error.</exception>
     private async Task EnviarSinRespuestaAsync<TPeticion>(
         HttpMethod metodo, string ruta, TPeticion peticion, JsonTypeInfo<TPeticion> tipoPeticion, CancellationToken cancellationToken)
     {
@@ -261,6 +288,15 @@ public sealed class ServicioDeApi : IServicioDeApi
         await GarantizarExitoAsync(respuesta, cancellationToken);
     }
 
+    /// <summary>
+    /// Sube el archivo directo al almacenamiento con la URL firmada, sin el
+    /// token de la API.
+    /// </summary>
+    /// <param name="autorizacion">URL firmada y tipo de blob que devolvió la API.</param>
+    /// <param name="bytes">Contenido del archivo.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Tarea que finaliza al subir el archivo.</returns>
+    /// <exception cref="ErrorDeApiException">Se lanza si el almacenamiento rechaza la carga.</exception>
     private async Task SubirAlAlmacenAsync(SolicitarCargaResponse autorizacion, byte[] bytes, CancellationToken cancellationToken)
     {
         // Cliente aparte, sin el token de la API: la URL firmada ya es la credencial.
@@ -278,11 +314,25 @@ public sealed class ServicioDeApi : IServicioDeApi
         }
     }
 
+    /// <summary>
+    /// Convierte una URL relativa (la del almacén local) en absoluta respecto
+    /// de la dirección de la API.
+    /// </summary>
+    /// <param name="url">URL devuelta por la API.</param>
+    /// <returns>La URL absoluta.</returns>
+    /// <exception cref="InvalidOperationException">Se lanza si el cliente HTTP no tiene dirección base.</exception>
     private Uri Absoluta(Uri url)
         => url.IsAbsoluteUri ? url : new Uri(_http.BaseAddress ?? throw new InvalidOperationException("El cliente HTTP no tiene dirección base."), url);
 
+    /// <summary>Da formato a un identificador opcional para la cadena de consulta.</summary>
+    /// <param name="id">Identificador.</param>
+    /// <returns>El texto, o <c>null</c> para omitir el parámetro.</returns>
     private static string? Id(Guid? id) => id?.ToString();
 
+    /// <summary>Añade a una ruta los parámetros de consulta que tienen valor.</summary>
+    /// <param name="ruta">Ruta relativa.</param>
+    /// <param name="parametros">Nombres y valores; los <c>null</c> se omiten.</param>
+    /// <returns>La ruta con los valores escapados.</returns>
     private static string Ruta(string ruta, params (string Nombre, string? Valor)[] parametros)
     {
         var constructor = new StringBuilder(ruta);
@@ -306,6 +356,10 @@ public sealed class ServicioDeApi : IServicioDeApi
     /// Convierte una respuesta de error en <see cref="ErrorDeApiException"/> con
     /// el mensaje de <c>ProblemDetails</c> que redactó el servidor.
     /// </summary>
+    /// <param name="respuesta">Respuesta de la API.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Tarea que finaliza sin error si la respuesta fue correcta.</returns>
+    /// <exception cref="ErrorDeApiException">Se lanza si la respuesta tiene un código de error.</exception>
     private static async Task GarantizarExitoAsync(HttpResponseMessage respuesta, CancellationToken cancellationToken)
     {
         if (respuesta.IsSuccessStatusCode)

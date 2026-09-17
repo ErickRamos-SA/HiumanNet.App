@@ -1,6 +1,7 @@
 using System.Collections.Frozen;
 using System.Security.Claims;
 using HuimanNet.Application.Interfaces;
+using HuimanNet.Application.Usuarios;
 using HuimanNet.Contracts.Empresas;
 using HuimanNet.Contracts.Localizacion;
 using HuimanNet.Domain.Entities;
@@ -110,7 +111,7 @@ public sealed class ContextoDeUsuarioDelCircuito : IUsuarioActual
     /// Indica si el usuario tiene acceso transversal a todas las empresas.
     /// </summary>
     /// <value><c>true</c> para operadores de nómina y administradores.</value>
-    public bool EsTransversal => Rol is RolUsuario.OperadorNomina or RolUsuario.Administrador;
+    public bool EsTransversal => Rol.EsTransversal();
 
     /// <summary>
     /// Indica si el usuario elige la empresa de trabajo en la cabecera.
@@ -182,9 +183,11 @@ public sealed class ContextoDeUsuarioDelCircuito : IUsuarioActual
 
             await using AsyncServiceScope ambito = _fabricaDeAmbitos.CreateAsyncScope();
 
+            // El circuito no tiene una petición HTTP fiable: la bitácora queda sin IP.
+            IdentidadAutenticada identidad = ambito.ServiceProvider.GetRequiredService<LectorDeIdentidadPorClaims>().Leer(principal);
             Usuario usuario = await ambito.ServiceProvider
-                .GetRequiredService<ResolutorDeUsuarioPorClaims>()
-                .ResolverAsync(principal, cancellationToken);
+                .GetRequiredService<ResolutorDeUsuarioAutenticado>()
+                .ResolverAsync(identidad, direccionIp: null, cancellationToken);
 
             IConsultasEmpresas consultas = ambito.ServiceProvider.GetRequiredService<IConsultasEmpresas>();
             var empresas = new List<EmpresaDto>(usuario.Empresas.Count);
@@ -220,6 +223,12 @@ public sealed class ContextoDeUsuarioDelCircuito : IUsuarioActual
         await GarantizarResueltoAsync(cancellationToken);
     }
 
+    /// <summary>Obtiene el usuario resuelto del circuito.</summary>
+    /// <returns>El usuario.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Se lanza si la identidad aún no se resolvió, lo que indica una página que
+    /// no hereda de <c>ComponenteDelPortal</c>.
+    /// </exception>
     private Usuario Requerido()
         => _usuario ?? throw new InvalidOperationException(
             "La identidad del circuito no está resuelta. ¿La página hereda de ComponenteDelPortal?");

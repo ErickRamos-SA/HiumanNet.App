@@ -25,11 +25,17 @@
     // en lugar de consultar la base de datos dos veces por visita.
     private static readonly IComponentRenderMode ModoInteractivo = new InteractiveServerRenderMode(prerender: false);
 
+    /// <summary>Obtiene o establece el contexto de la petición inicial.</summary>
+    /// <value>Lo aporta el servidor al renderizar el documento.</value>
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
-    // Las páginas marcadas con [ExcludeFromInteractiveRouting] (acceso, error)
-    // se sirven estáticas para poder escribir cookies con formularios normales.
+    /// <summary>
+    /// Obtiene el modo de renderizado de la página pedida. Las marcadas con
+    /// <c>[ExcludeFromInteractiveRouting]</c> (acceso, error) se sirven
+    /// estáticas para poder escribir cookies con formularios normales.
+    /// </summary>
+    /// <value>Servidor interactivo sin prerenderizado, o <c>null</c> para estático.</value>
     private IComponentRenderMode? ModoDeRenderizado
         => HttpContext.AcceptsInteractiveRouting() ? ModoInteractivo : null;
 

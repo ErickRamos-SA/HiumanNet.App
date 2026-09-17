@@ -17,6 +17,11 @@ public sealed class ParametroDeCalculo
     /// <summary>Longitud máxima de la clave.</summary>
     public const int LongitudMaximaClave = 64;
 
+    /// <summary>
+    /// Inicializa una instancia con valores ya validados. Sólo la usan las
+    /// fábricas y <see cref="Rehidratar"/>.
+    /// </summary>
+    /// <inheritdoc cref="Rehidratar" path="/param"/>
     private ParametroDeCalculo(
         Guid id,
         string clave,
@@ -226,6 +231,10 @@ public sealed class ParametroDeCalculo
         return normalizada;
     }
 
+    /// <summary>Comprueba que la vigencia no termine antes de empezar.</summary>
+    /// <param name="desde">Inicio de vigencia.</param>
+    /// <param name="hasta">Fin de vigencia, o <c>null</c> si sigue vigente.</param>
+    /// <exception cref="CatalogoInvalidoException">Se lanza si el fin es anterior al inicio.</exception>
     private static void ValidarVigencia(DateOnly desde, DateOnly? hasta)
     {
         if (hasta is not null && hasta.Value < desde)
@@ -234,6 +243,11 @@ public sealed class ParametroDeCalculo
         }
     }
 
+    /// <summary>Exige un texto obligatorio.</summary>
+    /// <param name="valor">Texto capturado.</param>
+    /// <param name="nombre">Nombre del dato, para el mensaje de error.</param>
+    /// <returns>El texto sin espacios en los extremos.</returns>
+    /// <exception cref="CatalogoInvalidoException">Se lanza si el texto está vacío.</exception>
     private static string Requerido(string? valor, string nombre)
         => string.IsNullOrWhiteSpace(valor)
             ? throw new CatalogoInvalidoException($"La {nombre} es obligatoria.")

@@ -27,6 +27,10 @@ public sealed class AnalizadorSintactico
     private readonly IReadOnlyList<Token> _tokens;
     private int _indice;
 
+    /// <summary>
+    /// Inicializa el analizador sobre los tokens de una fórmula.
+    /// </summary>
+    /// <param name="tokens">Tokens producidos por <see cref="AnalizadorLexico"/>, terminados en <see cref="TipoDeToken.Fin"/>.</param>
     private AnalizadorSintactico(IReadOnlyList<Token> tokens) => _tokens = tokens;
 
     /// <summary>
@@ -57,16 +61,28 @@ public sealed class AnalizadorSintactico
         return raiz;
     }
 
+    /// <summary>Obtiene el token pendiente de consumir.</summary>
+    /// <value>El token en la posición actual.</value>
     private Token Actual => _tokens[_indice];
 
+    /// <summary>Consume el token actual.</summary>
+    /// <returns>El token consumido.</returns>
     private Token Avanzar() => _tokens[_indice++];
 
+    /// <summary>Indica si el token actual es el operador indicado.</summary>
+    /// <param name="texto">Operador buscado.</param>
+    /// <returns><c>true</c> si coincide.</returns>
     private bool EsOperador(string texto)
         => Actual.Tipo == TipoDeToken.Operador && Actual.Texto == texto;
 
+    /// <summary>Indica si el token actual es la palabra reservada indicada.</summary>
+    /// <param name="palabra">Palabra en mayúsculas.</param>
+    /// <returns><c>true</c> si coincide.</returns>
     private bool EsPalabra(string palabra)
         => Actual.Tipo == TipoDeToken.Identificador && Actual.Texto == palabra;
 
+    /// <summary>Analiza la regla <c>disyuncion</c>: conjunciones unidas por <c>O</c>.</summary>
+    /// <returns>El árbol de la subexpresión.</returns>
     private Expresion Disyuncion()
     {
         Expresion izquierda = Conjuncion();
@@ -80,6 +96,8 @@ public sealed class AnalizadorSintactico
         return izquierda;
     }
 
+    /// <summary>Analiza la regla <c>conjuncion</c>: comparaciones unidas por <c>Y</c>.</summary>
+    /// <returns>El árbol de la subexpresión.</returns>
     private Expresion Conjuncion()
     {
         Expresion izquierda = Comparacion();
@@ -93,6 +111,8 @@ public sealed class AnalizadorSintactico
         return izquierda;
     }
 
+    /// <summary>Analiza la regla <c>comparacion</c>: dos sumas con, a lo sumo, un operador relacional.</summary>
+    /// <returns>El árbol de la subexpresión.</returns>
     private Expresion Comparacion()
     {
         Expresion izquierda = Suma();
@@ -122,6 +142,8 @@ public sealed class AnalizadorSintactico
         return new ExpresionBinaria(operador.Value, izquierda, Suma());
     }
 
+    /// <summary>Analiza la regla <c>suma</c>: productos unidos por <c>+</c> o <c>-</c>.</summary>
+    /// <returns>El árbol de la subexpresión.</returns>
     private Expresion Suma()
     {
         Expresion izquierda = Producto();
@@ -135,6 +157,8 @@ public sealed class AnalizadorSintactico
         return izquierda;
     }
 
+    /// <summary>Analiza la regla <c>producto</c>: unarios unidos por <c>*</c> o <c>/</c>.</summary>
+    /// <returns>El árbol de la subexpresión.</returns>
     private Expresion Producto()
     {
         Expresion izquierda = Unario();
@@ -151,6 +175,8 @@ public sealed class AnalizadorSintactico
         return izquierda;
     }
 
+    /// <summary>Analiza la regla <c>unario</c>: signo o negación lógica seguidos de otro unario, o una potencia.</summary>
+    /// <returns>El árbol de la subexpresión.</returns>
     private Expresion Unario()
     {
         if (EsOperador("-"))
@@ -174,9 +200,16 @@ public sealed class AnalizadorSintactico
         return Potencia();
     }
 
+    /// <summary>
+    /// Indica si al token actual no le sigue un paréntesis, para distinguir el
+    /// operador <c>NO x</c> de la función <c>NO(x)</c>.
+    /// </summary>
+    /// <returns><c>true</c> si el siguiente token no abre paréntesis.</returns>
     private bool SiguienteNoEsParentesis()
         => _indice + 1 < _tokens.Count && _tokens[_indice + 1].Tipo != TipoDeToken.ParentesisAbre;
 
+    /// <summary>Analiza la regla <c>potencia</c>: un primario elevado, opcionalmente, a un unario.</summary>
+    /// <returns>El árbol de la subexpresión.</returns>
     private Expresion Potencia()
     {
         Expresion baseValor = Primario();
@@ -190,6 +223,12 @@ public sealed class AnalizadorSintactico
         return baseValor;
     }
 
+    /// <summary>
+    /// Analiza la regla <c>primario</c>: número, texto, expresión entre
+    /// paréntesis, variable o llamada a función.
+    /// </summary>
+    /// <returns>El árbol de la subexpresión.</returns>
+    /// <exception cref="ErrorDeFormulaException">Se lanza si la fórmula termina o aparece un token que no es un valor.</exception>
     private Expresion Primario()
     {
         Token token = Actual;
@@ -227,6 +266,12 @@ public sealed class AnalizadorSintactico
         }
     }
 
+    /// <summary>Analiza una llamada a función y comprueba su número de argumentos.</summary>
+    /// <param name="nombre">Token con el nombre de la función, ya consumido.</param>
+    /// <returns>La expresión de llamada.</returns>
+    /// <exception cref="ErrorDeFormulaException">
+    /// Se lanza si la función no existe o recibe un número de argumentos fuera de su rango.
+    /// </exception>
     private Expresion Llamada(Token nombre)
     {
         if (!FuncionesDeFormula.TryObtener(nombre.Texto, out DescripcionDeFuncion descripcion))
@@ -268,6 +313,10 @@ public sealed class AnalizadorSintactico
         return new ExpresionLlamada(descripcion.Funcion, [.. argumentos], nombre.Posicion);
     }
 
+    /// <summary>Consume el token actual si es del tipo esperado.</summary>
+    /// <param name="tipo">Tipo de token esperado.</param>
+    /// <param name="texto">Representación del token, para el mensaje de error.</param>
+    /// <exception cref="ErrorDeFormulaException">Se lanza si el token actual es de otro tipo.</exception>
     private void Esperar(TipoDeToken tipo, string texto)
     {
         if (Actual.Tipo != tipo)

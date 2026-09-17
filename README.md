@@ -17,7 +17,8 @@ HuimanNet.sln
 │   ├── HuimanNet.Domain/          # Entidades, políticas, lenguaje de fórmulas y motor de cálculo. Sin dependencias.
 │   ├── HuimanNet.Contracts/       # Contrato HTTP, JsonSerializerContext y textos es/en (Localizacion/).
 │   ├── HuimanNet.Application/     # Casos de uso (CQRS ligero, sin mediador).
-│   ├── HuimanNet.Infrastructure/  # ADO.NET, scripts SQL, catálogo inicial, almacenamiento local/Blob, identidad.
+│   ├── HuimanNet.Infrastructure/  # ADO.NET sobre procedimientos almacenados, scripts SQL, catálogo inicial, almacenamiento local/Blob, identidad.
+│   ├── HuimanNet.Hosting/         # ASP.NET Core común a Api y Web (endpoints del almacén local de desarrollo).
 │   ├── HuimanNet.Api/             # Minimal API + Native AOT (backend de la app móvil).
 │   ├── HuimanNet.Web/             # Blazor Server (consume Application en proceso).
 │   └── HuimanNet.App/             # MAUI + MVVM (Android · iOS).

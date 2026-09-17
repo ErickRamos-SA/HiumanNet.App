@@ -24,13 +24,7 @@ public sealed class EmpresaRepository : RepositorioSqlBase, IEmpresaRepository
     /// <inheritdoc/>
     public async Task<Empresa?> ObtenerPorIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeEmpresas.Columnas}
-            FROM   dbo.Empresas AS e
-            WHERE  e.Id = @Id;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Empresas.Obtener, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = id });
 
         await using SqlDataReader reader = await comando.ExecuteReaderAsync(cancellationToken);
@@ -42,14 +36,7 @@ public sealed class EmpresaRepository : RepositorioSqlBase, IEmpresaRepository
     public async Task<IReadOnlyList<Empresa>> ListarAsync(
         bool soloActivas = true, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeEmpresas.Columnas}
-            FROM   dbo.Empresas AS e
-            WHERE  (@SoloActivas = 0 OR e.Activa = 1)
-            ORDER BY e.RazonSocial ASC;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Empresas.Listar, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@SoloActivas", SqlDbType.Bit) { Value = soloActivas });
 
         var empresas = new List<Empresa>();
@@ -69,14 +56,7 @@ public sealed class EmpresaRepository : RepositorioSqlBase, IEmpresaRepository
     {
         ArgumentNullException.ThrowIfNull(empresa);
 
-        const string sql = """
-            INSERT INTO dbo.Empresas
-                (Id, RazonSocial, IdentificadorFiscal, PrefijoContenedor, Activa, FechaAlta)
-            VALUES
-                (@Id, @RazonSocial, @IdentificadorFiscal, @PrefijoContenedor, @Activa, @FechaAlta);
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Empresas.Insertar, cancellationToken);
 
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = empresa.Id });
         comando.Parameters.Add(new SqlParameter("@RazonSocial", SqlDbType.NVarChar, 200) { Value = empresa.RazonSocial });
@@ -93,15 +73,7 @@ public sealed class EmpresaRepository : RepositorioSqlBase, IEmpresaRepository
     {
         ArgumentNullException.ThrowIfNull(empresa);
 
-        const string sql = """
-            UPDATE dbo.Empresas
-            SET    RazonSocial = @RazonSocial,
-                   IdentificadorFiscal = @IdentificadorFiscal,
-                   Activa = @Activa
-            WHERE  Id = @Id;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Empresas.Actualizar, cancellationToken);
 
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = empresa.Id });
         comando.Parameters.Add(new SqlParameter("@RazonSocial", SqlDbType.NVarChar, 200) { Value = empresa.RazonSocial });

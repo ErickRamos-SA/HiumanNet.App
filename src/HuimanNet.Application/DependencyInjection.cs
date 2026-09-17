@@ -11,6 +11,7 @@ using HuimanNet.Application.Empresas.Queries;
 using HuimanNet.Application.Incidencias;
 using HuimanNet.Application.Inicio;
 using HuimanNet.Application.Nomina;
+using HuimanNet.Application.Notificaciones;
 using HuimanNet.Application.Periodos.Commands;
 using HuimanNet.Application.Periodos.Queries;
 using HuimanNet.Application.Periodos.Validators;
@@ -93,6 +94,11 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>
+    /// Registra los casos de uso de documentos, períodos, empresas, bitácora,
+    /// inicio y avisos.
+    /// </summary>
+    /// <param name="services">Contenedor de servicios.</param>
     private static void RegistrarDocumentosYPeriodos(IServiceCollection services)
     {
         services.AddScoped<IManejadorDeComando<SolicitarCargaDocumentoCommand, SolicitarCargaResponse>, SolicitarCargaDocumentoHandler>();
@@ -108,8 +114,17 @@ public static class DependencyInjection
         services.AddScoped<IManejadorDeConsulta<ListarEmpresasQuery, IReadOnlyList<EmpresaDto>>, ListarEmpresasHandler>();
         services.AddScoped<IManejadorDeConsulta<ConsultarBitacoraQuery, PaginaDto<RegistroAuditoriaDto>>, ConsultarBitacoraHandler>();
         services.AddScoped<IManejadorDeConsulta<ObtenerResumenDeInicioQuery, ResumenDeInicioDto>, ObtenerResumenDeInicioHandler>();
+        services.AddScoped<IManejadorDeConsulta<ListarDestinatariosDeAvisoQuery, IReadOnlyList<string>>, ListarDestinatariosDeAvisoHandler>();
     }
 
+    /// <summary>
+    /// Registra los casos de uso de empresas, razones sociales, empleados y contratos.
+    /// </summary>
+    /// <param name="services">Contenedor de servicios.</param>
+    /// <remarks>
+    /// Un manejador que atiende varios casos de uso se registra una vez y se
+    /// expone por cada interfaz, para compartir la instancia dentro del ámbito.
+    /// </remarks>
     private static void RegistrarCatalogosDeEmpresa(IServiceCollection services)
     {
         services.AddScoped<GuardarEmpresaHandler>();
@@ -132,6 +147,11 @@ public static class DependencyInjection
         services.AddScoped<IManejadorDeConsulta<ObtenerEmpleadoQuery, EmpleadoDto>>(sp => sp.GetRequiredService<ConsultarEmpleadosHandler>());
     }
 
+    /// <summary>
+    /// Registra los casos de uso de incidencias y del cálculo, la consulta y el
+    /// cotejo de la nómina.
+    /// </summary>
+    /// <param name="services">Contenedor de servicios.</param>
     private static void RegistrarNomina(IServiceCollection services)
     {
         services.AddScoped<GuardarIncidenciaHandler>();
@@ -148,6 +168,7 @@ public static class DependencyInjection
         services.AddScoped<IManejadorDeConsulta<ObtenerResumenDeCorridaQuery, ResumenDeCorridaDto>>(sp => sp.GetRequiredService<ConsultarNominaHandler>());
         services.AddScoped<IManejadorDeConsulta<ObtenerDetalleDeResultadoQuery, DetalleDeResultadoDto>>(sp => sp.GetRequiredService<ConsultarNominaHandler>());
         services.AddScoped<IManejadorDeConsulta<ExportarCorridaQuery, ArchivoExportado>>(sp => sp.GetRequiredService<ConsultarNominaHandler>());
+        services.AddScoped<IManejadorDeConsulta<ListarCorridasRecientesQuery, IReadOnlyList<CorridaDeNominaDto>>, ListarCorridasRecientesHandler>();
 
         services.AddScoped<IManejadorDeComando<CotejarNominaCommand, CotejoDto>, CotejarNominaHandler>();
         services.AddScoped<ConsultarCotejosHandler>();
@@ -155,6 +176,11 @@ public static class DependencyInjection
         services.AddScoped<IManejadorDeConsulta<ObtenerCotejoQuery, CotejoDto>>(sp => sp.GetRequiredService<ConsultarCotejosHandler>());
     }
 
+    /// <summary>
+    /// Registra los casos de uso de parámetros, tablas, conceptos y
+    /// explicaciones del cálculo.
+    /// </summary>
+    /// <param name="services">Contenedor de servicios.</param>
     private static void RegistrarCatalogosDeCalculo(IServiceCollection services)
     {
         services.AddScoped<AdministrarCatalogosHandler>();
@@ -176,6 +202,8 @@ public static class DependencyInjection
         services.AddScoped<IManejadorDeConsulta<ObtenerExplicacionCompletaQuery, ExplicacionCompletaDto>>(sp => sp.GetRequiredService<ConsultarCatalogosHandler>());
     }
 
+    /// <summary>Registra los casos de uso de usuarios y de la sesión.</summary>
+    /// <param name="services">Contenedor de servicios.</param>
     private static void RegistrarUsuarios(IServiceCollection services)
     {
         services.AddScoped<AdministrarUsuariosHandler>();
@@ -186,8 +214,11 @@ public static class DependencyInjection
         services.AddScoped<IManejadorDeConsulta<ListarUsuariosQuery, IReadOnlyList<UsuarioDto>>>(sp => sp.GetRequiredService<ConsultarUsuariosHandler>());
         services.AddScoped<IManejadorDeConsulta<ObtenerUsuarioQuery, UsuarioDto>>(sp => sp.GetRequiredService<ConsultarUsuariosHandler>());
 
+        services.AddScoped<ResolutorDeUsuarioAutenticado>();
+
         services.AddScoped<SesionDeUsuarioHandler>();
         services.AddScoped<IManejadorDeComando<IniciarSesionLocalCommand, IniciarSesionResponse>>(sp => sp.GetRequiredService<SesionDeUsuarioHandler>());
+        services.AddScoped<IManejadorDeComando<ValidarCredencialesLocalesCommand, SesionLocalValidada>>(sp => sp.GetRequiredService<SesionDeUsuarioHandler>());
         services.AddScoped<IManejadorDeComando<CambiarContrasenaCommand>>(sp => sp.GetRequiredService<SesionDeUsuarioHandler>());
         services.AddScoped<IManejadorDeComando<ActualizarPreferenciasCommand>>(sp => sp.GetRequiredService<SesionDeUsuarioHandler>());
         services.AddScoped<IManejadorDeConsulta<ObtenerUsuarioActualQuery, UsuarioActualDto>>(sp => sp.GetRequiredService<SesionDeUsuarioHandler>());

@@ -13,6 +13,13 @@ public sealed class FormulaCompilada
 {
     private readonly Expresion _raiz;
 
+    /// <summary>
+    /// Inicializa una fórmula ya analizada. Sólo la usa <see cref="Compilar"/>.
+    /// </summary>
+    /// <param name="texto">Texto original.</param>
+    /// <param name="raiz">Raíz del árbol de expresión.</param>
+    /// <param name="variables">Variables que referencia.</param>
+    /// <param name="tablas">Tablas que consulta.</param>
     private FormulaCompilada(string texto, Expresion raiz, HashSet<string> variables, HashSet<string> tablas)
     {
         Texto = texto;

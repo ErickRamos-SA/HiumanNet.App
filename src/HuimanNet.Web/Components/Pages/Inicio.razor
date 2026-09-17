@@ -41,7 +41,7 @@
                         @foreach (PendienteDto pendiente in _resumen.Pendientes)
                         {
                             <li>
-                                <a href="@pendiente.Ruta">
+                                <a href="@RutaDe(pendiente)">
                                     <span class="tarea-icono"><Icono Nombre="@IconoDe(pendiente.Clave)" /></span>
                                     <span class="tarea-texto">
                                         <strong>@T[pendiente.Clave]</strong>
@@ -111,13 +111,18 @@ else if (!Inicializado)
 }
 
 @code {
+    /// <summary>Número de corridas que muestra la tarjeta de corridas recientes.</summary>
+    private const int CorridasRecientes = 5;
+
     private ResumenDeInicioDto? _resumen;
     private IReadOnlyList<CorridaDeNominaDto> _corridas = [];
 
     /// <inheritdoc/>
     protected override bool DependeDeEmpresa => true;
 
-    private string PrimerNombre => ContextoDeUsuario.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
+    /// <summary>Obtiene el primer nombre del usuario, para el saludo.</summary>
+    /// <value>La primera palabra del nombre completo.</value>
+    private string PrimerNombre =>ContextoDeUsuario.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
 
     /// <inheritdoc/>
     protected override async Task CargarDatosAsync()
@@ -125,11 +130,14 @@ else if (!Inicializado)
         _resumen = await Casos.ConsultarAsync<ObtenerResumenDeInicioQuery, ResumenDeInicioDto>(new ObtenerResumenDeInicioQuery(ContextoDeUsuario.EsTransversal ? null : EmpresaDeConsulta));
 
         _corridas = ContextoDeUsuario.Puede(AccionDelSistema.ConsultarNomina)
-            ? await Casos.UsarAsync<IConsultasNomina, IReadOnlyList<CorridaDeNominaDto>>(
-                c => c.ListarRecientesAsync(EmpresaDeConsulta ?? ContextoDeUsuario.EmpresaId, 5))
+            ? await Casos.ConsultarAsync<ListarCorridasRecientesQuery, IReadOnlyList<CorridaDeNominaDto>>(
+                new ListarCorridasRecientesQuery(EmpresaDeConsulta, CorridasRecientes))
             : [];
     }
 
+    /// <summary>Elige el icono de un pendiente.</summary>
+    /// <param name="clave">Clave de texto del pendiente.</param>
+    /// <returns>El nombre del icono.</returns>
     private static string IconoDe(string clave) => clave switch
     {
         "pendiente.subirDocumentos" => "subir",
@@ -139,6 +147,15 @@ else if (!Inicializado)
         _ => "check",
     };
 
+    /// <summary>Obtiene la página de la web que resuelve un pendiente.</summary>
+    /// <param name="pendiente">Pendiente sugerido.</param>
+    /// <returns>El detalle de la corrida para un cotejo; los documentos del período en los demás casos.</returns>
+    private static string RutaDe(PendienteDto pendiente) => pendiente.Tipo == TipoDePendiente.CotejarCorrida
+        ? $"nomina/corridas/{pendiente.CorridaId}?empresaId={pendiente.EmpresaId}"
+        : $"periodos/{pendiente.PeriodoId}/documentos?empresaId={pendiente.EmpresaId}";
+
+    /// <summary>Lista los accesos directos a los que el usuario tiene permiso.</summary>
+    /// <returns>Ruta, icono y clave de texto de cada acceso.</returns>
     private IEnumerable<(string Ruta, string Icono, string Clave)> Accesos()
     {
         if (ContextoDeUsuario.Puede(AccionDelSistema.CargarDocumentos) || ContextoDeUsuario.Puede(AccionDelSistema.DescargarDocumentos))

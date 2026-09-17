@@ -59,6 +59,9 @@ public static class ConstructorDeVariables
         decimal primaRiesgo = configuracion.PrimaDeRiesgo
             ?? Parametro(parametros, ClavesDeParametro.PrimaRiesgoPredeterminada);
 
+        decimal tasaIva = configuracion.TasaIva
+            ?? Parametro(parametros, ClavesDeParametro.TasaIva);
+
         var variables = new Dictionary<string, decimal>(64, StringComparer.Ordinal)
         {
             [VariablesDeCalculo.SueldoPeriodoReal] = condiciones.SueldoPeriodoReal,
@@ -81,7 +84,7 @@ public static class ConstructorDeVariables
             [VariablesDeCalculo.AplicaFaltasProporcionales] = configuracion.AplicaFaltasProporcionales ? 1m : 0m,
             [VariablesDeCalculo.ComisionSobreCosto] = configuracion.ModalidadDeComision == ModalidadDeComision.SobreCosto ? 1m : 0m,
             [VariablesDeCalculo.PorcentajeComision] = configuracion.PorcentajeComision,
-            [VariablesDeCalculo.TasaIvaFactura] = configuracion.TasaIva,
+            [VariablesDeCalculo.TasaIvaFactura] = tasaIva,
             [VariablesDeCalculo.PorcentajeOtrosCostos] = configuracion.PorcentajeOtrosCostos,
             [VariablesDeCalculo.PrimaRiesgo] = primaRiesgo,
 
@@ -117,6 +120,11 @@ public static class ConstructorDeVariables
         return variables;
     }
 
+    /// <summary>Obtiene un parámetro que el cálculo de variables necesita siempre.</summary>
+    /// <param name="parametros">Parámetros vigentes.</param>
+    /// <param name="clave">Clave del parámetro.</param>
+    /// <returns>El valor del parámetro.</returns>
+    /// <exception cref="CatalogoInvalidoException">Se lanza si el catálogo no define el parámetro para la fecha.</exception>
     private static decimal Parametro(IReadOnlyDictionary<string, decimal> parametros, string clave)
         => parametros.TryGetValue(clave, out decimal valor)
             ? valor

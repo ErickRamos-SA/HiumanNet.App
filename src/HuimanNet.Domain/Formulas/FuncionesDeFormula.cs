@@ -1,68 +1,6 @@
 namespace HuimanNet.Domain.Formulas;
 
 /// <summary>
-/// Funciones incorporadas del lenguaje de fórmulas.
-/// </summary>
-public enum FuncionDeFormula
-{
-    /// <summary><c>SI(condición; si_verdadero; si_falso)</c>.</summary>
-    Si,
-
-    /// <summary><c>MAX(a; b; ...)</c>.</summary>
-    Maximo,
-
-    /// <summary><c>MIN(a; b; ...)</c>.</summary>
-    Minimo,
-
-    /// <summary><c>REDONDEAR(valor; decimales)</c>, redondeo comercial (mitad hacia arriba).</summary>
-    Redondear,
-
-    /// <summary><c>TRUNCAR(valor; decimales)</c>.</summary>
-    Truncar,
-
-    /// <summary><c>ABS(valor)</c>.</summary>
-    Absoluto,
-
-    /// <summary><c>ENTERO(valor)</c>: mayor entero menor o igual.</summary>
-    Entero,
-
-    /// <summary><c>TECHO(valor)</c>: menor entero mayor o igual.</summary>
-    Techo,
-
-    /// <summary><c>Y(a; b; ...)</c>.</summary>
-    Y,
-
-    /// <summary><c>O(a; b; ...)</c>.</summary>
-    O,
-
-    /// <summary><c>NO(a)</c>.</summary>
-    No,
-
-    /// <summary><c>ENTRE(valor; mínimo; máximo)</c>: 1 si el valor está en el intervalo cerrado.</summary>
-    Entre,
-
-    /// <summary><c>TABLA("CLAVE"; valor; "CAMPO")</c>: consulta una tabla por rangos.</summary>
-    Tabla,
-}
-
-/// <summary>
-/// Descripción de una función para la ayuda del administrador.
-/// </summary>
-/// <param name="Funcion">Función descrita.</param>
-/// <param name="Nombres">Nombres aceptados (español e inglés).</param>
-/// <param name="MinimoArgumentos">Número mínimo de argumentos.</param>
-/// <param name="MaximoArgumentos">Número máximo de argumentos, o <c>null</c> si no hay límite.</param>
-/// <param name="Firma">Firma de ejemplo.</param>
-/// <param name="Descripcion">Qué hace la función.</param>
-public sealed record DescripcionDeFuncion(
-    FuncionDeFormula Funcion,
-    IReadOnlyList<string> Nombres,
-    int MinimoArgumentos,
-    int? MaximoArgumentos,
-    string Firma,
-    string Descripcion);
-
-/// <summary>
 /// Catálogo de funciones del lenguaje de fórmulas, con sus alias y su aridad.
 /// </summary>
 /// <remarks>
@@ -112,6 +50,10 @@ public static class FuncionesDeFormula
     /// <returns><c>true</c> si es una función incorporada.</returns>
     public static bool EsFuncion(string nombre) => PorNombre.ContainsKey(nombre);
 
+    /// <summary>
+    /// Indexa el catálogo de funciones por cada uno de sus nombres (español e inglés).
+    /// </summary>
+    /// <returns>El índice por nombre en mayúsculas.</returns>
     private static Dictionary<string, DescripcionDeFuncion> Construir()
     {
         var indice = new Dictionary<string, DescripcionDeFuncion>(StringComparer.Ordinal);

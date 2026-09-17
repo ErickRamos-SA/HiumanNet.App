@@ -2,10 +2,9 @@ using System.Globalization;
 using System.Text.Json;
 using Azure.Storage.Queues;
 using Azure.Storage.Queues.Models;
+using HuimanNet.Application.Common;
 using HuimanNet.Application.Interfaces;
-using HuimanNet.Domain.Entities;
-using HuimanNet.Domain.Enums;
-using HuimanNet.Domain.Repositories;
+using HuimanNet.Application.Notificaciones;
 using HuimanNet.Infrastructure.Notifications;
 using Microsoft.Extensions.Options;
 
@@ -23,9 +22,15 @@ namespace HuimanNet.Web.Notificaciones;
 /// Un mensaje sólo se borra de la cola cuando su envío termina bien: si el
 /// proceso muere a mitad, el aviso vuelve a estar visible y se reintenta.
 /// </para>
+/// <para>
+/// Quién recibe cada aviso lo decide la capa de aplicación
+/// (<see cref="ListarDestinatariosDeAvisoQuery"/>); este servicio sólo lee la
+/// cola, redacta el correo y lo envía.
+/// </para>
 /// </remarks>
 public sealed class TrabajadorDeAvisos : BackgroundService
 {
+    /// <summary>Mensajes que se leen de la cola en cada sondeo.</summary>
     private const int MensajesPorLote = 16;
 
     private readonly QueueClient _cola;
@@ -38,7 +43,7 @@ public sealed class TrabajadorDeAvisos : BackgroundService
     /// Inicializa una nueva instancia de <see cref="TrabajadorDeAvisos"/>.
     /// </summary>
     /// <param name="cola">Cliente de la cola de avisos.</param>
-    /// <param name="fabricaDeAmbitos">Fábrica de ámbitos para resolver repositorios.</param>
+    /// <param name="fabricaDeAmbitos">Fábrica de ámbitos para resolver los casos de uso de cada aviso.</param>
     /// <param name="correo">Enviador de correo.</param>
     /// <param name="opciones">Opciones de correo.</param>
     /// <param name="logger">Registro de eventos.</param>
@@ -95,6 +100,13 @@ public sealed class TrabajadorDeAvisos : BackgroundService
         _logger.LogInformation("Trabajador de avisos detenido.");
     }
 
+    /// <summary>
+    /// Envía el aviso de un mensaje y lo borra de la cola; si falla, el mensaje
+    /// vuelve a aparecer y se reintenta. Los mensajes ilegibles se descartan.
+    /// </summary>
+    /// <param name="mensaje">Mensaje leído de la cola.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Tarea que finaliza al procesar el mensaje.</returns>
     private async Task ProcesarAsync(QueueMessage mensaje, CancellationToken cancellationToken)
     {
         try
@@ -123,37 +135,40 @@ public sealed class TrabajadorDeAvisos : BackgroundService
 #pragma warning restore CA1031
     }
 
+    /// <summary>Obtiene los destinatarios del aviso y les envía el correo.</summary>
+    /// <param name="aviso">Aviso a enviar.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Tarea que finaliza al enviar todos los correos.</returns>
     private async Task EnviarAvisoAsync(AvisoPendiente aviso, CancellationToken cancellationToken)
     {
         await using AsyncServiceScope ambito = _fabricaDeAmbitos.CreateAsyncScope();
 
-        var usuarios = ambito.ServiceProvider.GetRequiredService<IUsuarioRepository>();
-
-        RolUsuario rolDestino = aviso.Tipo switch
-        {
-            TipoDeAviso.DocumentosRecibidos => RolUsuario.OperadorNomina,
-            TipoDeAviso.ResultadosDisponibles => RolUsuario.ClienteEmpresa,
-            _ => RolUsuario.Administrador,
-        };
-
-        IReadOnlyList<Usuario> destinatarios =
-            await usuarios.ListarDestinatariosAsync(aviso.EmpresaId, rolDestino, cancellationToken);
+        IReadOnlyList<string> destinatarios = await ambito.ServiceProvider
+            .GetRequiredService<IManejadorDeConsulta<ListarDestinatariosDeAvisoQuery, IReadOnlyList<string>>>()
+            .EjecutarAsync(new ListarDestinatariosDeAvisoQuery(aviso.Tipo, aviso.EmpresaId), cancellationToken);
 
         if (destinatarios.Count == 0)
         {
             _logger.LogWarning(
-                "No hay destinatarios con rol {Rol} para el aviso {Tipo}.", rolDestino, aviso.Tipo);
+                "No hay destinatarios con rol {Rol} para el aviso {Tipo}.",
+                ListarDestinatariosDeAvisoHandler.RolDestinatario(aviso.Tipo), aviso.Tipo);
             return;
         }
 
         (string asunto, string cuerpo) = Redactar(aviso);
 
-        foreach (Usuario destinatario in destinatarios)
+        foreach (string destinatario in destinatarios)
         {
-            await _correo.EnviarAsync(destinatario.Correo, asunto, cuerpo, cancellationToken);
+            await _correo.EnviarAsync(destinatario, asunto, cuerpo, cancellationToken);
         }
     }
 
+    /// <summary>
+    /// Redacta el correo de un aviso; sólo incluye el período y un enlace al
+    /// portal, nunca nombres de archivo ni datos personales.
+    /// </summary>
+    /// <param name="aviso">Aviso a enviar.</param>
+    /// <returns>El asunto y el cuerpo en texto plano.</returns>
     private (string Asunto, string Cuerpo) Redactar(AvisoPendiente aviso)
     {
         string enlace = $"{_opciones.UrlDelPortal.TrimEnd('/')}/periodos/{aviso.PeriodoId}/documentos";

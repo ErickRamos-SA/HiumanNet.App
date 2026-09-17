@@ -13,8 +13,10 @@ namespace HuimanNet.Infrastructure.Persistence.Repositories;
 /// </summary>
 /// <remarks>
 /// Los resultados se insertan con <see cref="SqlBulkCopy"/> dentro de la
-/// transacción del caso de uso: una corrida de miles de trabajadores se
-/// persiste en un solo viaje de datos en lugar de miles de sentencias.
+/// transacción del caso de uso, no con un procedimiento: una corrida de miles
+/// de trabajadores se persiste en un solo viaje de datos en lugar de miles de
+/// llamadas. Todo lo demás pasa por los procedimientos de
+/// <c>Procedimientos/Nomina.sql</c>.
 /// </remarks>
 public sealed class CorridaDeNominaRepository : RepositorioSqlBase, ICorridaDeNominaRepository
 {
@@ -66,9 +68,7 @@ public sealed class CorridaDeNominaRepository : RepositorioSqlBase, ICorridaDeNo
     /// <inheritdoc/>
     public async Task<CorridaDeNomina?> ObtenerAsync(Guid id, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"SELECT {LectorDeCorridas.ColumnasDeCorrida} FROM dbo.CorridasDeNomina AS k WHERE k.Id = @Id AND k.EmpresaId = @EmpresaId;";
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Nomina.CorridaObtener, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = id });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
 
@@ -80,14 +80,8 @@ public sealed class CorridaDeNominaRepository : RepositorioSqlBase, ICorridaDeNo
     public async Task<IReadOnlyList<CorridaDeNomina>> ListarPorPeriodoAsync(
         Guid periodoId, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeCorridas.ColumnasDeCorrida}
-            FROM   dbo.CorridasDeNomina AS k
-            WHERE  k.PeriodoId = @PeriodoId AND k.EmpresaId = @EmpresaId
-            ORDER BY k.Numero DESC;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Nomina.CorridasListarPorPeriodo, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@PeriodoId", SqlDbType.UniqueIdentifier) { Value = periodoId });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
 
@@ -105,8 +99,8 @@ public sealed class CorridaDeNominaRepository : RepositorioSqlBase, ICorridaDeNo
     /// <inheritdoc/>
     public async Task<int> SiguienteNumeroAsync(Guid periodoId, CancellationToken cancellationToken = default)
     {
-        await using SqlCommand comando = await CrearComandoAsync(
-            "SELECT ISNULL(MAX(Numero), 0) + 1 FROM dbo.CorridasDeNomina WHERE PeriodoId = @PeriodoId;", cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Nomina.CorridaSiguienteNumero, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@PeriodoId", SqlDbType.UniqueIdentifier) { Value = periodoId });
 
         object? valor = await comando.ExecuteScalarAsync(cancellationToken);
@@ -120,22 +114,9 @@ public sealed class CorridaDeNominaRepository : RepositorioSqlBase, ICorridaDeNo
         ArgumentNullException.ThrowIfNull(corrida);
         ArgumentNullException.ThrowIfNull(resultados);
 
-        const string sql = """
-            INSERT INTO dbo.CorridasDeNomina
-                (Id, EmpresaId, PeriodoId, Numero, Estado, FechaReferencia, FechaCalculo, CalculadaPorUsuarioId, Trabajadores,
-                 TotalBruto, TotalPercepciones, TotalDeducciones, TotalNeto, TotalIsr, TotalImssTrabajador, TotalImssPatronal,
-                 TotalInfonavit, TotalIsn, TotalComplemento, TotalFacturable, TotalComision, TotalCosto, DuracionMs,
-                 Observaciones, Advertencias)
-            VALUES
-                (@Id, @EmpresaId, @PeriodoId, @Numero, @Estado, @FechaReferencia, @FechaCalculo, @Usuario, @Trabajadores,
-                 @Bruto, @Percepciones, @Deducciones, @Neto, @Isr, @ImssTrabajador, @ImssPatronal,
-                 @Infonavit, @Isn, @Complemento, @Facturable, @Comision, @Costo, @Duracion,
-                 @Observaciones, @Advertencias);
-            """;
-
         TotalesDeCorrida t = corrida.Totales;
 
-        await using (SqlCommand comando = await CrearComandoAsync(sql, cancellationToken))
+        await using (SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Nomina.CorridaInsertar, cancellationToken))
         {
             comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = corrida.Id });
             comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = corrida.EmpresaId });
@@ -194,8 +175,8 @@ public sealed class CorridaDeNominaRepository : RepositorioSqlBase, ICorridaDeNo
     {
         ArgumentNullException.ThrowIfNull(corrida);
 
-        await using SqlCommand comando = await CrearComandoAsync(
-            "UPDATE dbo.CorridasDeNomina SET Estado = @Estado, Observaciones = @Observaciones WHERE Id = @Id;", cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Nomina.CorridaActualizar, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = corrida.Id });
         comando.Parameters.Add(new SqlParameter("@Estado", SqlDbType.TinyInt) { Value = (byte)corrida.Estado });
         comando.Parameters.Add(new SqlParameter("@Observaciones", SqlDbType.NVarChar, 1000) { Value = (object?)corrida.Observaciones ?? DBNull.Value });
@@ -206,14 +187,8 @@ public sealed class CorridaDeNominaRepository : RepositorioSqlBase, ICorridaDeNo
     public async Task<IReadOnlyList<ResultadoDeNomina>> ListarResultadosAsync(
         Guid corridaId, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeCorridas.ColumnasDeResultado}, n.Conceptos
-            FROM   dbo.ResultadosDeNomina AS n
-            WHERE  n.CorridaId = @CorridaId AND n.EmpresaId = @EmpresaId
-            ORDER BY LEN(n.ClaveEmpleado), n.ClaveEmpleado, n.Esquema;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Nomina.ResultadosListarPorCorrida, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@CorridaId", SqlDbType.UniqueIdentifier) { Value = corridaId });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
 
@@ -232,13 +207,8 @@ public sealed class CorridaDeNominaRepository : RepositorioSqlBase, ICorridaDeNo
     public async Task<ResultadoDeNomina?> ObtenerResultadoAsync(
         Guid resultadoId, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeCorridas.ColumnasDeResultado}, n.Conceptos
-            FROM   dbo.ResultadosDeNomina AS n
-            WHERE  n.Id = @Id AND n.EmpresaId = @EmpresaId;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Nomina.ResultadoObtener, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = resultadoId });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
 
@@ -250,6 +220,8 @@ public sealed class CorridaDeNominaRepository : RepositorioSqlBase, ICorridaDeNo
     /// Lee un resultado en acceso secuencial: las columnas se consumen en orden
     /// y la columna de conceptos, la más grande, se lee al final.
     /// </summary>
+    /// <param name="reader">Lector situado en la fila.</param>
+    /// <returns>El resultado rehidratado.</returns>
     private static ResultadoDeNomina Mapear(SqlDataReader reader)
     {
         var valores = new object[32];
@@ -268,99 +240,26 @@ public sealed class CorridaDeNominaRepository : RepositorioSqlBase, ICorridaDeNo
             valores[30] as string);
     }
 
+    /// <summary>Convierte una columna leída a importe.</summary>
+    /// <param name="valor">Valor de la columna.</param>
+    /// <returns>El importe.</returns>
     private static decimal D(object valor) => (decimal)valor;
 
+    /// <summary>Redondea un importe a los cuatro decimales de la columna.</summary>
+    /// <param name="valor">Importe calculado.</param>
+    /// <returns>El importe redondeado, con los medios lejos del cero.</returns>
     private static decimal Redondear(decimal valor) => Math.Round(valor, 4, MidpointRounding.AwayFromZero);
 
+    /// <summary>Recorta un texto a la longitud de su columna.</summary>
+    /// <param name="valor">Texto.</param>
+    /// <param name="maximo">Longitud de la columna.</param>
+    /// <returns>El texto, recortado si excede la longitud.</returns>
     private static string Recortar(string valor, int maximo) => valor.Length <= maximo ? valor : valor[..maximo];
 
+    /// <summary>Crea un parámetro de importe redondeado a cuatro decimales.</summary>
+    /// <param name="nombre">Nombre del parámetro.</param>
+    /// <param name="valor">Importe.</param>
+    /// <returns>El parámetro.</returns>
     private static SqlParameter Importe(string nombre, decimal valor)
         => new(nombre, SqlDbType.Decimal) { Precision = 18, Scale = 4, Value = Redondear(valor) };
-}
-
-/// <summary>
-/// Repositorio de cotejos de nómina.
-/// </summary>
-public sealed class CotejoRepository : RepositorioSqlBase, ICotejoRepository
-{
-    /// <summary>
-    /// Inicializa una nueva instancia de <see cref="CotejoRepository"/>.
-    /// </summary>
-    /// <param name="sesion">Sesión de base de datos de la petición en curso.</param>
-    public CotejoRepository(ISesionSql sesion)
-        : base(sesion)
-    {
-    }
-
-    /// <inheritdoc/>
-    public async Task AgregarAsync(CotejoDeNomina cotejo, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(cotejo);
-
-        const string sql = """
-            INSERT INTO dbo.CotejosDeNomina
-                (Id, CorridaId, EmpresaId, FechaCotejo, UsuarioId, NombreArchivo, ToleranciaAbsoluta,
-                 TotalComparaciones, TotalFueraDeTolerancia, Diferencias)
-            VALUES (@Id, @CorridaId, @EmpresaId, @Fecha, @UsuarioId, @Nombre, @Tolerancia, @Total, @Fuera, @Diferencias);
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
-        comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = cotejo.Id });
-        comando.Parameters.Add(new SqlParameter("@CorridaId", SqlDbType.UniqueIdentifier) { Value = cotejo.CorridaId });
-        comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = cotejo.EmpresaId });
-        comando.Parameters.Add(new SqlParameter("@Fecha", SqlDbType.DateTimeOffset) { Value = cotejo.FechaCotejo });
-        comando.Parameters.Add(new SqlParameter("@UsuarioId", SqlDbType.UniqueIdentifier) { Value = cotejo.UsuarioId });
-        comando.Parameters.Add(new SqlParameter("@Nombre", SqlDbType.NVarChar, 255) { Value = cotejo.NombreArchivo });
-        comando.Parameters.Add(new SqlParameter("@Tolerancia", SqlDbType.Decimal) { Precision = 18, Scale = 4, Value = cotejo.ToleranciaAbsoluta });
-        comando.Parameters.Add(new SqlParameter("@Total", SqlDbType.Int) { Value = cotejo.TotalComparaciones });
-        comando.Parameters.Add(new SqlParameter("@Fuera", SqlDbType.Int) { Value = cotejo.TotalFueraDeTolerancia });
-        comando.Parameters.Add(new SqlParameter("@Diferencias", SqlDbType.NVarChar, -1) { Value = SerializadorDeNomina.SerializarDiferencias(cotejo.Diferencias) });
-        await comando.ExecuteNonQueryAsync(cancellationToken);
-    }
-
-    /// <inheritdoc/>
-    public async Task<CotejoDeNomina?> ObtenerAsync(Guid id, Guid empresaId, CancellationToken cancellationToken = default)
-    {
-        string sql = $"""
-            SELECT {LectorDeCorridas.ColumnasDeCotejo}, j.Diferencias
-            FROM   dbo.CotejosDeNomina AS j
-            WHERE  j.Id = @Id AND j.EmpresaId = @EmpresaId;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
-        comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = id });
-        comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
-
-        await using SqlDataReader reader = await comando.ExecuteReaderAsync(cancellationToken);
-
-        return await reader.ReadAsync(cancellationToken)
-            ? LectorDeCorridas.MapearCotejo(reader, SerializadorDeNomina.LeerDiferencias(reader.GetString(9)))
-            : null;
-    }
-
-    /// <inheritdoc/>
-    public async Task<IReadOnlyList<CotejoDeNomina>> ListarPorCorridaAsync(
-        Guid corridaId, Guid empresaId, CancellationToken cancellationToken = default)
-    {
-        string sql = $"""
-            SELECT {LectorDeCorridas.ColumnasDeCotejo}
-            FROM   dbo.CotejosDeNomina AS j
-            WHERE  j.CorridaId = @CorridaId AND j.EmpresaId = @EmpresaId
-            ORDER BY j.FechaCotejo DESC;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
-        comando.Parameters.Add(new SqlParameter("@CorridaId", SqlDbType.UniqueIdentifier) { Value = corridaId });
-        comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
-
-        var lista = new List<CotejoDeNomina>();
-        await using SqlDataReader reader = await comando.ExecuteReaderAsync(cancellationToken);
-
-        while (await reader.ReadAsync(cancellationToken))
-        {
-            lista.Add(LectorDeCorridas.MapearCotejo(reader, []));
-        }
-
-        return lista;
-    }
 }

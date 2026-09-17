@@ -59,18 +59,11 @@
                                     <a class="boton boton-pequeno" href="@($"nomina?periodoId={periodo.Id}&empresaId={periodo.EmpresaId}")">
                                         <Icono Nombre="nomina" Tamano="16" /> @T["nav.nomina"]
                                     </a>
-                                    @if (periodo.Estado == EstadoPeriodo.Recibido)
+                                    @if (PuedeGestionar && periodo.Estado.Siguiente() is { } siguiente)
                                     {
-                                        <button type="button" class="boton boton-pequeno" disabled="@EstaCargando"
-                                                @onclick="() => AvanzarAsync(periodo, EstadoPeriodo.EnProceso)">
-                                            @T["periodos.accion.EnProceso"]
-                                        </button>
-                                    }
-                                    else if (periodo.Estado == EstadoPeriodo.EnProceso)
-                                    {
-                                        <button type="button" class="boton boton-pequeno boton-primario" disabled="@EstaCargando"
-                                                @onclick="() => AvanzarAsync(periodo, EstadoPeriodo.ResultadosDisponibles)">
-                                            @T["periodos.accion.ResultadosDisponibles"]
+                                        <button type="button" class="boton boton-pequeno @(siguiente == EstadoPeriodo.ResultadosDisponibles ? "boton-primario" : null)"
+                                                disabled="@EstaCargando" @onclick="() => AvanzarAsync(periodo, siguiente)">
+                                            @T[$"periodos.accion.{siguiente}"]
                                         </button>
                                     }
                                 </div>
@@ -86,11 +79,19 @@
 @code {
     private IReadOnlyList<PeriodoDto> _periodos = [];
 
+    /// <summary>Indica si el usuario puede avanzar el estado de los períodos.</summary>
+    /// <value><c>true</c> con la acción de gestionar períodos, la misma que exige el servidor.</value>
+    private bool PuedeGestionar => ContextoDeUsuario.Puede(AccionDelSistema.GestionarPeriodos);
+
     /// <inheritdoc/>
     protected override async Task CargarDatosAsync()
         => _periodos = await Casos.ConsultarAsync<ListarBandejaOperadorQuery, IReadOnlyList<PeriodoDto>>(new ListarBandejaOperadorQuery());
 
-    private Task AvanzarAsync(PeriodoDto periodo, EstadoPeriodo nuevoEstado) => EjecutarAsync(async () =>
+    /// <summary>Avanza el estado de un período y recarga la bandeja.</summary>
+    /// <param name="periodo">Período afectado.</param>
+    /// <param name="nuevoEstado">Estado siguiente.</param>
+    /// <returns>Tarea que finaliza al recargar la bandeja.</returns>
+    private Task AvanzarAsync(PeriodoDto periodo, EstadoPeriodo nuevoEstado) =>EjecutarAsync(async () =>
     {
         MensajeDeExito = null;
         await Casos.EjecutarAsync(new CambiarEstadoPeriodoCommand(periodo.Id, nuevoEstado, null, periodo.EmpresaId));

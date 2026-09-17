@@ -110,6 +110,8 @@
         return Task.CompletedTask;
     }
 
+    /// <summary>Guarda el idioma en el perfil y en el navegador y recarga el portal en ese idioma.</summary>
+    /// <returns>Tarea que finaliza al iniciar la recarga.</returns>
     private Task GuardarIdiomaAsync() => EjecutarAsync(async () =>
     {
         await Casos.EjecutarAsync(new ActualizarPreferenciasCommand(_idioma));
@@ -119,6 +121,8 @@
         Navegacion.NavigateTo("perfil", forceLoad: true);
     });
 
+    /// <summary>Cambia la contraseña si la confirmación coincide y recarga la identidad.</summary>
+    /// <returns>Tarea que finaliza al cambiarla o al mostrar el error.</returns>
     private async Task CambiarContrasenaAsync()
     {
         if (!string.Equals(_nueva, _confirmacion, StringComparison.Ordinal))

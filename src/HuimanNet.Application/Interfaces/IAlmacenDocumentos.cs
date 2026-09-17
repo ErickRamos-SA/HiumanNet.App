@@ -1,27 +1,6 @@
 namespace HuimanNet.Application.Interfaces;
 
 /// <summary>
-/// Enlace temporal de acceso directo a un blob.
-/// </summary>
-/// <param name="Url">URL firmada (SAS) con alcance de un único blob.</param>
-/// <param name="ExpiraEn">Instante en que la firma deja de ser válida, en UTC.</param>
-public sealed record EnlaceTemporal(Uri Url, DateTimeOffset ExpiraEn);
-
-/// <summary>
-/// Propiedades observadas de un blob ya almacenado.
-/// </summary>
-/// <param name="TamanoBytes">Tamaño real del contenido, en bytes.</param>
-/// <param name="HashMd5Base64">
-/// Hash MD5 que calcula el servicio de almacenamiento, en Base64, o <c>null</c>
-/// si no está disponible.
-/// </param>
-/// <param name="UltimaModificacion">Instante de la última escritura, en UTC.</param>
-public sealed record PropiedadesDeBlob(
-    long TamanoBytes,
-    string? HashMd5Base64,
-    DateTimeOffset UltimaModificacion);
-
-/// <summary>
 /// Abstracción del almacenamiento de documentos y de la emisión de enlaces
 /// temporales de acceso directo.
 /// </summary>

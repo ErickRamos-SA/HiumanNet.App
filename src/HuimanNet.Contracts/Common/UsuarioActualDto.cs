@@ -53,41 +53,5 @@ public sealed record UsuarioActualDto(
     /// Indica si el rol opera sobre todas las empresas.
     /// </summary>
     /// <value><c>true</c> para operador de nómina y administrador.</value>
-    public bool EsTransversal => Rol is RolUsuario.OperadorNomina or RolUsuario.Administrador;
+    public bool EsTransversal => Rol.EsTransversal();
 }
-
-/// <summary>
-/// Configuración pública del servidor que los clientes consultan antes de autenticarse.
-/// </summary>
-/// <param name="ModoDeIdentidad"><c>Entra</c> o <c>Local</c>.</param>
-/// <param name="Version">Versión de la API.</param>
-/// <param name="ProveedorDeAlmacenamiento"><c>Local</c> o <c>AzureBlob</c>; informativo.</param>
-public sealed record ConfiguracionPublicaDto(string ModoDeIdentidad, string Version, string ProveedorDeAlmacenamiento);
-
-/// <summary>
-/// Credenciales de inicio de sesión en modo local.
-/// </summary>
-/// <param name="Correo">Correo del usuario.</param>
-/// <param name="Contrasena">Contraseña en claro; viaja sólo por HTTPS y nunca se almacena.</param>
-public sealed record IniciarSesionRequest(string Correo, string Contrasena);
-
-/// <summary>
-/// Resultado de un inicio de sesión local.
-/// </summary>
-/// <param name="Token">Token de acceso para las siguientes peticiones.</param>
-/// <param name="ExpiraEn">Instante de caducidad del token, en UTC.</param>
-/// <param name="Usuario">Identidad efectiva del usuario.</param>
-public sealed record IniciarSesionResponse(string Token, DateTimeOffset ExpiraEn, UsuarioActualDto Usuario);
-
-/// <summary>
-/// Cambio de contraseña por el propio usuario.
-/// </summary>
-/// <param name="ContrasenaActual">Contraseña vigente.</param>
-/// <param name="NuevaContrasena">Nueva contraseña.</param>
-public sealed record CambiarContrasenaRequest(string ContrasenaActual, string NuevaContrasena);
-
-/// <summary>
-/// Preferencias de interfaz del usuario.
-/// </summary>
-/// <param name="Idioma">Idioma preferido.</param>
-public sealed record ActualizarPreferenciasRequest(Idioma Idioma);

@@ -80,5 +80,8 @@
     [Parameter]
     public EventCallback AlNavegar { get; set; }
 
+    /// <summary>Indica si el usuario puede ejecutar una acción, para mostrar su entrada del menú.</summary>
+    /// <param name="accion">Acción consultada.</param>
+    /// <returns><c>true</c> si está entre sus acciones efectivas.</returns>
     private bool Puede(AccionDelSistema accion) => Contexto.Puede(accion);
 }

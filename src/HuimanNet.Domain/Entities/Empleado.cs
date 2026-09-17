@@ -3,30 +3,6 @@ using HuimanNet.Domain.Exceptions;
 namespace HuimanNet.Domain.Entities;
 
 /// <summary>
-/// Datos personales de un empleado.
-/// </summary>
-/// <param name="Nombre">Nombre o nombres.</param>
-/// <param name="ApellidoPaterno">Primer apellido.</param>
-/// <param name="ApellidoMaterno">Segundo apellido, o <c>null</c>.</param>
-/// <param name="Rfc">RFC, o <c>null</c> si aún no se captura.</param>
-/// <param name="Curp">CURP, o <c>null</c>.</param>
-/// <param name="Nss">Número de seguridad social, o <c>null</c>.</param>
-/// <param name="FechaNacimiento">Fecha de nacimiento, o <c>null</c>.</param>
-/// <param name="Correo">Correo personal, o <c>null</c>.</param>
-/// <param name="Telefono">Teléfono, o <c>null</c>.</param>
-/// <remarks>RFC, CURP y NSS son datos sensibles: nunca deben escribirse en registros de log.</remarks>
-public sealed record DatosPersonales(
-    string Nombre,
-    string ApellidoPaterno,
-    string? ApellidoMaterno,
-    string? Rfc,
-    string? Curp,
-    string? Nss,
-    DateOnly? FechaNacimiento,
-    string? Correo,
-    string? Telefono);
-
-/// <summary>
 /// Persona que trabaja para una empresa cliente. Puede tener uno o varios
 /// contratos, cada uno con una razón social y un esquema de pago.
 /// </summary>
@@ -41,6 +17,11 @@ public sealed class Empleado
     /// <summary>Longitud máxima de la clave del empleado.</summary>
     public const int LongitudMaximaClave = 20;
 
+    /// <summary>
+    /// Inicializa una instancia con valores ya validados. Sólo la usan las
+    /// fábricas y <see cref="Rehidratar"/>.
+    /// </summary>
+    /// <inheritdoc cref="Rehidratar" path="/param"/>
     private Empleado(
         Guid id,
         Guid empresaId,
@@ -148,6 +129,14 @@ public sealed class Empleado
             : limpia;
     }
 
+    /// <summary>
+    /// Valida y normaliza los datos personales: recorta espacios, pasa RFC y
+    /// CURP a mayúsculas y el correo a minúsculas.
+    /// </summary>
+    /// <param name="datos">Datos capturados.</param>
+    /// <returns>Los datos normalizados.</returns>
+    /// <exception cref="ArgumentNullException">Se lanza si <paramref name="datos"/> es <c>null</c>.</exception>
+    /// <exception cref="CatalogoInvalidoException">Se lanza si falta el nombre o el primer apellido.</exception>
     private static DatosPersonales Normalizar(DatosPersonales datos)
     {
         ArgumentNullException.ThrowIfNull(datos);
@@ -170,6 +159,9 @@ public sealed class Empleado
         };
     }
 
+    /// <summary>Normaliza un texto opcional.</summary>
+    /// <param name="valor">Texto capturado.</param>
+    /// <returns>El texto sin espacios en los extremos, o <c>null</c> si está vacío.</returns>
     private static string? Limpiar(string? valor)
         => string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 }

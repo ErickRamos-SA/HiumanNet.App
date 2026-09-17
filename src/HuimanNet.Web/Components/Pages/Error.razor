@@ -25,6 +25,8 @@
 @code {
     private string? _referencia;
 
+    /// <summary>Obtiene o establece el contexto de la petición.</summary>
+    /// <value><c>null</c> si la página se muestra dentro del circuito.</value>
     [CascadingParameter]
     private HttpContext? HttpContext { get; set; }
 

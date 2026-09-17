@@ -376,8 +376,6 @@
 </Dialogo>
 
 @code {
-    private const int TamanoPagina = 50;
-
     private PaginaDto<EmpleadoResumenDto>? _pagina;
     private int _numeroDePagina = 1;
     private string? _texto;
@@ -394,11 +392,19 @@
     private IReadOnlyList<RazonSocialDto> _razones = [];
     private Guid? _empresaDeLasRazones;
 
+    /// <summary>Panel que se muestra junto a la lista.</summary>
     private enum Vista
     {
+        /// <summary>Sólo la lista.</summary>
         Ninguna,
+
+        /// <summary>Ficha del empleado con sus contratos.</summary>
         Detalle,
+
+        /// <summary>Formulario del empleado.</summary>
         Empleado,
+
+        /// <summary>Formulario de un contrato.</summary>
         Contrato,
     }
 
@@ -451,10 +457,15 @@
         return CargarDatosAsync();
     }
 
+    /// <summary>Carga la página actual con los filtros elegidos.</summary>
+    /// <returns>Tarea que finaliza al cargarla.</returns>
     private async Task CargarPaginaAsync()
         => _pagina = await Casos.ConsultarAsync<ListarEmpleadosQuery, PaginaDto<EmpleadoResumenDto>>(
-            new ListarEmpleadosQuery(EmpresaDelFiltro, _soloActivos, string.IsNullOrWhiteSpace(_texto) ? null : _texto.Trim(), _numeroDePagina, TamanoPagina));
+            new ListarEmpleadosQuery(EmpresaDelFiltro, _soloActivos, string.IsNullOrWhiteSpace(_texto) ? null : _texto.Trim(), _numeroDePagina, Paginacion.TamanoDeEmpleados));
 
+    /// <summary>Filtra por otra empresa desde la primera página.</summary>
+    /// <param name="argumentos">Evento del selector de empresa.</param>
+    /// <returns>Tarea que finaliza al cargar la página.</returns>
     private Task CambiarFiltroDeEmpresaAsync(ChangeEventArgs argumentos)
     {
         _filtroEmpresa = Guid.TryParse(argumentos.Value?.ToString(), out Guid id) ? id : null;
@@ -462,26 +473,40 @@
         return EjecutarAsync(CargarPaginaAsync);
     }
 
+    /// <summary>Aplica la búsqueda desde la primera página.</summary>
+    /// <returns>Tarea que finaliza al cargar la página.</returns>
     private Task BuscarAsync()
     {
         _numeroDePagina = 1;
         return EjecutarAsync(CargarPaginaAsync);
     }
 
+    /// <summary>Muestra otra página.</summary>
+    /// <param name="pagina">Página, desde 1.</param>
+    /// <returns>Tarea que finaliza al cargarla.</returns>
     private Task IrAPaginaAsync(int pagina)
     {
         _numeroDePagina = Math.Max(1, pagina);
         return EjecutarAsync(CargarPaginaAsync);
     }
 
+    /// <summary>Convierte la lista de esquemas del resumen en valores del enumerado.</summary>
+    /// <param name="esquemas">Nombres separados por comas.</param>
+    /// <returns>Los esquemas reconocidos.</returns>
     private static IEnumerable<EsquemaDePago> EsquemasDe(string esquemas)
         => esquemas.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(e => Enum.TryParse(e, out EsquemaDePago esquema) ? esquema : EsquemaDePago.NoEspecificado)
             .Where(e => e != EsquemaDePago.NoEspecificado);
 
+    /// <summary>Obtiene la razón social de una empresa del filtro.</summary>
+    /// <param name="empresaId">Empresa.</param>
+    /// <returns>La razón social, o cadena vacía si no está en la lista.</returns>
     private string NombreDeEmpresa(Guid empresaId)
         => _empresas.FirstOrDefault(e => e.Id == empresaId)?.RazonSocial ?? string.Empty;
 
+    /// <summary>Abre la ficha de un empleado.</summary>
+    /// <param name="resumen">Empleado elegido en la lista.</param>
+    /// <returns>Tarea que finaliza al cargar la ficha.</returns>
     private Task AbrirAsync(EmpleadoResumenDto resumen) => EjecutarAsync(async () =>
     {
         LimpiarMensajes();
@@ -490,12 +515,14 @@
         _vista = Vista.Detalle;
     });
 
+    /// <summary>Cierra el panel y vuelve a la lista.</summary>
     private void Cerrar()
     {
         _vista = Vista.Ninguna;
         _empleado = null;
     }
 
+    /// <summary>Abre el formulario de un empleado nuevo en la empresa filtrada o de trabajo.</summary>
     private void NuevoEmpleado()
     {
         LimpiarMensajes();
@@ -504,6 +531,7 @@
         _vista = Vista.Empleado;
     }
 
+    /// <summary>Abre el formulario con los datos del empleado abierto.</summary>
     private void EditarEmpleado()
     {
         if (_empleado is { } e)
@@ -513,10 +541,14 @@
         }
     }
 
+    /// <summary>Cancela el formulario del empleado y vuelve a la ficha o a la lista.</summary>
     private void VolverDeEdicion() => _vista = _empleado is null ? Vista.Ninguna : Vista.Detalle;
 
+    /// <summary>Cancela el formulario del contrato y vuelve a la ficha.</summary>
     private void VolverAlDetalle() => _vista = Vista.Detalle;
 
+    /// <summary>Guarda el empleado del formulario y abre su ficha.</summary>
+    /// <returns>Tarea que finaliza al abrir la ficha o al mostrar el error.</returns>
     private Task GuardarEmpleadoAsync() => EjecutarAsync(async () =>
     {
         if (_modeloEmpleado is not { } modelo)
@@ -540,6 +572,8 @@
         _vista = Vista.Detalle;
     });
 
+    /// <summary>Abre el formulario de un contrato nuevo; propone la razón social si sólo hay una.</summary>
+    /// <returns>Tarea que finaliza al abrir el formulario.</returns>
     private Task NuevoContratoAsync() => EjecutarAsync(async () =>
     {
         await CargarRazonesAsync();
@@ -547,6 +581,9 @@
         _vista = Vista.Contrato;
     });
 
+    /// <summary>Abre el formulario con los datos de un contrato.</summary>
+    /// <param name="contrato">Contrato a editar.</param>
+    /// <returns>Tarea que finaliza al abrir el formulario.</returns>
     private Task EditarContratoAsync(ContratoDto contrato) => EjecutarAsync(async () =>
     {
         await CargarRazonesAsync();
@@ -567,6 +604,8 @@
         }
     }
 
+    /// <summary>Guarda el contrato del formulario y recarga la ficha y la lista.</summary>
+    /// <returns>Tarea que finaliza al recargar o al mostrar el error.</returns>
     private Task GuardarContratoAsync() => EjecutarAsync(async () =>
     {
         if (_modeloContrato is not { } modelo || _empleado is not { } empleado)
@@ -592,20 +631,61 @@
     /// <summary>Estado editable de un empleado.</summary>
     private sealed class ModeloEmpleado
     {
+        /// <summary>Obtiene el identificador.</summary>
+        /// <value><c>null</c> para un empleado nuevo.</value>
         public Guid? Id { get; init; }
+
+        /// <summary>Obtiene o establece la empresa del empleado.</summary>
+        /// <value>La elige el rol transversal; para la empresa cliente la impone el servidor.</value>
         public Guid? EmpresaId { get; set; }
+
+        /// <summary>Obtiene o establece la clave del empleado.</summary>
+        /// <value>Única en la empresa.</value>
         public string Clave { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece el nombre.</summary>
+        /// <value>Obligatorio.</value>
         public string Nombre { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece el apellido paterno.</summary>
+        /// <value>Obligatorio.</value>
         public string ApellidoPaterno { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece el apellido materno.</summary>
+        /// <value>Opcional.</value>
         public string? ApellidoMaterno { get; set; }
+
+        /// <summary>Obtiene o establece el RFC.</summary>
+        /// <value>Se guarda en mayúsculas.</value>
         public string? Rfc { get; set; }
+
+        /// <summary>Obtiene o establece la CURP.</summary>
+        /// <value>Se guarda en mayúsculas.</value>
         public string? Curp { get; set; }
+
+        /// <summary>Obtiene o establece el número de seguridad social.</summary>
+        /// <value>Opcional.</value>
         public string? Nss { get; set; }
+
+        /// <summary>Obtiene o establece la fecha de nacimiento.</summary>
+        /// <value>Opcional.</value>
         public DateOnly? FechaNacimiento { get; set; }
+
+        /// <summary>Obtiene o establece el correo.</summary>
+        /// <value>Opcional.</value>
         public string? Correo { get; set; }
+
+        /// <summary>Obtiene o establece el teléfono.</summary>
+        /// <value>Opcional.</value>
         public string? Telefono { get; set; }
+
+        /// <summary>Obtiene o establece si el empleado está activo.</summary>
+        /// <value><c>true</c> para un empleado nuevo.</value>
         public bool Activo { get; set; } = true;
 
+        /// <summary>Crea el modelo con los datos de un empleado.</summary>
+        /// <param name="e">Empleado.</param>
+        /// <returns>El modelo editable.</returns>
         public static ModeloEmpleado Desde(EmpleadoDto e) => new()
         {
             Id = e.Id,
@@ -623,6 +703,9 @@
             Activo = e.Activo,
         };
 
+        /// <summary>Arma la petición con los textos normalizados.</summary>
+        /// <param name="empresaId">Empresa que se envía; <c>null</c> para la empresa cliente.</param>
+        /// <returns>La petición de guardado.</returns>
         public GuardarEmpleadoRequest ARequest(Guid? empresaId) => new(
             empresaId, Clave.Trim(), Nombre.Trim(), ApellidoPaterno.Trim(), Limpio(ApellidoMaterno),
             Limpio(Rfc)?.ToUpperInvariant(), Limpio(Curp)?.ToUpperInvariant(), Limpio(Nss), FechaNacimiento,
@@ -632,30 +715,101 @@
     /// <summary>Estado editable de un contrato.</summary>
     private sealed class ModeloContrato
     {
+        /// <summary>Obtiene el identificador.</summary>
+        /// <value><c>null</c> para un contrato nuevo.</value>
         public Guid? Id { get; init; }
+
+        /// <summary>Obtiene o establece la razón social pagadora.</summary>
+        /// <value>Obligatoria para guardar.</value>
         public Guid? RazonSocialId { get; set; }
+
+        /// <summary>Obtiene o establece el esquema de pago.</summary>
+        /// <value>IMSS para un contrato nuevo.</value>
         public EsquemaDePago Esquema { get; set; } = EsquemaDePago.Imss;
+
+        /// <summary>Obtiene o establece el número de trabajador.</summary>
+        /// <value>Opcional.</value>
         public string? NumeroTrabajador { get; set; }
+
+        /// <summary>Obtiene o establece el puesto.</summary>
+        /// <value>Opcional.</value>
         public string? Puesto { get; set; }
+
+        /// <summary>Obtiene o establece el departamento.</summary>
+        /// <value>Opcional.</value>
         public string? Departamento { get; set; }
+
+        /// <summary>Obtiene o establece el tipo de contrato.</summary>
+        /// <value>Opcional.</value>
         public string? TipoDeContrato { get; set; }
+
+        /// <summary>Obtiene o establece el sueldo real del período.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal SueldoPeriodoReal { get; set; }
+
+        /// <summary>Obtiene o establece el salario diario fiscal.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal SalarioDiarioFiscal { get; set; }
+
+        /// <summary>Obtiene o establece el salario diario integrado.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal SalarioDiarioIntegrado { get; set; }
+
+        /// <summary>Obtiene o establece la zona de salario mínimo.</summary>
+        /// <value>Zona A para un contrato nuevo.</value>
         public ZonaSalarioMinimo Zona { get; set; } = ZonaSalarioMinimo.A;
+
+        /// <summary>Obtiene o establece el tipo de crédito INFONAVIT.</summary>
+        /// <value>Ninguno para un contrato nuevo.</value>
         public TipoDeCreditoInfonavit InfonavitTipo { get; set; } = TipoDeCreditoInfonavit.Ninguno;
+
+        /// <summary>Obtiene o establece el valor del crédito INFONAVIT.</summary>
+        /// <value>Importe, porcentaje o factor según el tipo.</value>
         public decimal InfonavitValor { get; set; }
+
+        /// <summary>Obtiene o establece el seguro de vivienda INFONAVIT.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal InfonavitSeguroVivienda { get; set; }
+
+        /// <summary>Obtiene o establece el descuento FONACOT mensual.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal FonacotMensual { get; set; }
+
+        /// <summary>Obtiene o establece la pensión alimenticia fija.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal PensionAlimenticiaImporte { get; set; }
+
+        /// <summary>Obtiene o establece la pensión alimenticia porcentual.</summary>
+        /// <value>Fracción entre 0 y 1.</value>
         public decimal PensionAlimenticiaPorcentaje { get; set; }
+
+        /// <summary>Obtiene o establece el descuento fijo de préstamo personal.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal PrestamoPersonalFijo { get; set; }
+
+        /// <summary>Obtiene o establece el bono fijo.</summary>
+        /// <value>Importe en pesos.</value>
         public decimal BonoFijo { get; set; }
+
+        /// <summary>Obtiene o establece si los honorarios causan IVA.</summary>
+        /// <value>Sólo se envía para el esquema honorarios.</value>
         public bool HonorariosAplicaIva { get; set; }
+
+        /// <summary>Obtiene o establece si recibe complemento sindical.</summary>
+        /// <value><c>true</c> si lo recibe.</value>
         public bool PagaComplementoSindical { get; set; }
+
+        /// <summary>Obtiene o establece la fecha de alta.</summary>
+        /// <value>Hoy para un contrato nuevo.</value>
         public DateOnly FechaAlta { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+
+        /// <summary>Obtiene o establece la fecha de baja.</summary>
+        /// <value><c>null</c> si sigue vigente.</value>
         public DateOnly? FechaBaja { get; set; }
 
+        /// <summary>Crea el modelo con los datos de un contrato.</summary>
+        /// <param name="c">Contrato.</param>
+        /// <returns>El modelo editable.</returns>
         public static ModeloContrato Desde(ContratoDto c) => new()
         {
             Id = c.Id,
@@ -683,6 +837,10 @@
             FechaBaja = c.FechaBaja,
         };
 
+        /// <summary>Arma la petición con los textos normalizados.</summary>
+        /// <param name="empresaId">Empresa del empleado; <c>null</c> para la empresa cliente.</param>
+        /// <param name="razonSocialId">Razón social elegida.</param>
+        /// <returns>La petición de guardado.</returns>
         public GuardarContratoRequest ARequest(Guid? empresaId, Guid razonSocialId) => new(
             empresaId, razonSocialId, Esquema, Limpio(NumeroTrabajador), Limpio(Puesto), Limpio(Departamento),
             Limpio(TipoDeContrato), SueldoPeriodoReal, SalarioDiarioFiscal, SalarioDiarioIntegrado, Zona,
@@ -691,5 +849,8 @@
             Esquema == EsquemaDePago.Honorarios && HonorariosAplicaIva, PagaComplementoSindical, FechaAlta, FechaBaja);
     }
 
-    private static string? Limpio(string? valor) => string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+    /// <summary>Normaliza un texto opcional.</summary>
+    /// <param name="valor">Texto capturado.</param>
+    /// <returns>El texto sin espacios en los extremos, o <c>null</c> si está vacío.</returns>
+    private static string? Limpio(string? valor) =>string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 }

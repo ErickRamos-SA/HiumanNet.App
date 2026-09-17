@@ -58,6 +58,12 @@ public static class PeriodosEndpoints
         return app;
     }
 
+    /// <summary>Lista los períodos de una empresa.</summary>
+    /// <param name="empresaId">Empresa consultada; la del usuario si se omite.</param>
+    /// <param name="incluirCerrados">Incluye los cerrados; verdadero si se omite.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>200 con los períodos.</returns>
     private static async Task<IResult> ListarAsync(
         Guid? empresaId,
         bool? incluirCerrados,
@@ -70,6 +76,10 @@ public static class PeriodosEndpoints
         return TypedResults.Ok(periodos);
     }
 
+    /// <summary>Lista los períodos pendientes de todas las empresas para la bandeja del operador.</summary>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>200 con los períodos.</returns>
     private static async Task<IResult> ListarBandejaAsync(
         IManejadorDeConsulta<ListarBandejaOperadorQuery, IReadOnlyList<PeriodoDto>> manejador,
         CancellationToken cancellationToken)
@@ -80,9 +90,13 @@ public static class PeriodosEndpoints
         return TypedResults.Ok(periodos);
     }
 
+    /// <summary>Abre un período de carga.</summary>
+    /// <param name="peticion">Empresa, año, mes, consecutivo, descripción y fecha límite.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>201 con el período y su ubicación.</returns>
     private static async Task<IResult> AbrirAsync(
         AbrirPeriodoRequest peticion,
-        IValidadorDeEntrada<AbrirPeriodoCommand> validador,
         IManejadorDeComando<AbrirPeriodoCommand, PeriodoDto> manejador,
         CancellationToken cancellationToken)
     {
@@ -94,13 +108,18 @@ public static class PeriodosEndpoints
             peticion.Descripcion,
             peticion.FechaLimiteCarga);
 
-        validador.Validar(comando).GarantizarValido();
-
         PeriodoDto periodo = await manejador.EjecutarAsync(comando, cancellationToken);
 
         return TypedResults.Created($"{RutasApi.Periodos}/{periodo.Id}", periodo);
     }
 
+    /// <summary>Avanza el estado de un período.</summary>
+    /// <param name="periodoId">Período afectado.</param>
+    /// <param name="empresaId">Empresa del período; la del usuario si se omite.</param>
+    /// <param name="peticion">Estado nuevo y comentario.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>204 si se cambió.</returns>
     private static async Task<IResult> CambiarEstadoAsync(
         Guid periodoId,
         Guid? empresaId,

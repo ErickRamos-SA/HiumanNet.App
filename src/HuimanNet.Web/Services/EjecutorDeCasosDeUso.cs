@@ -1,24 +1,7 @@
 using HuimanNet.Application.Common;
-using HuimanNet.Application.Interfaces;
 using HuimanNet.Web.Seguridad;
 
 namespace HuimanNet.Web.Services;
-
-/// <summary>
-/// Portador del usuario del circuito dentro de un ámbito de operación.
-/// </summary>
-/// <remarks>
-/// Cada operación de la web se ejecuta en un ámbito de DI propio (ver
-/// <see cref="EjecutorDeCasosDeUso"/>). Ese ámbito no conoce el circuito, así
-/// que el ejecutor deposita aquí la identidad ya resuelta antes de construir
-/// el manejador; el registro de <see cref="IUsuarioActual"/> la toma de aquí.
-/// </remarks>
-public sealed class PortadorDeUsuarioActual
-{
-    /// <summary>Obtiene o establece el usuario del circuito que origina la operación.</summary>
-    /// <value><c>null</c> en el ámbito del propio circuito.</value>
-    public IUsuarioActual? Usuario { get; set; }
-}
 
 /// <summary>
 /// Ejecuta casos de uso desde los componentes, cada uno en su propio ámbito de DI.
@@ -84,19 +67,16 @@ public sealed class EjecutorDeCasosDeUso
         });
 
     /// <summary>
-    /// Usa directamente un servicio de lectura (por ejemplo, una interfaz de consultas).
+    /// Ejecuta una operación en un ámbito de DI nuevo que ya conoce la identidad del circuito.
     /// </summary>
-    /// <typeparam name="TServicio">Servicio a resolver.</typeparam>
-    /// <typeparam name="TResultado">Tipo del resultado.</typeparam>
-    /// <param name="operacion">Operación sobre el servicio.</param>
+    /// <typeparam name="T">Tipo del resultado.</typeparam>
+    /// <param name="operacion">Operación que resuelve y ejecuta el caso de uso.</param>
     /// <returns>El resultado de la operación.</returns>
-    public Task<TResultado> UsarAsync<TServicio, TResultado>(Func<TServicio, Task<TResultado>> operacion)
-        where TServicio : notnull
-    {
-        ArgumentNullException.ThrowIfNull(operacion);
-        return EnAmbitoAsync(sp => operacion(sp.GetRequiredService<TServicio>()));
-    }
-
+    /// <remarks>
+    /// Sólo se exponen casos de uso: las páginas nunca resuelven repositorios ni
+    /// consultas directamente, así la autorización y el ámbito de empresa los
+    /// aplica siempre la capa de aplicación.
+    /// </remarks>
     private async Task<T> EnAmbitoAsync<T>(Func<IServiceProvider, Task<T>> operacion)
     {
         await using AsyncServiceScope ambito = _fabricaDeAmbitos.CreateAsyncScope();

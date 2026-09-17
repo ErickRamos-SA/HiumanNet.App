@@ -4,44 +4,6 @@ using HuimanNet.Domain.Exceptions;
 namespace HuimanNet.Domain.Entities;
 
 /// <summary>
-/// Totales consolidados de una corrida de nómina.
-/// </summary>
-/// <param name="Trabajadores">Número de contratos calculados.</param>
-/// <param name="Bruto">Suma del bruto de incidencias.</param>
-/// <param name="Percepciones">Suma de percepciones del recibo.</param>
-/// <param name="Deducciones">Suma de deducciones del recibo.</param>
-/// <param name="Neto">Suma del neto pagado.</param>
-/// <param name="Isr">Suma del ISR retenido.</param>
-/// <param name="ImssTrabajador">Suma de la cuota obrera descontada.</param>
-/// <param name="ImssPatronal">Suma de cuotas patronales IMSS.</param>
-/// <param name="Infonavit">Suma de aportaciones patronales INFONAVIT.</param>
-/// <param name="Isn">Suma del impuesto sobre nóminas.</param>
-/// <param name="ComplementoSindical">Suma del complemento sindical.</param>
-/// <param name="Facturable">Suma de la base facturable.</param>
-/// <param name="Comision">Suma de comisiones.</param>
-/// <param name="CostoTotal">Suma del costo total antes de IVA.</param>
-public sealed record TotalesDeCorrida(
-    int Trabajadores,
-    decimal Bruto,
-    decimal Percepciones,
-    decimal Deducciones,
-    decimal Neto,
-    decimal Isr,
-    decimal ImssTrabajador,
-    decimal ImssPatronal,
-    decimal Infonavit,
-    decimal Isn,
-    decimal ComplementoSindical,
-    decimal Facturable,
-    decimal Comision,
-    decimal CostoTotal)
-{
-    /// <summary>Obtiene los totales en cero.</summary>
-    /// <value>Instancia con todos los importes en cero.</value>
-    public static TotalesDeCorrida Vacios { get; } = new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-}
-
-/// <summary>
 /// Ejecución del cálculo de nómina de un período por parte del sistema.
 /// </summary>
 /// <remarks>
@@ -51,6 +13,11 @@ public sealed record TotalesDeCorrida(
 /// </remarks>
 public sealed class CorridaDeNomina
 {
+    /// <summary>
+    /// Inicializa una instancia con valores ya validados. Sólo la usan las
+    /// fábricas y <see cref="Rehidratar"/>.
+    /// </summary>
+    /// <inheritdoc cref="Rehidratar" path="/param"/>
     private CorridaDeNomina(
         Guid id,
         Guid empresaId,
@@ -272,6 +239,9 @@ public sealed class CorridaDeNomina
         Observaciones = texto.Length <= longitudMaxima ? texto : texto[^longitudMaxima..];
     }
 
+    /// <summary>Normaliza un texto opcional.</summary>
+    /// <param name="valor">Texto capturado.</param>
+    /// <returns>El texto sin espacios en los extremos, o <c>null</c> si está vacío.</returns>
     private static string? Limpiar(string? valor)
         => string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 }

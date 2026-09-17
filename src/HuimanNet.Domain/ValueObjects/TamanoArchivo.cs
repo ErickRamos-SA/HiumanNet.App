@@ -10,6 +10,8 @@ public readonly record struct TamanoArchivo
     /// <summary>Número de bytes que contiene un megabyte binario.</summary>
     public const long BytesPorMegabyte = 1_048_576L;
 
+    /// <summary>Inicializa un tamaño ya validado.</summary>
+    /// <param name="bytes">Tamaño en bytes, mayor que cero.</param>
     private TamanoArchivo(long bytes) => Bytes = bytes;
 
     /// <summary>

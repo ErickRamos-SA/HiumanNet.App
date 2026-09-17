@@ -97,8 +97,6 @@
 </section>
 
 @code {
-    private const int TamanoDePagina = 25;
-
     private PaginaDto<RegistroAuditoriaDto>? _pagina;
     private int _paginaActual = 1;
     private DateOnly _desde;
@@ -114,24 +112,31 @@
         if (_hasta == default)
         {
             _hasta = DateOnly.FromDateTime(Reloj.GetLocalNow().DateTime);
-            _desde = _hasta.AddDays(-30);
+            _desde = _hasta.AddDays(-VentanaDeBitacora.DiasPredeterminados);
         }
 
         return ConsultarAsync();
     }
 
+    /// <summary>Aplica los filtros desde la primera página.</summary>
+    /// <returns>Tarea que finaliza al consultar.</returns>
     private Task FiltrarAsync() => EjecutarAsync(() =>
     {
         _paginaActual = 1;
         return ConsultarAsync();
     });
 
+    /// <summary>Muestra otra página con los mismos filtros.</summary>
+    /// <param name="pagina">Página, desde 1.</param>
+    /// <returns>Tarea que finaliza al consultar.</returns>
     private Task IrAPaginaAsync(int pagina) => EjecutarAsync(() =>
     {
         _paginaActual = pagina;
         return ConsultarAsync();
     });
 
+    /// <summary>Consulta la bitácora con los filtros y la página actuales; las fechas cubren los días completos.</summary>
+    /// <returns>Tarea que finaliza al consultar.</returns>
     private async Task ConsultarAsync()
     {
         DateTimeOffset desde = new(_desde.ToDateTime(TimeOnly.MinValue));
@@ -139,6 +144,6 @@
         AccionAuditada? accion = Enum.TryParse(_accion, out AccionAuditada valor) ? valor : null;
 
         _pagina = await Casos.ConsultarAsync<ConsultarBitacoraQuery, PaginaDto<RegistroAuditoriaDto>>(new ConsultarBitacoraQuery(
-            EmpresaDeConsulta, desde, hasta, accion, UsuarioId: null, _paginaActual, TamanoDePagina));
+            EmpresaDeConsulta, desde, hasta, accion, UsuarioId: null, _paginaActual, Paginacion.TamanoDeBitacora));
     }
 }

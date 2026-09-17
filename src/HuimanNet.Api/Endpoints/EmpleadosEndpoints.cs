@@ -15,9 +15,6 @@ namespace HuimanNet.Api.Endpoints;
 /// </summary>
 public static class EmpleadosEndpoints
 {
-    /// <summary>Tamaño de página por omisión del listado de empleados.</summary>
-    public const int TamanoDePaginaPredeterminado = 50;
-
     /// <summary>
     /// Mapea los endpoints de empleados, contratos e incidencias.
     /// </summary>
@@ -60,6 +57,15 @@ public static class EmpleadosEndpoints
         return app;
     }
 
+    /// <summary>Lista los empleados de una empresa, paginados.</summary>
+    /// <param name="empresaId">Empresa consultada; la del usuario si se omite.</param>
+    /// <param name="soloActivos">Sólo los activos; verdadero si se omite.</param>
+    /// <param name="texto">Texto a buscar.</param>
+    /// <param name="pagina">Página, desde 1; la primera si se omite.</param>
+    /// <param name="tamanoPagina">Tamaño de página; <see cref="Paginacion.TamanoDeEmpleados"/> si se omite.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>200 con la página de empleados.</returns>
     private static async Task<Ok<PaginaDto<EmpleadoResumenDto>>> ListarAsync(
         Guid? empresaId,
         bool? soloActivos,
@@ -69,9 +75,16 @@ public static class EmpleadosEndpoints
         IManejadorDeConsulta<ListarEmpleadosQuery, PaginaDto<EmpleadoResumenDto>> manejador,
         CancellationToken cancellationToken)
         => TypedResults.Ok(await manejador.EjecutarAsync(
-            new ListarEmpleadosQuery(empresaId, soloActivos ?? true, texto, pagina ?? 1, tamanoPagina ?? TamanoDePaginaPredeterminado),
+            new ListarEmpleadosQuery(
+                empresaId, soloActivos ?? true, texto, pagina ?? Paginacion.PaginaInicial, tamanoPagina ?? Paginacion.TamanoDeEmpleados),
             cancellationToken));
 
+    /// <summary>Obtiene un empleado con sus contratos.</summary>
+    /// <param name="empleadoId">Empleado consultado.</param>
+    /// <param name="empresaId">Empresa del empleado; la del usuario si se omite.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>200 con el empleado.</returns>
     private static async Task<Ok<EmpleadoDto>> ObtenerAsync(
         Guid empleadoId,
         Guid? empresaId,
@@ -79,6 +92,11 @@ public static class EmpleadosEndpoints
         CancellationToken cancellationToken)
         => TypedResults.Ok(await manejador.EjecutarAsync(new ObtenerEmpleadoQuery(empleadoId, empresaId), cancellationToken));
 
+    /// <summary>Da de alta un empleado.</summary>
+    /// <param name="peticion">Datos personales y empresa.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>201 con el empleado y su ubicación.</returns>
     private static async Task<Created<EmpleadoDto>> CrearAsync(
         GuardarEmpleadoRequest peticion,
         IManejadorDeComando<GuardarEmpleadoCommand, EmpleadoDto> manejador,
@@ -88,6 +106,12 @@ public static class EmpleadosEndpoints
         return TypedResults.Created(RutasApi.Recurso(RutasApi.Empleados, empleado.Id), empleado);
     }
 
+    /// <summary>Actualiza los datos de un empleado.</summary>
+    /// <param name="empleadoId">Empleado a actualizar.</param>
+    /// <param name="peticion">Datos nuevos.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>200 con el empleado actualizado.</returns>
     private static async Task<Ok<EmpleadoDto>> ActualizarAsync(
         Guid empleadoId,
         GuardarEmpleadoRequest peticion,
@@ -95,6 +119,12 @@ public static class EmpleadosEndpoints
         CancellationToken cancellationToken)
         => TypedResults.Ok(await manejador.EjecutarAsync(new GuardarEmpleadoCommand(empleadoId, peticion), cancellationToken));
 
+    /// <summary>Crea un contrato para un empleado.</summary>
+    /// <param name="empleadoId">Empleado del contrato.</param>
+    /// <param name="peticion">Razón social, esquema y condiciones.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>201 con el contrato y la ubicación de los contratos del empleado.</returns>
     private static async Task<Created<ContratoDto>> CrearContratoAsync(
         Guid empleadoId,
         GuardarContratoRequest peticion,
@@ -105,6 +135,13 @@ public static class EmpleadosEndpoints
         return TypedResults.Created(RutasApi.ContratosDeEmpleado(empleadoId), contrato);
     }
 
+    /// <summary>Actualiza un contrato.</summary>
+    /// <param name="empleadoId">Empleado del contrato.</param>
+    /// <param name="contratoId">Contrato a actualizar.</param>
+    /// <param name="peticion">Datos nuevos.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>200 con el contrato actualizado.</returns>
     private static async Task<Ok<ContratoDto>> ActualizarContratoAsync(
         Guid empleadoId,
         Guid contratoId,
@@ -113,6 +150,12 @@ public static class EmpleadosEndpoints
         CancellationToken cancellationToken)
         => TypedResults.Ok(await manejador.EjecutarAsync(new GuardarContratoCommand(empleadoId, contratoId, peticion), cancellationToken));
 
+    /// <summary>Lista las incidencias capturadas en un período.</summary>
+    /// <param name="periodoId">Período consultado.</param>
+    /// <param name="empresaId">Empresa del período; la del usuario si se omite.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>200 con las incidencias.</returns>
     private static async Task<Ok<IReadOnlyList<IncidenciaDto>>> ListarIncidenciasAsync(
         Guid periodoId,
         Guid? empresaId,
@@ -120,12 +163,23 @@ public static class EmpleadosEndpoints
         CancellationToken cancellationToken)
         => TypedResults.Ok(await manejador.EjecutarAsync(new ListarIncidenciasQuery(periodoId, empresaId), cancellationToken));
 
+    /// <summary>Crea o sustituye la incidencia de un contrato en un período.</summary>
+    /// <param name="peticion">Contrato, período y cantidades.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>200 con la incidencia guardada.</returns>
     private static async Task<Ok<IncidenciaDto>> GuardarIncidenciaAsync(
         GuardarIncidenciaRequest peticion,
         IManejadorDeComando<GuardarIncidenciaCommand, IncidenciaDto> manejador,
         CancellationToken cancellationToken)
         => TypedResults.Ok(await manejador.EjecutarAsync(new GuardarIncidenciaCommand(peticion), cancellationToken));
 
+    /// <summary>Elimina una incidencia.</summary>
+    /// <param name="incidenciaId">Incidencia a eliminar.</param>
+    /// <param name="empresaId">Empresa de la incidencia; la del usuario si se omite.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>204 si se eliminó.</returns>
     private static async Task<NoContent> EliminarIncidenciaAsync(
         Guid incidenciaId,
         Guid? empresaId,
@@ -136,6 +190,14 @@ public static class EmpleadosEndpoints
         return TypedResults.NoContent();
     }
 
+    /// <summary>
+    /// Importa las incidencias de un archivo (CSV o XLSX) ya cargado en los
+    /// documentos del período.
+    /// </summary>
+    /// <param name="peticion">Documento a importar y empresa.</param>
+    /// <param name="manejador">Caso de uso que atiende la petición.</param>
+    /// <param name="cancellationToken">Token de cancelación de la petición.</param>
+    /// <returns>200 con el resumen de la importación y los errores por fila.</returns>
     private static async Task<Ok<ResultadoDeImportacionDto>> ImportarIncidenciasAsync(
         ImportarIncidenciasRequest peticion,
         IManejadorDeComando<ImportarIncidenciasCommand, ResultadoDeImportacionDto> manejador,

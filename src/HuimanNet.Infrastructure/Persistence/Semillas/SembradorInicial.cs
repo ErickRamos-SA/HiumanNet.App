@@ -68,6 +68,12 @@ public sealed class SembradorInicial
         await GarantizarAdministradorAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Carga el catálogo de cálculo inicial en cada sección (parámetros, tablas,
+    /// conceptos, explicaciones) que esté vacía, en una transacción.
+    /// </summary>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Tarea que finaliza al cargar el catálogo.</returns>
     private async Task SembrarCatalogoAsync(CancellationToken cancellationToken)
     {
         DateTimeOffset ahora = _reloj.GetUtcNow();
@@ -128,6 +134,12 @@ public sealed class SembradorInicial
             sinConceptos ? catalogo.Conceptos.Count : 0);
     }
 
+    /// <summary>
+    /// Crea el administrador inicial de la configuración si no hay ningún
+    /// administrador activo y su correo no está en uso.
+    /// </summary>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Tarea que finaliza al comprobar o crear el administrador.</returns>
     private async Task GarantizarAdministradorAsync(CancellationToken cancellationToken)
     {
         OpcionesDeAdministradorInicial inicial = _identidad.AdministradorInicial;

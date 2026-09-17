@@ -8,13 +8,6 @@ using HuimanNet.Domain.Services;
 namespace HuimanNet.Application.Documentos;
 
 /// <summary>
-/// Archivo de un período leído del almacenamiento.
-/// </summary>
-/// <param name="Documento">Documento del período.</param>
-/// <param name="Contenido">Bytes del archivo.</param>
-public sealed record ArchivoDelPeriodo(Documento Documento, byte[] Contenido);
-
-/// <summary>
 /// Lee los archivos que el servidor procesa (importación de incidencias y
 /// cotejo) a partir de los documentos intercambiados en el período.
 /// </summary>

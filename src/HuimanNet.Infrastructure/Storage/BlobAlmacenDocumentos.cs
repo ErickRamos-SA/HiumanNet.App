@@ -1,7 +1,6 @@
 using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using Azure.Storage.Blobs.Specialized;
 using Azure.Storage.Sas;
 using HuimanNet.Application.Interfaces;
 using HuimanNet.Domain.Exceptions;
@@ -197,9 +196,20 @@ public sealed class BlobAlmacenDocumentos : IAlmacenDocumentos, IDisposable
     /// </summary>
     public void Dispose() => _cerrojoDeClave.Dispose();
 
+    /// <summary>Obtiene el cliente de un blob del contenedor de documentos.</summary>
+    /// <param name="rutaBlob">Ruta del blob.</param>
+    /// <returns>El cliente del blob.</returns>
     private BlobClient ObtenerBlobDeDocumentos(string rutaBlob)
         => _servicio.GetBlobContainerClient(_opciones.ContenedorDocumentos).GetBlobClient(rutaBlob);
 
+    /// <summary>
+    /// Prepara una firma SAS de un solo blob, sólo HTTPS y con tolerancia al
+    /// desfase de reloj en el inicio.
+    /// </summary>
+    /// <param name="contenedor">Contenedor del blob.</param>
+    /// <param name="rutaBlob">Ruta del blob.</param>
+    /// <param name="expira">Instante de expiración.</param>
+    /// <returns>El constructor, al que el llamador añade los permisos.</returns>
     private BlobSasBuilder CrearConstructor(string contenedor, string rutaBlob, DateTimeOffset expira)
         => new()
         {
@@ -211,6 +221,14 @@ public sealed class BlobAlmacenDocumentos : IAlmacenDocumentos, IDisposable
             Protocol = SasProtocol.Https,
         };
 
+    /// <summary>
+    /// Firma la URL del blob: con la clave de cuenta si el cliente la tiene
+    /// (Azurite) o con una clave de delegación de usuario (identidad administrada).
+    /// </summary>
+    /// <param name="blob">Cliente del blob.</param>
+    /// <param name="constructor">Firma a emitir.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>La URL firmada.</returns>
     private async Task<Uri> FirmarAsync(
         BlobClient blob, BlobSasBuilder constructor, CancellationToken cancellationToken)
     {
@@ -228,6 +246,12 @@ public sealed class BlobAlmacenDocumentos : IAlmacenDocumentos, IDisposable
         }.ToUri();
     }
 
+    /// <summary>
+    /// Obtiene la clave de delegación de usuario; la renueva, con un semáforo,
+    /// cuando está por caducar.
+    /// </summary>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>La clave vigente.</returns>
     private async Task<UserDelegationKey> ObtenerClaveDeDelegacionAsync(
         CancellationToken cancellationToken)
     {
@@ -268,6 +292,12 @@ public sealed class BlobAlmacenDocumentos : IAlmacenDocumentos, IDisposable
         }
     }
 
+    /// <summary>
+    /// Quita comillas y saltos de línea del nombre de descarga para que no
+    /// rompan la cabecera <c>Content-Disposition</c>.
+    /// </summary>
+    /// <param name="nombre">Nombre original del archivo.</param>
+    /// <returns>El nombre saneado.</returns>
     private static string SanearNombre(string nombre)
         => nombre.Replace("\"", string.Empty, StringComparison.Ordinal)
                  .Replace("\r", string.Empty, StringComparison.Ordinal)

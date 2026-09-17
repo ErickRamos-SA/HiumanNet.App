@@ -12,14 +12,6 @@ using Microsoft.Extensions.Logging;
 namespace HuimanNet.Application.Nomina;
 
 /// <summary>
-/// Calcula la nómina de un período con el motor del sistema.
-/// </summary>
-/// <param name="PeriodoId">Período a calcular.</param>
-/// <param name="EmpresaId">Empresa; sólo la aportan los roles transversales.</param>
-/// <param name="Observaciones">Nota opcional.</param>
-public sealed record CalcularNominaCommand(Guid PeriodoId, Guid? EmpresaId, string? Observaciones);
-
-/// <summary>
 /// Ejecuta <see cref="CalcularNominaCommand"/>: resuelve el catálogo vigente,
 /// evalúa cada contrato en paralelo y persiste la corrida con sus resultados.
 /// </summary>
@@ -131,7 +123,7 @@ public sealed class CalcularNominaHandler : IManejadorDeComando<CalcularNominaCo
                 $"La corrida #{aprobada.Numero} ya está aprobada como nómina definitiva del período; no puede reprocesarse.");
         }
 
-        DateOnly fecha = FechasDePeriodo.Referencia(periodo);
+        DateOnly fecha = periodo.FechaDeReferencia;
         var cronometro = Stopwatch.StartNew();
 
         // Entradas: una consulta por tipo, nunca por trabajador.
@@ -203,7 +195,10 @@ public sealed class CalcularNominaHandler : IManejadorDeComando<CalcularNominaCo
                         ConstructorDeVariables.Construir(contrato, razonSocial, incidencia, catalogo.Parametros, fecha);
 
                     ResultadoDeCalculo calculo = _motor.Calcular(catalogo.Plan(contrato.Esquema), variables);
-                    string? advertencia = ComprobarClavesDeResumen(calculo, contrato.Esquema);
+                    IReadOnlyList<string> faltantes = ClavesDeResumen.Faltantes(calculo, contrato.Esquema);
+                    string? advertencia = faltantes.Count == 0
+                        ? null
+                        : "El catálogo no define los conceptos de resumen: " + string.Join(", ", faltantes) + ".";
 
                     resultados[i] = ResultadoDeNomina.Crear(corrida.Id, contrato, empleado, movimiento, calculo, advertencia);
                 }
@@ -227,7 +222,7 @@ public sealed class CalcularNominaHandler : IManejadorDeComando<CalcularNominaCo
         }
 
         cronometro.Stop();
-        corrida.RegistrarTotales(Totalizar(calculados), cronometro.ElapsedMilliseconds, advertencias);
+        corrida.RegistrarTotales(TotalesDeCorrida.Sumar(calculados), cronometro.ElapsedMilliseconds, advertencias);
 
         // Las corridas abiertas anteriores quedan reemplazadas: el período conserva
         // un solo resultado vigente y todo el historial para auditoría.
@@ -262,48 +257,5 @@ public sealed class CalcularNominaHandler : IManejadorDeComando<CalcularNominaCo
 
         return await _consultas.ObtenerCorridaAsync(corrida.Id, empresaId, cancellationToken)
             ?? Mapeadores.ADto(corrida, periodo.Calendario.Clave, periodo.Descripcion, _autorizador.Usuario.NombreCompleto);
-    }
-
-    private static string? ComprobarClavesDeResumen(ResultadoDeCalculo calculo, EsquemaDePago esquema)
-    {
-        // Los conceptos de facturación y las cargas patronales sólo son
-        // obligatorios en el esquema IMSS; en el resto basta con los totales.
-        IEnumerable<string> exigidas = esquema == EsquemaDePago.Imss
-            ? ClavesDeResumen.Todas
-            : [ClavesDeResumen.BrutoIncidencias, ClavesDeResumen.TotalPercepciones, ClavesDeResumen.TotalDeducciones, ClavesDeResumen.NetoPagado, ClavesDeResumen.CostoTotal];
-
-        List<string> faltantes = exigidas.Where(c => !calculo.Contiene(c)).ToList();
-
-        return faltantes.Count == 0
-            ? null
-            : "El catálogo no define los conceptos de resumen: " + string.Join(", ", faltantes) + ".";
-    }
-
-    private static TotalesDeCorrida Totalizar(IReadOnlyList<ResultadoDeNomina> resultados)
-    {
-        decimal bruto = 0, percepciones = 0, deducciones = 0, neto = 0, isr = 0, imssTrabajador = 0, imssPatronal = 0,
-            infonavit = 0, isn = 0, complemento = 0, facturable = 0, comision = 0, costo = 0;
-
-        foreach (ResultadoDeNomina resultado in resultados)
-        {
-            ResumenDeResultado r = resultado.Resumen;
-            bruto += r.Bruto;
-            percepciones += r.TotalPercepciones;
-            deducciones += r.TotalDeducciones;
-            neto += r.Neto;
-            isr += r.Isr;
-            imssTrabajador += r.ImssTrabajador;
-            imssPatronal += r.ImssPatronal;
-            infonavit += r.InfonavitPatronal;
-            isn += r.Isn;
-            complemento += r.ComplementoSindical;
-            facturable += r.Facturable;
-            comision += r.Comision;
-            costo += r.CostoTotal;
-        }
-
-        return new TotalesDeCorrida(
-            resultados.Count, bruto, percepciones, deducciones, neto, isr, imssTrabajador, imssPatronal,
-            infonavit, isn, complemento, facturable, comision, costo);
     }
 }

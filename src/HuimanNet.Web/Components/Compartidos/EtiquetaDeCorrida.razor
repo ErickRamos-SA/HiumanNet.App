@@ -8,6 +8,8 @@
     [Parameter]
     public EstadoDeCorrida Estado { get; set; }
 
+    /// <summary>Obtiene la clase CSS del color del estado.</summary>
+    /// <value>Vacía para un estado sin color.</value>
     private string Clase => Estado switch
     {
         EstadoDeCorrida.Calculada => "etiqueta-info",

@@ -115,7 +115,7 @@ public static class Mapeadores
         return new ConceptoDeNominaDto(
             concepto.Id, concepto.Clave, concepto.Nombre, concepto.Descripcion, concepto.Tipo, concepto.Esquemas,
             concepto.Orden, concepto.Formula, concepto.VisibleEnRecibo, concepto.Activo, concepto.EmpresaId,
-            concepto.FechaModificacion);
+            concepto.FechaModificacion, concepto.AliasDeCotejo);
     }
 
     /// <summary>
@@ -253,6 +253,10 @@ public static class Mapeadores
             usuario.Idioma, accionesEfectivas.OrderBy(static a => (int)a).ToList(), usuario.RequiereCambioDeContrasena, empresas);
     }
 
+    /// <summary>Busca la razón social de la empresa principal del usuario.</summary>
+    /// <param name="empresaId">Empresa principal.</param>
+    /// <param name="empresas">Empresas visibles para el usuario.</param>
+    /// <returns>La razón social, o <c>null</c> si no tiene empresa o no está en la lista.</returns>
     private static string? RazonSocialDe(Guid? empresaId, IReadOnlyList<EmpresaDto> empresas)
         => empresaId is { } id ? empresas.FirstOrDefault(e => e.Id == id)?.RazonSocial : null;
 }

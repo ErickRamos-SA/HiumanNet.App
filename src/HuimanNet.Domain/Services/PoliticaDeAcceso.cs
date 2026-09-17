@@ -21,23 +21,58 @@ namespace HuimanNet.Domain.Services;
 /// </remarks>
 public sealed class PoliticaDeAcceso
 {
+    /// <summary>Tipos de documento que pueden cargarse en el portal.</summary>
+    private static readonly TipoDocumento[] TiposCargables =
+        [TipoDocumento.Incidencia, TipoDocumento.DatosEmpleado, TipoDocumento.Resultado, TipoDocumento.Ajuste];
+
     /// <summary>
     /// Indica si un rol puede cargar documentos de un tipo determinado.
     /// </summary>
     /// <param name="rol">Rol del usuario solicitante.</param>
     /// <param name="tipo">Tipo de documento que se pretende cargar.</param>
     /// <returns><c>true</c> si la combinación de rol y tipo está permitida.</returns>
-    public bool PuedeCargar(RolUsuario rol, TipoDocumento tipo)
-        => (rol, tipo) switch
-        {
-            (RolUsuario.ClienteEmpresa, TipoDocumento.Incidencia) => true,
-            (RolUsuario.ClienteEmpresa, TipoDocumento.DatosEmpleado) => true,
-            (RolUsuario.OperadorNomina, TipoDocumento.Resultado) => true,
-            (RolUsuario.OperadorNomina, TipoDocumento.Ajuste) => true,
-            (RolUsuario.Administrador, TipoDocumento.Resultado) => true,
-            (RolUsuario.Administrador, TipoDocumento.Ajuste) => true,
-            _ => false,
-        };
+    /// <remarks>
+    /// Es sólo la matriz por rol. El caso de uso exige además la acción de carga
+    /// del tipo; consulte <see cref="GarantizarPuedeCargar(RolUsuario, IEnumerable{PermisoDeUsuario}, TipoDocumento)"/>.
+    /// </remarks>
+    public bool PuedeCargar(RolUsuario rol, TipoDocumento tipo) => PuedeCargarSegunRol(rol, tipo);
+
+    /// <summary>
+    /// Obtiene la acción del sistema que exige cargar un tipo de documento.
+    /// </summary>
+    /// <param name="tipo">Tipo de documento.</param>
+    /// <returns>
+    /// <see cref="AccionDelSistema.CargarDocumentos"/> para lo que aporta la
+    /// empresa cliente; <see cref="AccionDelSistema.PublicarResultados"/> para
+    /// resultados y ajustes.
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException">Se lanza si el tipo no está especificado.</exception>
+    public static AccionDelSistema AccionParaCargar(TipoDocumento tipo) => tipo switch
+    {
+        TipoDocumento.Incidencia or TipoDocumento.DatosEmpleado => AccionDelSistema.CargarDocumentos,
+        TipoDocumento.Resultado or TipoDocumento.Ajuste => AccionDelSistema.PublicarResultados,
+        _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "Tipo de documento no especificado."),
+    };
+
+    /// <summary>
+    /// Lista los tipos de documento que un usuario puede cargar.
+    /// </summary>
+    /// <param name="rol">Rol del usuario.</param>
+    /// <param name="acciones">Acciones efectivas del usuario.</param>
+    /// <returns>
+    /// Los tipos que admite la matriz de su rol y para los que tiene habilitada
+    /// la acción de carga, en el orden en que conviene ofrecerlos.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">Se lanza si <paramref name="acciones"/> es <c>null</c>.</exception>
+    /// <remarks>
+    /// Combina las dos barreras que aplica el caso de uso de carga, para que la
+    /// web y la app ofrezcan exactamente lo que el servidor aceptará.
+    /// </remarks>
+    public static IReadOnlyList<TipoDocumento> TiposQuePuedeCargar(RolUsuario rol, IReadOnlyCollection<AccionDelSistema> acciones)
+    {
+        ArgumentNullException.ThrowIfNull(acciones);
+        return [.. TiposCargables.Where(t => PuedeCargarSegunRol(rol, t) && acciones.Contains(AccionParaCargar(t)))];
+    }
 
     /// <summary>
     /// Indica si un rol puede descargar un documento de un tipo determinado.
@@ -62,8 +97,7 @@ public sealed class PoliticaDeAcceso
     /// </summary>
     /// <param name="rol">Rol del usuario solicitante.</param>
     /// <returns><c>true</c> para el operador de nómina y el administrador.</returns>
-    public bool OperaSobreTodasLasEmpresas(RolUsuario rol)
-        => rol is RolUsuario.OperadorNomina or RolUsuario.Administrador;
+    public bool OperaSobreTodasLasEmpresas(RolUsuario rol) => rol.EsTransversal();
 
     /// <summary>
     /// Calcula las acciones efectivas de un usuario.
@@ -117,6 +151,23 @@ public sealed class PoliticaDeAcceso
             throw new AccesoNoAutorizadoException(
                 $"El rol '{rol}' no puede cargar documentos de tipo '{tipo}'.");
         }
+    }
+
+    /// <summary>
+    /// Comprueba que un usuario puede cargar un tipo de documento: que su rol lo
+    /// admite y que tiene habilitada la acción de carga de ese tipo.
+    /// </summary>
+    /// <param name="rol">Rol del usuario solicitante.</param>
+    /// <param name="personalizados">Permisos personalizados del usuario, o <c>null</c>.</param>
+    /// <param name="tipo">Tipo de documento que se pretende cargar.</param>
+    /// <exception cref="AccesoNoAutorizadoException">
+    /// Se lanza si el rol no puede cargar ese tipo o si el administrador le
+    /// retiró la acción correspondiente.
+    /// </exception>
+    public void GarantizarPuedeCargar(RolUsuario rol, IEnumerable<PermisoDeUsuario>? personalizados, TipoDocumento tipo)
+    {
+        GarantizarPuedeCargar(rol, tipo);
+        GarantizarPuedeEjecutar(rol, personalizados, AccionParaCargar(tipo));
     }
 
     /// <summary>
@@ -279,4 +330,23 @@ public sealed class PoliticaDeAcceso
                 $"El rol '{rol}' no puede consultar la bitácora de auditoría.");
         }
     }
+
+    /// <summary>
+    /// Matriz de carga por rol: la empresa cliente aporta incidencias y datos de
+    /// empleados; nómina y administración publican resultados y ajustes.
+    /// </summary>
+    /// <param name="rol">Rol del usuario.</param>
+    /// <param name="tipo">Tipo de documento.</param>
+    /// <returns><c>true</c> si la combinación está permitida.</returns>
+    private static bool PuedeCargarSegunRol(RolUsuario rol, TipoDocumento tipo)
+        => (rol, tipo) switch
+        {
+            (RolUsuario.ClienteEmpresa, TipoDocumento.Incidencia) => true,
+            (RolUsuario.ClienteEmpresa, TipoDocumento.DatosEmpleado) => true,
+            (RolUsuario.OperadorNomina, TipoDocumento.Resultado) => true,
+            (RolUsuario.OperadorNomina, TipoDocumento.Ajuste) => true,
+            (RolUsuario.Administrador, TipoDocumento.Resultado) => true,
+            (RolUsuario.Administrador, TipoDocumento.Ajuste) => true,
+            _ => false,
+        };
 }

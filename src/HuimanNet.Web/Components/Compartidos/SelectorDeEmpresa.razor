@@ -36,17 +36,27 @@
         }
     }
 
+    /// <summary>
+    /// Carga las empresas elegibles: todas las activas para nómina y
+    /// administración; las suyas para la empresa cliente.
+    /// </summary>
+    /// <returns>Tarea que finaliza al cargarlas.</returns>
     private async Task CargarAsync()
         => _empresas = Contexto.EsTransversal
-            ? await Casos.UsarAsync<IConsultasEmpresas, IReadOnlyList<EmpresaDto>>(c => c.ListarAsync(soloActivas: true))
+            ? await Casos.ConsultarAsync<ListarEmpresasQuery, IReadOnlyList<EmpresaDto>>(new ListarEmpresasQuery(SoloActivas: true))
             : Contexto.EmpresasDelUsuario;
 
+    /// <summary>Recarga la lista cuando otra página modifica las empresas.</summary>
+    /// <returns>Tarea que finaliza al volver a dibujar.</returns>
     private Task RecargarAsync() => InvokeAsync(async () =>
     {
         await CargarAsync();
         StateHasChanged();
     });
 
+    /// <summary>Comparte con el circuito la empresa elegida.</summary>
+    /// <param name="argumentos">Evento del selector.</param>
+    /// <returns>Tarea que finaliza cuando todas las páginas recargaron.</returns>
     private Task CambiarAsync(ChangeEventArgs argumentos)
     {
         Guid? empresaId = Guid.TryParse(argumentos.Value?.ToString(), out Guid id) ? id : null;
@@ -54,6 +64,8 @@
         return Estado.SeleccionarEmpresaAsync(empresaId, nombre);
     }
 
+    /// <summary>Vuelve a dibujar cuando la empresa cambia desde otra página.</summary>
+    /// <returns>Tarea que finaliza al dibujar.</returns>
     private Task RefrescarAsync() => InvokeAsync(StateHasChanged);
 
     /// <inheritdoc/>

@@ -1,5 +1,7 @@
 using FluentAssertions;
+using HuimanNet.Application.Common;
 using HuimanNet.Application.Documentos.Commands;
+using HuimanNet.Application.Documentos.Validators;
 using HuimanNet.Application.Interfaces;
 using HuimanNet.Contracts.Documentos;
 using HuimanNet.Domain.Entities;
@@ -106,6 +108,37 @@ public sealed class SolicitarCargaDocumentoHandlerTests
             Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task Ejecutar_ConNombreDeArchivoVacio_EsRechazadoAntesDeTocarDatos()
+    {
+        PeriodoCarga periodo = DadoUnPeriodoAbierto();
+        SolicitarCargaDocumentoHandler manejador = CrearManejador();
+
+        Func<Task> accion = () => manejador.EjecutarAsync(new SolicitarCargaDocumentoCommand(
+            periodo.Id, TipoDocumento.Incidencia, "   ", 2048, EmpresaId: null));
+
+        await accion.Should().ThrowAsync<EntradaInvalidaException>();
+        await _periodos.DidNotReceive().ObtenerPorIdAsync(
+            Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _almacen.DidNotReceive().CrearEnlaceDeEscrituraAsync(
+            Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Ejecutar_ConLaCargaNegadaAlUsuario_EsRechazado()
+    {
+        PeriodoCarga periodo = DadoUnPeriodoAbierto();
+        _usuarioActual.Permisos.Returns([new PermisoDeUsuario(AccionDelSistema.CargarDocumentos, false)]);
+        SolicitarCargaDocumentoHandler manejador = CrearManejador();
+
+        Func<Task> accion = () => manejador.EjecutarAsync(new SolicitarCargaDocumentoCommand(
+            periodo.Id, TipoDocumento.Incidencia, "incidencias.xlsx", 2048, EmpresaId: null));
+
+        await accion.Should().ThrowAsync<AccesoNoAutorizadoException>();
+        await _almacen.DidNotReceive().CrearEnlaceDeEscrituraAsync(
+            Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
     private PeriodoCarga DadoUnPeriodoAbierto()
     {
         PeriodoCarga periodo = PeriodoCarga.Abrir(
@@ -127,6 +160,7 @@ public sealed class SolicitarCargaDocumentoHandlerTests
             _unitOfWork,
             new PoliticaDeAcceso(),
             new ValidadorDeDocumento(PoliticaDeCarga.Predeterminada),
+            new ValidadorDeSolicitudDeCarga(),
             new ProveedorDeTiempoFijo(Ahora),
             NullLogger<SolicitarCargaDocumentoHandler>.Instance);
 

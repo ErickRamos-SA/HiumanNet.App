@@ -3,22 +3,6 @@ using HuimanNet.Domain.Exceptions;
 namespace HuimanNet.Domain.Nomina;
 
 /// <summary>
-/// Renglón de una tabla por rangos: tarifa de ISR, subsidio al empleo o
-/// cuota variable de cesantía y vejez.
-/// </summary>
-/// <param name="LimiteInferior">Límite inferior del rango, inclusive.</param>
-/// <param name="LimiteSuperior">Límite superior del rango, inclusive, o <c>null</c> para "en adelante".</param>
-/// <param name="CuotaFija">Cuota fija del rango (tarifas de ISR).</param>
-/// <param name="Porcentaje">Porcentaje aplicable sobre el excedente, como fracción (16 % = 0.16).</param>
-/// <param name="Valor">Valor directo del rango (subsidio al empleo).</param>
-public sealed record RangoDeTabla(
-    decimal LimiteInferior,
-    decimal? LimiteSuperior,
-    decimal CuotaFija,
-    decimal Porcentaje,
-    decimal Valor);
-
-/// <summary>
 /// Tabla por rangos con vigencia: tarifa de ISR, tabla de subsidio al empleo,
 /// tabla de cesantía y vejez patronal, etc.
 /// </summary>
@@ -32,6 +16,11 @@ public sealed class TablaDeRangos
 {
     private RangoDeTabla[] _rangos;
 
+    /// <summary>
+    /// Inicializa una instancia con valores ya validados. Sólo la usan las
+    /// fábricas y <see cref="Rehidratar"/>.
+    /// </summary>
+    /// <inheritdoc cref="Rehidratar" path="/param"/>
     private TablaDeRangos(
         Guid id,
         string clave,
@@ -242,6 +231,13 @@ public sealed class TablaDeRangos
         };
     }
 
+    /// <summary>
+    /// Ordena los rangos por límite inferior y comprueba que no se repita ninguno.
+    /// </summary>
+    /// <param name="rangos">Rangos capturados.</param>
+    /// <returns>Los rangos en orden ascendente.</returns>
+    /// <exception cref="ArgumentNullException">Se lanza si <paramref name="rangos"/> es <c>null</c>.</exception>
+    /// <exception cref="CatalogoInvalidoException">Se lanza si no hay rangos o un límite inferior está repetido.</exception>
     private static RangoDeTabla[] Ordenar(IEnumerable<RangoDeTabla> rangos)
     {
         ArgumentNullException.ThrowIfNull(rangos);

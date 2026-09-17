@@ -16,14 +16,6 @@ namespace HuimanNet.Infrastructure.Persistence.Queries;
 /// </remarks>
 public sealed class ConsultasEmpresas : RepositorioSqlBase, IConsultasEmpresas
 {
-    private const string ProyeccionDeDetalle = """
-        SELECT e.Id, e.RazonSocial, e.IdentificadorFiscal, e.Activa, e.FechaAlta,
-               (SELECT COUNT_BIG(1) FROM dbo.RazonesSociales AS r WHERE r.EmpresaId = e.Id AND r.Activa = 1),
-               (SELECT COUNT_BIG(1) FROM dbo.Empleados AS m WHERE m.EmpresaId = e.Id AND m.Activo = 1),
-               (SELECT COUNT_BIG(1) FROM dbo.Usuarios AS u WHERE u.EmpresaId = e.Id AND u.Activo = 1)
-        FROM   dbo.Empresas AS e
-        """;
-
     /// <summary>
     /// Inicializa una nueva instancia de <see cref="ConsultasEmpresas"/>.
     /// </summary>
@@ -36,14 +28,7 @@ public sealed class ConsultasEmpresas : RepositorioSqlBase, IConsultasEmpresas
     /// <inheritdoc/>
     public async Task<IReadOnlyList<EmpresaDto>> ListarAsync(bool soloActivas, CancellationToken cancellationToken = default)
     {
-        const string sql = """
-            SELECT e.Id, e.RazonSocial, e.Activa
-            FROM   dbo.Empresas AS e
-            WHERE  (@SoloActivas = 0 OR e.Activa = 1)
-            ORDER BY e.RazonSocial;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Empresas.ListarResumen, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@SoloActivas", SqlDbType.Bit) { Value = soloActivas });
 
         var empresas = new List<EmpresaDto>();
@@ -51,7 +36,7 @@ public sealed class ConsultasEmpresas : RepositorioSqlBase, IConsultasEmpresas
 
         while (await reader.ReadAsync(cancellationToken))
         {
-            empresas.Add(new EmpresaDto(reader.GetGuid(0), reader.GetString(1), reader.GetBoolean(2)));
+            empresas.Add(MapearResumen(reader));
         }
 
         return empresas;
@@ -60,23 +45,18 @@ public sealed class ConsultasEmpresas : RepositorioSqlBase, IConsultasEmpresas
     /// <inheritdoc/>
     public async Task<EmpresaDto?> ObtenerAsync(Guid empresaId, CancellationToken cancellationToken = default)
     {
-        await using SqlCommand comando = await CrearComandoAsync(
-            "SELECT e.Id, e.RazonSocial, e.Activa FROM dbo.Empresas AS e WHERE e.Id = @Id;", cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Empresas.ObtenerResumen, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = empresaId });
 
         await using SqlDataReader reader = await comando.ExecuteReaderAsync(cancellationToken);
 
-        return await reader.ReadAsync(cancellationToken)
-            ? new EmpresaDto(reader.GetGuid(0), reader.GetString(1), reader.GetBoolean(2))
-            : null;
+        return await reader.ReadAsync(cancellationToken) ? MapearResumen(reader) : null;
     }
 
     /// <inheritdoc/>
     public async Task<IReadOnlyList<EmpresaDetalleDto>> ListarDetalleAsync(bool soloActivas, CancellationToken cancellationToken = default)
     {
-        string sql = $"{ProyeccionDeDetalle} WHERE (@SoloActivas = 0 OR e.Activa = 1) ORDER BY e.RazonSocial;";
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Empresas.ListarDetalle, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@SoloActivas", SqlDbType.Bit) { Value = soloActivas });
 
         var lista = new List<EmpresaDetalleDto>();
@@ -93,15 +73,22 @@ public sealed class ConsultasEmpresas : RepositorioSqlBase, IConsultasEmpresas
     /// <inheritdoc/>
     public async Task<EmpresaDetalleDto?> ObtenerDetalleAsync(Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"{ProyeccionDeDetalle} WHERE e.Id = @Id;";
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Empresas.ObtenerDetalle, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = empresaId });
 
         await using SqlDataReader reader = await comando.ExecuteReaderAsync(cancellationToken);
         return await reader.ReadAsync(cancellationToken) ? MapearDetalle(reader) : null;
     }
 
+    /// <summary>Proyecta una fila de <c>Empresas_ListarResumen</c> a su DTO.</summary>
+    /// <param name="reader">Lector situado en la fila.</param>
+    /// <returns>El resumen de la empresa.</returns>
+    private static EmpresaDto MapearResumen(SqlDataReader reader)
+        => new(reader.GetGuid(0), reader.GetString(1), reader.GetBoolean(2));
+
+    /// <summary>Proyecta una fila de <c>Empresas_ListarDetalle</c> a su DTO.</summary>
+    /// <param name="reader">Lector situado en la fila.</param>
+    /// <returns>El detalle de la empresa.</returns>
     private static EmpresaDetalleDto MapearDetalle(SqlDataReader reader)
         => new(
             reader.GetGuid(0), reader.GetString(1), reader.GetString(2), reader.GetBoolean(3), reader.GetDateTimeOffset(4),

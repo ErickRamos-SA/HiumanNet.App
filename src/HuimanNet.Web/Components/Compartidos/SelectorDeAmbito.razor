@@ -31,6 +31,12 @@
     [Parameter]
     public EventCallback<Guid?> EmpresaIdChanged { get; set; }
 
+    /// <summary>
+    /// Asigna el elemento a la empresa de trabajo al marcar la casilla y lo
+    /// devuelve al catálogo global al desmarcarla.
+    /// </summary>
+    /// <param name="argumentos">Evento de la casilla.</param>
+    /// <returns>Tarea que finaliza al notificar el cambio.</returns>
     private Task CambiarAsync(ChangeEventArgs argumentos)
     {
         Guid? nuevo = argumentos.Value is true ? EmpresaId ?? Estado.EmpresaId : null;

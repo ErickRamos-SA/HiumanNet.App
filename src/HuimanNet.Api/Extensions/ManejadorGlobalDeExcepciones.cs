@@ -83,6 +83,9 @@ public sealed class ManejadorGlobalDeExcepciones : IExceptionHandler
         });
     }
 
+    /// <summary>Traduce una excepción a la respuesta de problema que recibe el cliente.</summary>
+    /// <param name="exception">Excepción no controlada.</param>
+    /// <returns>Estado HTTP, título y detalle público del problema.</returns>
     private static (int Estado, string Titulo, string Detalle) Traducir(Exception exception)
         => exception switch
         {

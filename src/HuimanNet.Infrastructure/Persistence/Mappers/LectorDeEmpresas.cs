@@ -6,17 +6,14 @@ namespace HuimanNet.Infrastructure.Persistence.Mappers;
 /// <summary>
 /// Traduce filas de <c>dbo.Empresas</c> a entidades <see cref="Empresa"/>.
 /// </summary>
-/// <remarks>Mapeo manual por ordinal, sin reflexión.</remarks>
+/// <remarks>
+/// Mapeo manual por ordinal, sin reflexión. Las columnas y su orden los fija el
+/// procedimiento que alimenta el lector (<c>Empresas_Obtener</c> y
+/// <c>Empresas_Listar</c>, en <c>Procedimientos/Empresas.sql</c>): cambiarlas
+/// allí obliga a cambiar este mapeo.
+/// </remarks>
 public static class LectorDeEmpresas
 {
-    /// <summary>
-    /// Obtiene la lista de columnas que debe proyectar cualquier consulta que
-    /// alimente a <see cref="Mapear"/>.
-    /// </summary>
-    /// <value>Fragmento SQL con los nombres de columna en el orden esperado.</value>
-    public const string Columnas =
-        "e.Id, e.RazonSocial, e.IdentificadorFiscal, e.PrefijoContenedor, e.Activa, e.FechaAlta";
-
     /// <summary>
     /// Construye una entidad a partir de la fila actual del lector.
     /// </summary>

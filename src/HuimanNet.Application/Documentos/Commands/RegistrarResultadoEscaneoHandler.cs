@@ -143,6 +143,14 @@ public sealed class RegistrarResultadoEscaneoHandler
         }
     }
 
+    /// <summary>
+    /// Prepara el aviso de un documento que quedó disponible: documentos
+    /// recibidos si lo aportó el cliente; resultados disponibles si no.
+    /// </summary>
+    /// <param name="documento">Documento que superó el escaneo.</param>
+    /// <param name="ahora">Instante del aviso, en UTC.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>El aviso, o <c>null</c> si el período ya no existe.</returns>
     private async Task<AvisoPendiente?> PrepararAvisoAsync(
         Documento documento, DateTimeOffset ahora, CancellationToken cancellationToken)
     {
@@ -167,6 +175,13 @@ public sealed class RegistrarResultadoEscaneoHandler
             ahora);
     }
 
+    /// <summary>
+    /// Pasa el período a recibido cuando le llega un documento disponible y
+    /// sigue abierto.
+    /// </summary>
+    /// <param name="documento">Documento que superó el escaneo.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Tarea que finaliza al actualizar el período, si correspondía.</returns>
     private async Task MarcarRecepcionDelPeriodoAsync(
         Documento documento, CancellationToken cancellationToken)
     {

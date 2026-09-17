@@ -4,54 +4,6 @@ using HuimanNet.Domain.Formulas;
 namespace HuimanNet.Domain.Nomina;
 
 /// <summary>
-/// Valor calculado de un concepto.
-/// </summary>
-/// <param name="Clave">Clave del concepto.</param>
-/// <param name="Importe">Importe calculado, sin redondeo adicional al de la fórmula.</param>
-public sealed record ValorDeConcepto(string Clave, decimal Importe);
-
-/// <summary>
-/// Resultado de evaluar un plan de cálculo para un trabajador.
-/// </summary>
-public sealed class ResultadoDeCalculo
-{
-    private readonly Dictionary<string, decimal> _porClave;
-
-    /// <summary>
-    /// Inicializa una nueva instancia de <see cref="ResultadoDeCalculo"/>.
-    /// </summary>
-    /// <param name="valores">Valores en orden de evaluación.</param>
-    /// <param name="porClave">Índice por clave.</param>
-    internal ResultadoDeCalculo(IReadOnlyList<ValorDeConcepto> valores, Dictionary<string, decimal> porClave)
-    {
-        Valores = valores;
-        _porClave = porClave;
-    }
-
-    /// <summary>Obtiene un resultado sin conceptos.</summary>
-    /// <value>Instancia compartida que devuelve cero para cualquier clave.</value>
-    public static ResultadoDeCalculo Vacio { get; } = new([], new Dictionary<string, decimal>(StringComparer.Ordinal));
-
-    /// <summary>Obtiene los valores en el orden en que se evaluaron.</summary>
-    /// <value>Lista de sólo lectura con todos los conceptos del plan.</value>
-    public IReadOnlyList<ValorDeConcepto> Valores { get; }
-
-    /// <summary>
-    /// Obtiene el importe de un concepto.
-    /// </summary>
-    /// <param name="clave">Clave del concepto.</param>
-    /// <returns>El importe, o cero si el plan no incluye el concepto.</returns>
-    public decimal Obtener(string clave) => _porClave.TryGetValue(clave, out decimal valor) ? valor : 0m;
-
-    /// <summary>
-    /// Indica si el plan incluye un concepto.
-    /// </summary>
-    /// <param name="clave">Clave del concepto.</param>
-    /// <returns><c>true</c> si se calculó.</returns>
-    public bool Contiene(string clave) => _porClave.ContainsKey(clave);
-}
-
-/// <summary>
 /// Evalúa un <see cref="PlanDeCalculo"/> para un trabajador concreto.
 /// </summary>
 /// <remarks>
@@ -110,6 +62,11 @@ public sealed class MotorDeCalculo
         private readonly PlanDeCalculo _plan;
         private readonly IReadOnlyDictionary<string, decimal> _variables;
 
+        /// <summary>
+        /// Inicializa una nueva instancia de <see cref="ContextoDeCalculo"/>.
+        /// </summary>
+        /// <param name="plan">Plan con los parámetros y tablas vigentes.</param>
+        /// <param name="variables">Variables de entrada del trabajador.</param>
         public ContextoDeCalculo(PlanDeCalculo plan, IReadOnlyDictionary<string, decimal> variables)
         {
             _plan = plan;
@@ -117,15 +74,22 @@ public sealed class MotorDeCalculo
             Resultados = new Dictionary<string, decimal>(plan.Conceptos.Count, StringComparer.Ordinal);
         }
 
+        /// <summary>Obtiene los importes de los conceptos ya calculados.</summary>
+        /// <value>Diccionario por clave de concepto.</value>
         public Dictionary<string, decimal> Resultados { get; }
 
+        /// <summary>Registra el importe de un concepto recién calculado.</summary>
+        /// <param name="clave">Clave del concepto.</param>
+        /// <param name="valor">Importe calculado.</param>
         public void Registrar(string clave, decimal valor) => Resultados[clave] = valor;
 
+        /// <inheritdoc/>
         public bool TryObtenerValor(string nombre, out decimal valor)
             => Resultados.TryGetValue(nombre, out valor)
                || _variables.TryGetValue(nombre, out valor)
                || _plan.Parametros.TryGetValue(nombre, out valor);
 
+        /// <inheritdoc/>
         public decimal ConsultarTabla(string tabla, decimal valor, string campo)
         {
             if (!_plan.Tablas.TryGetValue(tabla, out TablaDeRangos? definicion))

@@ -62,6 +62,12 @@ public sealed class PublicadorDeAvisosEnCola : INotificationService
             "Aviso {Tipo} encolado para el período {PeriodoId}.", aviso.Tipo, aviso.PeriodoId);
     }
 
+    /// <summary>
+    /// Crea la cola la primera vez que se publica, si la configuración lo pide;
+    /// el cerrojo evita que dos publicaciones simultáneas la creen a la vez.
+    /// </summary>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>Tarea que finaliza cuando la cola existe.</returns>
     private async Task GarantizarColaAsync(CancellationToken cancellationToken)
     {
         if (_colaVerificada || !_opciones.CrearColaAlIniciar)

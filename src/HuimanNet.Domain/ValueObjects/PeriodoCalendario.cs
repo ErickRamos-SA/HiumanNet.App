@@ -22,6 +22,10 @@ public readonly record struct PeriodoCalendario
     /// <summary>Número máximo de períodos dentro de un mismo mes (semanal).</summary>
     public const int ConsecutivoMaximo = 5;
 
+    /// <summary>Inicializa un período ya validado.</summary>
+    /// <param name="anio">Año.</param>
+    /// <param name="mes">Mes, de 1 a 12.</param>
+    /// <param name="consecutivo">Número de período dentro del mes.</param>
     private PeriodoCalendario(int anio, int mes, int consecutivo)
     {
         Anio = anio;
@@ -54,6 +58,12 @@ public readonly record struct PeriodoCalendario
     public string Clave => string.Create(
         CultureInfo.InvariantCulture,
         $"{Anio:D4}-{Mes:D2}-{Consecutivo:D2}");
+
+    /// <summary>
+    /// Obtiene el último día del mes del período.
+    /// </summary>
+    /// <value>Fecha del calendario gregoriano; tiene en cuenta los años bisiestos.</value>
+    public DateOnly UltimoDiaDelMes => new(Anio, Mes, DateTime.DaysInMonth(Anio, Mes));
 
     /// <summary>
     /// Crea un <see cref="PeriodoCalendario"/> validando los rangos.

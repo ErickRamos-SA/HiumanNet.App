@@ -19,6 +19,8 @@ trim_trailing_whitespace = false
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false
 csharp_using_directive_placement = outside_namespace:warning
+# Usings sin uso: sugerencia, para que el IDE y dotnet format los quiten.
+dotnet_diagnostic.IDE0005.severity = suggestion
 
 # Namespaces con ámbito de archivo (file-scoped)
 csharp_style_namespace_declarations = file_scoped:warning

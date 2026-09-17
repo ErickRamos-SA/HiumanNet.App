@@ -39,6 +39,7 @@ public sealed class ConfirmarCargaHandler
     private readonly IUnitOfWork _unitOfWork;
     private readonly PoliticaDeAcceso _politicaDeAcceso;
     private readonly PoliticaDeCarga _politicaDeCarga;
+    private readonly IValidadorDeEntrada<ConfirmarCargaCommand> _validadorDeEntrada;
     private readonly TimeProvider _reloj;
     private readonly ILogger<ConfirmarCargaHandler> _logger;
 
@@ -54,6 +55,7 @@ public sealed class ConfirmarCargaHandler
     /// <param name="unitOfWork">Coordinador de transacciones.</param>
     /// <param name="politicaDeAcceso">Matriz de permisos por rol y tipo.</param>
     /// <param name="politicaDeCarga">Política de extensiones y tamaño máximo.</param>
+    /// <param name="validadorDeEntrada">Validador de la forma del comando.</param>
     /// <param name="reloj">Proveedor de tiempo del sistema.</param>
     /// <param name="logger">Registro de eventos.</param>
     public ConfirmarCargaHandler(
@@ -66,9 +68,11 @@ public sealed class ConfirmarCargaHandler
         IUnitOfWork unitOfWork,
         PoliticaDeAcceso politicaDeAcceso,
         PoliticaDeCarga politicaDeCarga,
+        IValidadorDeEntrada<ConfirmarCargaCommand> validadorDeEntrada,
         TimeProvider reloj,
         ILogger<ConfirmarCargaHandler> logger)
     {
+        _validadorDeEntrada = validadorDeEntrada;
         _documentos = documentos;
         _auditoria = auditoria;
         _almacen = almacen;
@@ -84,6 +88,7 @@ public sealed class ConfirmarCargaHandler
 
     /// <inheritdoc/>
     /// <exception cref="ArgumentNullException">Se lanza si <paramref name="comando"/> es <c>null</c>.</exception>
+    /// <exception cref="EntradaInvalidaException">Se lanza si falta el documento o la huella no es un SHA-256.</exception>
     /// <exception cref="AccesoNoAutorizadoException">
     /// Se lanza si el documento no existe para el solicitante o si quien confirma
     /// no es quien solicitó la carga.
@@ -96,6 +101,7 @@ public sealed class ConfirmarCargaHandler
         ConfirmarCargaCommand comando, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(comando);
+        _validadorDeEntrada.Validar(comando).GarantizarValido();
 
         Documento documento = await ObtenerDocumentoAutorizadoAsync(comando.DocumentoId, cancellationToken);
 
@@ -158,6 +164,17 @@ public sealed class ConfirmarCargaHandler
         return MapeadorDeDocumentos.ADto(documento, _usuarioActual.NombreCompleto);
     }
 
+    /// <summary>
+    /// Obtiene el documento a confirmar y comprueba que pertenezca a alguna
+    /// empresa del usuario.
+    /// </summary>
+    /// <param name="documentoId">Documento reservado.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>El documento.</returns>
+    /// <exception cref="AccesoNoAutorizadoException">
+    /// Se lanza si no existe o es de otra empresa; ambos casos dan el mismo
+    /// mensaje para no revelar si existe.
+    /// </exception>
     private async Task<Documento> ObtenerDocumentoAutorizadoAsync(
         Guid documentoId, CancellationToken cancellationToken)
     {

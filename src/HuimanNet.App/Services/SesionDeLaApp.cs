@@ -8,14 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace HuimanNet.App.Services;
 
-/// <summary>Aviso de que el usuario inició sesión y su identidad ya se conoce.</summary>
-/// <param name="Usuario">Identidad efectiva devuelta por la API.</param>
-public sealed record SesionIniciadaMensaje(UsuarioActualDto Usuario);
-
-/// <summary>Aviso de que cambió la empresa de trabajo.</summary>
-/// <param name="EmpresaId">Empresa elegida, o <c>null</c>.</param>
-public sealed record EmpresaCambiadaMensaje(Guid? EmpresaId);
-
 /// <summary>
 /// Estado de la sesión en el dispositivo: modo de identidad, usuario, permisos
 /// y empresa de trabajo.
@@ -27,7 +19,10 @@ public sealed record EmpresaCambiadaMensaje(Guid? EmpresaId);
 /// </remarks>
 public sealed class SesionDeLaApp
 {
+    /// <summary>Clave de las preferencias donde se guarda el modo de identidad.</summary>
     private const string ClaveModo = "huimannet.modo";
+
+    /// <summary>Clave de las preferencias donde se guarda la última empresa elegida.</summary>
     private const string ClaveEmpresa = "huimannet.empresa";
 
     /// <summary>Obtiene o establece el modo de identidad que usa el servidor.</summary>
@@ -135,120 +130,5 @@ public sealed class SesionDeLaApp
         Usuario = null;
         Empresas = [];
         Empresa = null;
-    }
-}
-
-/// <summary>
-/// Token del modo de identidad local, guardado en el almacén seguro del sistema
-/// (Keystore en Android, Keychain en iOS).
-/// </summary>
-public sealed class ProveedorDeTokenLocal
-{
-    private const string ClaveToken = "huimannet.token";
-    private const string ClaveExpiracion = "huimannet.token.expira";
-
-    private string? _token;
-    private DateTimeOffset _expira = DateTimeOffset.MinValue;
-    private bool _cargado;
-
-    /// <summary>
-    /// Obtiene el token vigente.
-    /// </summary>
-    /// <returns>El token, o <c>null</c> si no hay o está por caducar.</returns>
-    public async Task<string?> ObtenerAsync()
-    {
-        if (!_cargado)
-        {
-            _token = await SecureStorage.Default.GetAsync(ClaveToken);
-            string? expira = await SecureStorage.Default.GetAsync(ClaveExpiracion);
-            _expira = long.TryParse(expira, NumberStyles.None, CultureInfo.InvariantCulture, out long segundos)
-                ? DateTimeOffset.FromUnixTimeSeconds(segundos)
-                : DateTimeOffset.MinValue;
-            _cargado = true;
-        }
-
-        return _token is not null && _expira > DateTimeOffset.UtcNow.AddMinutes(1) ? _token : null;
-    }
-
-    /// <summary>
-    /// Guarda el token emitido por la API.
-    /// </summary>
-    /// <param name="token">Token compacto.</param>
-    /// <param name="expira">Instante de caducidad.</param>
-    /// <returns>Una tarea que representa la operación asíncrona.</returns>
-    public async Task EstablecerAsync(string token, DateTimeOffset expira)
-    {
-        _token = token;
-        _expira = expira;
-        _cargado = true;
-
-        await SecureStorage.Default.SetAsync(ClaveToken, token);
-        await SecureStorage.Default.SetAsync(ClaveExpiracion, expira.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture));
-    }
-
-    /// <summary>Borra el token del dispositivo.</summary>
-    public void Borrar()
-    {
-        _token = null;
-        _expira = DateTimeOffset.MinValue;
-        _cargado = true;
-        SecureStorage.Default.Remove(ClaveToken);
-        SecureStorage.Default.Remove(ClaveExpiracion);
-    }
-}
-
-/// <summary>
-/// <see cref="IProveedorDeToken"/> que delega en Microsoft Entra o en el token
-/// local según el modo de identidad del servidor.
-/// </summary>
-public sealed class ProveedorDeToken : IProveedorDeToken
-{
-    private readonly SesionDeLaApp _sesion;
-    private readonly ProveedorDeTokenLocal _local;
-    private readonly IServiceProvider _servicios;
-
-    /// <summary>
-    /// Inicializa una nueva instancia de <see cref="ProveedorDeToken"/>.
-    /// </summary>
-    /// <param name="sesion">Estado de la sesión.</param>
-    /// <param name="local">Token del modo local.</param>
-    /// <param name="servicios">Contenedor, para crear el cliente de Entra sólo si hace falta.</param>
-    public ProveedorDeToken(SesionDeLaApp sesion, ProveedorDeTokenLocal local, IServiceProvider servicios)
-    {
-        _sesion = sesion;
-        _local = local;
-        _servicios = servicios;
-    }
-
-    private ProveedorDeTokenEntra Entra => _servicios.GetRequiredService<ProveedorDeTokenEntra>();
-
-    /// <inheritdoc/>
-    public Task<string?> ObtenerTokenSilenciosoAsync(CancellationToken cancellationToken = default)
-        => _sesion.EsLocal ? _local.ObtenerAsync() : Entra.ObtenerTokenSilenciosoAsync(cancellationToken);
-
-    /// <inheritdoc/>
-    /// <exception cref="InvalidOperationException">
-    /// En modo local, si el token caducó: el usuario debe volver a escribir su contraseña.
-    /// </exception>
-    public Task<string> IniciarSesionAsync(CancellationToken cancellationToken = default)
-    {
-        if (_sesion.EsLocal)
-        {
-            _local.Borrar();
-            throw new InvalidOperationException(Textos.Traductor["movil.sesionExpirada"]);
-        }
-
-        return Entra.IniciarSesionAsync(cancellationToken);
-    }
-
-    /// <inheritdoc/>
-    public async Task CerrarSesionAsync(CancellationToken cancellationToken = default)
-    {
-        _local.Borrar();
-
-        if (!_sesion.EsLocal)
-        {
-            await Entra.CerrarSesionAsync(cancellationToken);
-        }
     }
 }

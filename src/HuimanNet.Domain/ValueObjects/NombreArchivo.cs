@@ -16,9 +16,25 @@ public readonly record struct NombreArchivo
     /// <summary>Longitud máxima aceptada para el nombre original.</summary>
     public const int LongitudMaxima = 255;
 
+    /// <summary>
+    /// Caracteres que ningún nombre de archivo admite: los reservados por
+    /// Windows. Los de control (U+0000 a U+001F) se rechazan aparte, por rango.
+    /// </summary>
+    /// <remarks>
+    /// Es una lista fija a propósito. <see cref="Path.GetInvalidFileNameChars"/>
+    /// depende del sistema operativo (en Linux sólo devuelve <c>/</c> y
+    /// <c>\0</c>): el mismo nombre se aceptaría o se rechazaría según dónde
+    /// corriera el servicio, y un archivo aceptado en Linux podría no poder
+    /// guardarse al descargarlo en Windows.
+    /// </remarks>
+    private const string CaracteresReservados = "\"*/:<>?\\|";
+
     private readonly string? _valor;
     private readonly string? _extension;
 
+    /// <summary>Inicializa un nombre ya saneado.</summary>
+    /// <param name="valor">Nombre sin componentes de ruta.</param>
+    /// <param name="extension">Extensión en minúsculas, con el punto.</param>
     private NombreArchivo(string valor, string extension)
     {
         _valor = valor;
@@ -44,7 +60,8 @@ public readonly record struct NombreArchivo
     /// <returns>Instancia validada e inmutable.</returns>
     /// <exception cref="DocumentoInvalidoException">
     /// Se lanza si el nombre está vacío, excede <see cref="LongitudMaxima"/>,
-    /// contiene separadores de ruta o caracteres no válidos, o carece de extensión.
+    /// contiene separadores de ruta, caracteres reservados por Windows o de
+    /// control, o carece de extensión.
     /// </exception>
     public static NombreArchivo Crear(string? valor)
     {
@@ -69,10 +86,11 @@ public readonly record struct NombreArchivo
                 "El nombre del archivo no puede contener rutas ni secuencias de directorio.");
         }
 
-        if (limpio.AsSpan().IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        if (limpio.AsSpan().IndexOfAny(CaracteresReservados) >= 0
+            || limpio.AsSpan().IndexOfAnyInRange('\u0000', '\u001F') >= 0)
         {
             throw new DocumentoInvalidoException(
-                "El nombre del archivo contiene caracteres no válidos.");
+                "El nombre del archivo no puede contener los caracteres \" * : < > ? | ni caracteres de control.");
         }
 
         string extension = Path.GetExtension(limpio).ToLowerInvariant();

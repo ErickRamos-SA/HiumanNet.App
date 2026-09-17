@@ -15,6 +15,11 @@ namespace HuimanNet.Domain.Nomina;
 /// </remarks>
 public sealed class ExplicacionDeCalculo
 {
+    /// <summary>
+    /// Inicializa una instancia con valores ya validados. Sólo la usan las
+    /// fábricas y <see cref="Rehidratar"/>.
+    /// </summary>
+    /// <inheritdoc cref="Rehidratar" path="/param"/>
     private ExplicacionDeCalculo(
         Guid id,
         EsquemaDePago esquema,

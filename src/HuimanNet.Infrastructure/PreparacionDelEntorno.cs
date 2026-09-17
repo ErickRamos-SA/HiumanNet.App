@@ -68,6 +68,13 @@ public static class PreparacionDelEntorno
         return todoCorrecto;
     }
 
+    /// <summary>
+    /// Crea la base de datos y aplica los scripts pendientes, según la configuración.
+    /// </summary>
+    /// <param name="servicios">Proveedor de servicios del ámbito de arranque.</param>
+    /// <param name="logger">Registro de eventos.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns><c>false</c> si no se pudo preparar; el error queda registrado y la aplicación arranca igual.</returns>
     private static async Task<bool> PrepararBaseDeDatosAsync(
         IServiceProvider servicios, ILogger logger, CancellationToken cancellationToken)
     {
@@ -114,6 +121,13 @@ public static class PreparacionDelEntorno
         }
     }
 
+    /// <summary>
+    /// Carga los datos iniciales y, después, los de prueba, según la configuración.
+    /// </summary>
+    /// <param name="servicios">Proveedor de servicios del ámbito de arranque.</param>
+    /// <param name="logger">Registro de eventos.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns><c>false</c> si falló la carga; el error queda registrado.</returns>
     private static async Task<bool> SembrarAsync(
         IServiceProvider servicios, ILogger logger, CancellationToken cancellationToken)
     {
@@ -152,6 +166,14 @@ public static class PreparacionDelEntorno
         }
     }
 
+    /// <summary>
+    /// Informa de la carpeta del almacén local o crea los contenedores de Blob
+    /// Storage, según el proveedor configurado.
+    /// </summary>
+    /// <param name="servicios">Proveedor de servicios del ámbito de arranque.</param>
+    /// <param name="logger">Registro de eventos.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns><c>false</c> si no se pudieron crear los contenedores; el error queda registrado.</returns>
     private static async Task<bool> PrepararAlmacenamientoAsync(
         IServiceProvider servicios, ILogger logger, CancellationToken cancellationToken)
     {

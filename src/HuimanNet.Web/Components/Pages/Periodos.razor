@@ -84,7 +84,7 @@ else
                                                 <Icono Nombre="nomina" Tamano="16" /> @T["nav.nomina"]
                                             </a>
                                         }
-                                        @if (ContextoDeUsuario.Puede(AccionDelSistema.GestionarPeriodos) && SiguienteEstado(periodo.Estado) is { } siguiente)
+                                        @if (ContextoDeUsuario.Puede(AccionDelSistema.GestionarPeriodos) && periodo.Estado.Siguiente() is { } siguiente)
                                         {
                                             <button type="button" class="boton boton-pequeno" disabled="@EstaCargando"
                                                     @onclick="() => CambiarEstadoAsync(periodo, siguiente)">
@@ -165,22 +165,20 @@ else
             new ListarPeriodosQuery(EmpresaDeConsulta, _incluirCerrados));
     }
 
+    /// <summary>Muestra u oculta los períodos cerrados.</summary>
+    /// <param name="argumentos">Evento de la casilla.</param>
+    /// <returns>Tarea que finaliza al recargar la lista.</returns>
     private Task AlternarCerradosAsync(ChangeEventArgs argumentos)
     {
         _incluirCerrados = argumentos.Value is true;
         return EjecutarAsync(CargarDatosAsync);
     }
 
-    private static EstadoPeriodo? SiguienteEstado(EstadoPeriodo estado) => estado switch
-    {
-        EstadoPeriodo.Abierto => EstadoPeriodo.Recibido,
-        EstadoPeriodo.Recibido => EstadoPeriodo.EnProceso,
-        EstadoPeriodo.EnProceso => EstadoPeriodo.ResultadosDisponibles,
-        EstadoPeriodo.ResultadosDisponibles => EstadoPeriodo.Cerrado,
-        _ => null,
-    };
-
-    private Task CambiarEstadoAsync(PeriodoDto periodo, EstadoPeriodo nuevo) => EjecutarAsync(async () =>
+    /// <summary>Avanza el estado de un período y recarga la lista.</summary>
+    /// <param name="periodo">Período afectado.</param>
+    /// <param name="nuevo">Estado siguiente.</param>
+    /// <returns>Tarea que finaliza al recargar la lista.</returns>
+    private Task CambiarEstadoAsync(PeriodoDto periodo, EstadoPeriodo nuevo) =>EjecutarAsync(async () =>
     {
         MensajeDeExito = null;
         await Casos.EjecutarAsync(new CambiarEstadoPeriodoCommand(periodo.Id, nuevo, null, periodo.EmpresaId));
@@ -188,6 +186,7 @@ else
         await CargarDatosAsync();
     });
 
+    /// <summary>Abre el diálogo de apertura con el mes actual como propuesta.</summary>
     private void AbrirDialogo()
     {
         DateTime hoy = DateTime.Today;
@@ -199,8 +198,11 @@ else
         _dialogoAbierto = true;
     }
 
+    /// <summary>Cierra el diálogo de apertura sin guardar.</summary>
     private void CerrarDialogo() => _dialogoAbierto = false;
 
+    /// <summary>Abre el período capturado en el diálogo y recarga la lista.</summary>
+    /// <returns>Tarea que finaliza al recargar la lista.</returns>
     private Task AbrirPeriodoAsync() => EjecutarAsync(async () =>
     {
         if (Estado.EmpresaId is not { } empresaId)

@@ -29,12 +29,15 @@ public static class ClavesDeParametro
     /// <summary>Días del período de pago cuando no hay incidencia capturada.</summary>
     public const string DiasPeriodoPredeterminados = "DIAS_PERIODO_NOMINA";
 
+    /// <summary>Tasa general de IVA, como fracción; la usan las razones sociales que no definen una propia.</summary>
+    public const string TasaIva = "IVA_TASA";
+
     /// <summary>
     /// Obtiene las claves que el sistema exige que existan en el catálogo.
     /// </summary>
     /// <value>Lista de sólo lectura.</value>
     public static IReadOnlyList<string> Obligatorias { get; } =
     [
-        SalarioMinimoZonaA, SalarioMinimoZonaB, IsnZonaA, IsnZonaB, PrimaRiesgoPredeterminada, DiasPeriodoPredeterminados,
+        SalarioMinimoZonaA, SalarioMinimoZonaB, IsnZonaA, IsnZonaB, PrimaRiesgoPredeterminada, DiasPeriodoPredeterminados, TasaIva,
     ];
 }

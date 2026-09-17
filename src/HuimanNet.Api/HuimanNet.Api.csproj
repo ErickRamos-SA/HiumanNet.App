@@ -59,6 +59,7 @@
     <ProjectReference Include="..\HuimanNet.Contracts\HuimanNet.Contracts.csproj" />
     <ProjectReference Include="..\HuimanNet.Application\HuimanNet.Application.csproj" />
     <ProjectReference Include="..\HuimanNet.Infrastructure\HuimanNet.Infrastructure.csproj" />
+    <ProjectReference Include="..\HuimanNet.Hosting\HuimanNet.Hosting.csproj" />
   </ItemGroup>
 
   <ItemGroup>

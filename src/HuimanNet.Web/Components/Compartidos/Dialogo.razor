@@ -46,5 +46,7 @@
     [Parameter]
     public EventCallback AlCerrar { get; set; }
 
+    /// <summary>Notifica que el usuario quiere cerrar la ventana.</summary>
+    /// <returns>Tarea que finaliza al notificar.</returns>
     private Task CerrarAsync() => AlCerrar.InvokeAsync();
 }

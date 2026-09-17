@@ -194,9 +194,11 @@ public sealed class FlujoDeNominaEnSqlServerTests
         deTodasLasEmpresas.Elementos.Should().HaveCount(2)
             .And.OnlyContain(e => e.EmpresaId == empresa.Id && e.EmpresaRazonSocial == "Creatfor Pruebas");
 
-        ResumenDeInicioDto inicio = await casos.Usar<IConsultasInicio, ResumenDeInicioDto>(c => c.ObtenerResumenAsync(null, Ct));
+        HuimanNet.Application.Inicio.DatosDeInicio inicio = await casos.Usar<IConsultasInicio, HuimanNet.Application.Inicio.DatosDeInicio>(
+            c => c.ObtenerDatosAsync(null, Ct));
         inicio.EmpleadosActivos.Should().Be(2);
         inicio.CorridasPorCotejar.Should().Be(1);
+        inicio.Corridas.Should().ContainSingle(c => c.CorridaId == corrida.Id);
 
         IReadOnlyList<UsuarioDto> usuarios = await casos.Usar<IConsultasUsuarios, IReadOnlyList<UsuarioDto>>(c => c.ListarAsync(null, true, Ct));
         usuarios.Should().Contain(u => u.Rol == RolUsuario.Administrador);

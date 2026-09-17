@@ -58,5 +58,7 @@
     [Parameter]
     public string? Clase { get; set; }
 
-    private string Trazo => Trazos.TryGetValue(Nombre, out string? trazo) ? trazo : Trazos["ayuda"];
+    /// <summary>Obtiene el trazo SVG del icono.</summary>
+    /// <value>El del nombre indicado; el de ayuda si el nombre no existe.</value>
+    private string Trazo =>Trazos.TryGetValue(Nombre, out string? trazo) ? trazo : Trazos["ayuda"];
 }

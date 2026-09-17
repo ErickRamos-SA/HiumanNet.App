@@ -1,8 +1,6 @@
 using HuimanNet.Application;
-using HuimanNet.Application.Common;
 using HuimanNet.Application.Interfaces;
 using HuimanNet.Domain.Entities;
-using HuimanNet.Domain.Enums;
 using HuimanNet.Domain.Repositories;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
@@ -128,65 +126,4 @@ internal static class EntornoSqlDePrueba
         return await usuarios.ObtenerPorCorreoAsync(correo, Ct)
             ?? throw new InvalidOperationException($"No existe el usuario '{correo}'.");
     }
-}
-
-/// <summary>Ejecuta casos de uso en un ámbito nuevo, como hace cada petición.</summary>
-internal sealed class Casos(IServiceProvider servicios)
-{
-    public async Task<TR> Ejecutar<TC, TR>(TC comando)
-    {
-        await using AsyncServiceScope ambito = servicios.CreateAsyncScope();
-        return await ambito.ServiceProvider.GetRequiredService<IManejadorDeComando<TC, TR>>().EjecutarAsync(comando, EntornoSqlDePrueba.Ct);
-    }
-
-    public async Task Ejecutar<TC>(TC comando)
-    {
-        await using AsyncServiceScope ambito = servicios.CreateAsyncScope();
-        await ambito.ServiceProvider.GetRequiredService<IManejadorDeComando<TC>>().EjecutarAsync(comando, EntornoSqlDePrueba.Ct);
-    }
-
-    public async Task<TR> Consultar<TQ, TR>(TQ consulta)
-    {
-        await using AsyncServiceScope ambito = servicios.CreateAsyncScope();
-        return await ambito.ServiceProvider.GetRequiredService<IManejadorDeConsulta<TQ, TR>>().EjecutarAsync(consulta, EntornoSqlDePrueba.Ct);
-    }
-
-    public async Task<TR> Usar<TS, TR>(Func<TS, Task<TR>> operacion)
-        where TS : notnull
-    {
-        await using AsyncServiceScope ambito = servicios.CreateAsyncScope();
-        return await operacion(ambito.ServiceProvider.GetRequiredService<TS>());
-    }
-}
-
-/// <summary>Identidad fija de un usuario sembrado o dado de alta, sin contraseña ni token.</summary>
-internal sealed class UsuarioDePrueba : IUsuarioActual
-{
-    private Usuario? _usuario;
-
-    public Guid UsuarioId => Requerido().Id;
-
-    public string NombreCompleto => Requerido().NombreCompleto;
-
-    public string Correo => Requerido().Correo;
-
-    public RolUsuario Rol => Requerido().Rol;
-
-    public Guid? EmpresaId => Requerido().EmpresaId;
-
-    public IReadOnlyList<Guid> Empresas => Requerido().Empresas;
-
-    public IReadOnlyList<PermisoDeUsuario> Permisos => Requerido().Permisos;
-
-    public Idioma Idioma => Requerido().Idioma;
-
-    public bool RequiereCambioDeContrasena => false;
-
-    public string? DireccionIp => "127.0.0.1";
-
-    public bool EstaAutenticado => _usuario is not null;
-
-    public void Establecer(Usuario usuario) => _usuario = usuario;
-
-    private Usuario Requerido() => _usuario ?? throw new InvalidOperationException("Usuario de prueba sin establecer.");
 }

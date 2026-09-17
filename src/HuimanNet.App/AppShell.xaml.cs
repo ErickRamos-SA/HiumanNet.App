@@ -88,6 +88,7 @@ public partial class AppShell : Shell
         WeakReferenceMessenger.Default.Register<AppShell, SesionIniciadaMensaje>(this, static (shell, _) => shell.AplicarPermisos());
     }
 
+    /// <summary>Traduce los títulos de las pestañas al idioma actual.</summary>
     private void ActualizarTitulos()
     {
         TabInicio.Title = _traductor["nav.inicio"];
@@ -97,6 +98,10 @@ public partial class AppShell : Shell
         TabMas.Title = _traductor["movil.mas"];
     }
 
+    /// <summary>
+    /// Muestra sólo las pestañas de las acciones que el usuario tiene
+    /// habilitadas; la API vuelve a autorizar cada operación.
+    /// </summary>
     private void AplicarPermisos()
     {
         TabPeriodos.IsVisible = _sesion.Puede(AccionDelSistema.CargarDocumentos) || _sesion.Puede(AccionDelSistema.DescargarDocumentos);

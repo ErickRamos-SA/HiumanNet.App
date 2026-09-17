@@ -115,7 +115,7 @@
                                 <td>@T.Enumerado(razon.TipoDeServicio)</td>
                                 <td>@Porcentaje(razon.PorcentajeComision) · @T.Enumerado(razon.ModalidadDeComision)</td>
                                 <td>@T.Enumerado(razon.ZonaIsn)</td>
-                                <td class="numero">@Porcentaje(razon.TasaIva)</td>
+                                <td class="numero">@(razon.TasaIva is { } iva ? Porcentaje(iva) : T["razones.tasaIvaCatalogo"])</td>
                                 <td><span class="etiqueta @(razon.Activa ? "etiqueta-ok" : "etiqueta-error")">@(razon.Activa ? T["comun.activa"] : T["comun.inactiva"])</span></td>
                                 <td class="acciones-fila">
                                     <button type="button" class="boton-icono" title="@T["comun.editar"]" @onclick="() => EditarRazon(razon)"><Icono Nombre="editar" Tamano="18" /></button>
@@ -227,7 +227,11 @@
                     </select>
                 </div>
                 <CampoNumerico Etiqueta="@T["razones.comision"]" @bind-Valor="r.PorcentajeComision" Minimo="0" Ayuda="@T["comun.fraccionAyuda"]" />
-                <CampoNumerico Etiqueta="@T["razones.tasaIva"]" @bind-Valor="r.TasaIva" Minimo="0" Ayuda="@T["comun.fraccionAyuda"]" />
+                <div class="campo">
+                    <label for="rs-iva">@T["razones.tasaIva"]</label>
+                    <input id="rs-iva" type="number" step="any" min="0" @bind="r.TasaIva" />
+                    <span class="ayuda">@T["razones.tasaIvaAyuda"]</span>
+                </div>
                 <CampoNumerico Etiqueta="@T["razones.otrosCostos"]" @bind-Valor="r.PorcentajeOtrosCostos" Minimo="0" Ayuda="@T["razones.otrosCostosAyuda"]" />
                 <div class="campo">
                     <label for="rs-prima">@T["razones.primaDeRiesgo"]</label>
@@ -262,25 +266,36 @@
         }
     }
 
+    /// <summary>Da formato de porcentaje a una fracción.</summary>
+    /// <param name="fraccion">Fracción entre 0 y 1.</param>
+    /// <returns>El porcentaje con dos decimales en la cultura del usuario.</returns>
     private string Porcentaje(decimal fraccion) => fraccion.ToString("P2", T.Cultura);
 
+    /// <summary>Selecciona una empresa y carga sus razones sociales.</summary>
+    /// <param name="empresa">Empresa elegida.</param>
+    /// <returns>Tarea que finaliza al cargar las razones sociales.</returns>
     private Task SeleccionarAsync(EmpresaDetalleDto empresa) => EjecutarAsync(async () =>
     {
         _seleccionada = empresa;
         await CargarRazonesAsync();
     });
 
+    /// <summary>Carga todas las razones sociales de la empresa seleccionada.</summary>
+    /// <returns>Tarea que finaliza al cargarlas.</returns>
     private async Task CargarRazonesAsync()
         => _razones = _seleccionada is { } empresa
             ? await Casos.ConsultarAsync<ListarRazonesSocialesQuery, IReadOnlyList<RazonSocialDto>>(new ListarRazonesSocialesQuery(empresa.Id, SoloActivas: false))
             : [];
 
+    /// <summary>Abre el formulario de una empresa nueva.</summary>
     private void NuevaEmpresa()
     {
         LimpiarMensajes();
         _modeloEmpresa = new ModeloEmpresa();
     }
 
+    /// <summary>Abre el formulario con los datos de una empresa.</summary>
+    /// <param name="empresa">Empresa a editar.</param>
     private void EditarEmpresa(EmpresaDetalleDto empresa)
     {
         LimpiarMensajes();
@@ -293,6 +308,11 @@
         };
     }
 
+    /// <summary>
+    /// Crea o actualiza la empresa del formulario y avisa al selector de la
+    /// cabecera para que la refleje.
+    /// </summary>
+    /// <returns>Tarea que finaliza al recargar.</returns>
     private Task GuardarEmpresaAsync() => EjecutarAsync(async () =>
     {
         if (_modeloEmpresa is not { } m)
@@ -312,18 +332,23 @@
         await Estado.NotificarEmpresasModificadasAsync();
     });
 
+    /// <summary>Abre el formulario de una razón social nueva.</summary>
     private void NuevaRazon()
     {
         LimpiarMensajes();
         _modeloRazon = new ModeloRazon();
     }
 
+    /// <summary>Abre el formulario con los datos de una razón social.</summary>
+    /// <param name="razon">Razón social a editar.</param>
     private void EditarRazon(RazonSocialDto razon)
     {
         LimpiarMensajes();
         _modeloRazon = ModeloRazon.Desde(razon);
     }
 
+    /// <summary>Guarda la razón social del formulario y recarga la empresa.</summary>
+    /// <returns>Tarea que finaliza al recargar.</returns>
     private Task GuardarRazonAsync() => EjecutarAsync(async () =>
     {
         if (_modeloRazon is not { } r || _seleccionada is not { } empresa)
@@ -343,32 +368,93 @@
     /// <summary>Estado editable de una empresa.</summary>
     private sealed class ModeloEmpresa
     {
+        /// <summary>Obtiene el identificador.</summary>
+        /// <value><c>null</c> para una empresa nueva.</value>
         public Guid? Id { get; init; }
+
+        /// <summary>Obtiene o establece la razón social.</summary>
+        /// <value>Obligatoria.</value>
         public string RazonSocial { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece el identificador fiscal.</summary>
+        /// <value>Se guarda en mayúsculas.</value>
         public string IdentificadorFiscal { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece si la empresa está activa.</summary>
+        /// <value><c>true</c> para una empresa nueva.</value>
         public bool Activa { get; set; } = true;
     }
 
     /// <summary>Estado editable de una razón social.</summary>
     private sealed class ModeloRazon
     {
+        /// <summary>Obtiene el identificador.</summary>
+        /// <value><c>null</c> para una razón social nueva.</value>
         public Guid? Id { get; init; }
+
+        /// <summary>Obtiene o establece el nombre.</summary>
+        /// <value>Obligatorio.</value>
         public string Nombre { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece el RFC.</summary>
+        /// <value>Se guarda en mayúsculas.</value>
         public string Rfc { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece el registro patronal ante el IMSS.</summary>
+        /// <value>Opcional.</value>
         public string? RegistroPatronal { get; set; }
+
+        /// <summary>Obtiene o establece la zona de salario mínimo.</summary>
+        /// <value>Zona A para una razón social nueva.</value>
         public ZonaSalarioMinimo Zona { get; set; } = ZonaSalarioMinimo.A;
+
+        /// <summary>Obtiene o establece el tipo de servicio.</summary>
+        /// <value>Nómina o maquila.</value>
         public TipoDeServicio TipoDeServicio { get; set; } = TipoDeServicio.Nomina;
+
+        /// <summary>Obtiene o establece si la razón social absorbe el subsidio al empleo.</summary>
+        /// <value><c>true</c> si lo absorbe.</value>
         public bool SubsidioAbsorbido { get; set; }
+
+        /// <summary>Obtiene o establece si las faltas se descuentan en proporción.</summary>
+        /// <value><c>true</c> si se descuentan.</value>
         public bool AplicaFaltasProporcionales { get; set; }
+
+        /// <summary>Obtiene o establece la modalidad de la comisión.</summary>
+        /// <value>Sobre costo para una razón social nueva.</value>
         public ModalidadDeComision ModalidadDeComision { get; set; } = ModalidadDeComision.SobreCosto;
+
+        /// <summary>Obtiene o establece el porcentaje de comisión.</summary>
+        /// <value>Fracción entre 0 y 1.</value>
         public decimal PorcentajeComision { get; set; }
+
+        /// <summary>Obtiene o establece la zona del impuesto sobre nóminas.</summary>
+        /// <value>La del trabajador para una razón social nueva.</value>
         public ZonaIsn ZonaIsn { get; set; } = ZonaIsn.SegunZonaDelTrabajador;
-        public decimal TasaIva { get; set; } = 0.16m;
+
+        /// <summary>Obtiene o establece la tasa de IVA de la factura.</summary>
+        /// <value>Fracción entre 0 y 1; <c>null</c> para usar la tasa general del catálogo.</value>
+        public decimal? TasaIva { get; set; }
+
+        /// <summary>Obtiene o establece el porcentaje de otros costos facturables.</summary>
+        /// <value>Fracción entre 0 y 1.</value>
         public decimal PorcentajeOtrosCostos { get; set; }
+
+        /// <summary>Obtiene o establece la prima de riesgo de trabajo.</summary>
+        /// <value>Fracción, o <c>null</c> para usar la del catálogo.</value>
         public decimal? PrimaDeRiesgo { get; set; }
+
+        /// <summary>Obtiene o establece el banco dispersor.</summary>
+        /// <value>Opcional.</value>
         public string? BancoDispersor { get; set; }
+
+        /// <summary>Obtiene o establece si la razón social está activa.</summary>
+        /// <value><c>true</c> para una razón social nueva.</value>
         public bool Activa { get; set; } = true;
 
+        /// <summary>Crea el modelo con los datos de una razón social.</summary>
+        /// <param name="r">Razón social.</param>
+        /// <returns>El modelo editable.</returns>
         public static ModeloRazon Desde(RazonSocialDto r) => new()
         {
             Id = r.Id,
@@ -389,6 +475,9 @@
             Activa = r.Activa,
         };
 
+        /// <summary>Arma la petición con los textos normalizados.</summary>
+        /// <param name="empresaId">Empresa de la razón social.</param>
+        /// <returns>La petición de guardado.</returns>
         public GuardarRazonSocialRequest ARequest(Guid empresaId) => new(
             empresaId, Nombre.Trim(), Rfc.Trim().ToUpperInvariant(),
             string.IsNullOrWhiteSpace(RegistroPatronal) ? null : RegistroPatronal.Trim(),

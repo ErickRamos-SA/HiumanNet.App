@@ -10,7 +10,7 @@ namespace HuimanNet.Infrastructure.Persistence.Repositories;
 /// <summary>
 /// Repositorio de razones sociales basado en ADO.NET sobre SQL Server.
 /// </summary>
-/// <remarks>Toda lectura filtra por empresa en la cláusula <c>WHERE</c>.</remarks>
+/// <remarks>Toda lectura filtra por empresa.</remarks>
 public sealed class RazonSocialRepository : RepositorioSqlBase, IRazonSocialRepository
 {
     /// <summary>
@@ -25,13 +25,8 @@ public sealed class RazonSocialRepository : RepositorioSqlBase, IRazonSocialRepo
     /// <inheritdoc/>
     public async Task<RazonSocial?> ObtenerPorIdAsync(Guid id, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeRazonesSociales.Columnas}
-            FROM   dbo.RazonesSociales AS r
-            WHERE  r.Id = @Id AND r.EmpresaId = @EmpresaId;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.RazonesSociales.Obtener, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = id });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
 
@@ -43,14 +38,8 @@ public sealed class RazonSocialRepository : RepositorioSqlBase, IRazonSocialRepo
     public async Task<IReadOnlyList<RazonSocial>> ListarPorEmpresaAsync(
         Guid empresaId, bool soloActivas, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeRazonesSociales.Columnas}
-            FROM   dbo.RazonesSociales AS r
-            WHERE  r.EmpresaId = @EmpresaId AND (@SoloActivas = 0 OR r.Activa = 1)
-            ORDER BY r.Nombre;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.RazonesSociales.ListarPorEmpresa, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
         comando.Parameters.Add(new SqlParameter("@SoloActivas", SqlDbType.Bit) { Value = soloActivas });
 
@@ -70,18 +59,8 @@ public sealed class RazonSocialRepository : RepositorioSqlBase, IRazonSocialRepo
     {
         ArgumentNullException.ThrowIfNull(razonSocial);
 
-        const string sql = """
-            INSERT INTO dbo.RazonesSociales
-                (Id, EmpresaId, Nombre, Rfc, RegistroPatronal, Zona, TipoServicio, SubsidioAbsorbido,
-                 AplicaFaltasProporcionales, ModalidadComision, PorcentajeComision, ZonaIsn, TasaIva,
-                 PorcentajeOtrosCostos, PrimaRiesgo, BancoDispersor, Activa, FechaAlta)
-            VALUES
-                (@Id, @EmpresaId, @Nombre, @Rfc, @RegistroPatronal, @Zona, @TipoServicio, @SubsidioAbsorbido,
-                 @AplicaFaltas, @ModalidadComision, @PorcentajeComision, @ZonaIsn, @TasaIva,
-                 @PorcentajeOtros, @PrimaRiesgo, @BancoDispersor, @Activa, @FechaAlta);
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.RazonesSociales.Insertar, cancellationToken);
         AgregarParametros(comando, razonSocial);
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = razonSocial.EmpresaId });
         comando.Parameters.Add(new SqlParameter("@FechaAlta", SqlDbType.DateTimeOffset) { Value = razonSocial.FechaAlta });
@@ -93,22 +72,15 @@ public sealed class RazonSocialRepository : RepositorioSqlBase, IRazonSocialRepo
     {
         ArgumentNullException.ThrowIfNull(razonSocial);
 
-        const string sql = """
-            UPDATE dbo.RazonesSociales
-            SET    Nombre = @Nombre, Rfc = @Rfc, RegistroPatronal = @RegistroPatronal, Zona = @Zona,
-                   TipoServicio = @TipoServicio, SubsidioAbsorbido = @SubsidioAbsorbido,
-                   AplicaFaltasProporcionales = @AplicaFaltas, ModalidadComision = @ModalidadComision,
-                   PorcentajeComision = @PorcentajeComision, ZonaIsn = @ZonaIsn, TasaIva = @TasaIva,
-                   PorcentajeOtrosCostos = @PorcentajeOtros, PrimaRiesgo = @PrimaRiesgo,
-                   BancoDispersor = @BancoDispersor, Activa = @Activa
-            WHERE  Id = @Id;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.RazonesSociales.Actualizar, cancellationToken);
         AgregarParametros(comando, razonSocial);
         await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    /// <summary>Agrega los valores de una razón social al comando.</summary>
+    /// <param name="comando">Comando de inserción o actualización.</param>
+    /// <param name="r">Razón social.</param>
     private static void AgregarParametros(SqlCommand comando, RazonSocial r)
     {
         ConfiguracionDeRazonSocial c = r.Configuracion;
@@ -131,6 +103,10 @@ public sealed class RazonSocialRepository : RepositorioSqlBase, IRazonSocialRepo
         comando.Parameters.Add(new SqlParameter("@Activa", SqlDbType.Bit) { Value = r.Activa });
     }
 
+    /// <summary>Crea un parámetro de porcentaje o tasa con ocho decimales.</summary>
+    /// <param name="nombre">Nombre del parámetro.</param>
+    /// <param name="valor">Valor, o <c>null</c>.</param>
+    /// <returns>El parámetro.</returns>
     private static SqlParameter Decimal(string nombre, decimal? valor)
         => new(nombre, SqlDbType.Decimal) { Precision = 19, Scale = 8, Value = (object?)valor ?? DBNull.Value };
 }

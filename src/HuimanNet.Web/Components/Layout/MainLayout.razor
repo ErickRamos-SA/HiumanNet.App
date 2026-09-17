@@ -111,11 +111,15 @@
         }
     }
 
+    /// <summary>Abre o cierra el menú lateral en pantallas estrechas.</summary>
     private void AlternarMenuMovil() => _menuMovilAbierto = !_menuMovilAbierto;
 
+    /// <summary>Cierra el menú lateral tras navegar.</summary>
     private void CerrarMenuMovil() => _menuMovilAbierto = false;
 
+    /// <summary>Abre o cierra el menú del usuario.</summary>
     private void AlternarMenuUsuario() => _menuUsuarioAbierto = !_menuUsuarioAbierto;
 
+    /// <summary>Cierra la sesión con una recarga completa, para borrar la cookie.</summary>
     private void CerrarSesion() => Navegacion.NavigateTo("autenticacion/salir", forceLoad: true);
 }

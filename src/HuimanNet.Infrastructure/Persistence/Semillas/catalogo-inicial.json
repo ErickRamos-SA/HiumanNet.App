@@ -1694,5 +1694,28 @@
       "titulo": "What this scheme calculates",
       "cuerpo": "Payment for professional fees. Earnings are valued with the agreed amount and the period incidents.\nIncome tax: manual withholding if captured; ISR tariff without subsidy when HON_ISR_MODO = 2; otherwise the flat rate HON_ISR_TASA_FIJA (10 % by default).\nVAT: when the contract charges VAT, IVA_TASA is added on the fees and the proportion HON_IVA_RETENCION_PCT (two thirds) is withheld. Net = fees + VAT charged − ISR − VAT withheld − other − alimony. Client cost = fees + commission."
     }
-  ]
+  ],
+  "aliasDeCotejo": {
+    "DIAS_TRABAJADOS_FISCAL": [ "DIASTRABAJADOS" ],
+    "FALTAS_FISCAL": [ "FALTAS" ],
+    "AGUINALDO_FISCAL": [ "AGUINALDO" ],
+    "VACACIONES_FISCAL": [ "VACACIONES" ],
+    "PRIMA_VACACIONAL": [ "PRIMAVACACIONAL" ],
+    "GRATIFICACION_FISCAL": [ "GRATIFICACION" ],
+    "TELETRABAJO_FISCAL": [ "TELETRABAJO" ],
+    "TOTAL_PERCEPCIONES": [ "TOTALPERCEPCIONES" ],
+    "SUBSIDIO_ENTREGADO": [ "SUBSIDIOEMPLEO", "SUBSIDIO" ],
+    "IMSS_TRABAJADOR": [ "IMSS", "CUOTAOBRERA" ],
+    "FONACOT": [ "CREDITOFONACOT" ],
+    "INFONAVIT_TRABAJADOR": [ "CREDITOINFONAVIT", "INFONAVIT" ],
+    "PENSION_ALIMENTICIA": [ "PENSIONALIMENTICIA" ],
+    "TOTAL_DEDUCCIONES": [ "TOTALDEDUCCIONES" ],
+    "NETO_PAGADO": [ "NETOPAGADO", "NETO" ],
+    "COMPLEMENTO_SINDICAL": [ "SINDICATO", "COMPLEMENTOSINDICAL" ],
+    "BRUTO_INCIDENCIAS": [ "TOTALDEPERCEPCIONES", "BRUTO" ],
+    "TOTAL_NOMINA_FACTURABLE": [ "TOTALNOMINA" ],
+    "COSTO_TOTAL": [ "SUMA", "COSTOTOTAL" ],
+    "BASE_GRAVABLE": [ "BASEGRAVABLE" ],
+    "ISR_DETERMINADO": [ "IMPUESTODETERMINADO" ]
+  }
 }

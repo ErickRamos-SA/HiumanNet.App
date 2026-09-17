@@ -258,16 +258,31 @@
     /// <summary>Tri-estado de un permiso respecto de lo que concede el rol.</summary>
     private enum EstadoDePermiso
     {
+        /// <summary>Se aplica lo que concede el rol.</summary>
         SegunRol,
+
+        /// <summary>Se concede aunque el rol no lo incluya.</summary>
         Conceder,
+
+        /// <summary>Se niega aunque el rol lo incluya.</summary>
         Negar,
     }
 
+    /// <summary>Indica si el portal usa cuentas locales con contraseña.</summary>
+    /// <value><c>true</c> en modo local: se pide la contraseña inicial al dar de alta.</value>
     private bool EsLocal => Identidad.Value.EsLocal;
 
+    /// <summary>Cambia el estado de un permiso en el formulario.</summary>
+    /// <param name="modelo">Usuario en edición.</param>
+    /// <param name="accion">Acción del permiso.</param>
+    /// <param name="argumentos">Evento del selector del permiso.</param>
     private static void CambiarPermiso(ModeloUsuario modelo, AccionDelSistema accion, ChangeEventArgs argumentos)
         => modelo.Permisos[accion] = Enum.TryParse(argumentos.Value?.ToString(), out EstadoDePermiso estado) ? estado : EstadoDePermiso.SegunRol;
 
+    /// <summary>Añade o quita una empresa adicional del usuario en edición.</summary>
+    /// <param name="modelo">Usuario en edición.</param>
+    /// <param name="empresaId">Empresa de la casilla.</param>
+    /// <param name="argumentos">Evento de la casilla.</param>
     private static void AlternarEmpresa(ModeloUsuario modelo, Guid empresaId, ChangeEventArgs argumentos)
     {
         if (argumentos.Value is true)
@@ -281,11 +296,16 @@
     }
 
     /// <summary>La empresa principal y, si las hay, cuántas adicionales tiene.</summary>
+    /// <param name="usuario">Usuario de la fila.</param>
+    /// <returns>El texto de la columna; «transversal» si no pertenece a ninguna empresa.</returns>
     private string DescripcionDeEmpresas(UsuarioDto usuario)
         => usuario.EmpresaRazonSocial is not { } principal
             ? T["usuarios.transversal"]
             : usuario.EmpresasAdicionales.Count == 0 ? principal : $"{principal} +{usuario.EmpresasAdicionales.Count}";
 
+    /// <summary>Une las razones sociales de unas empresas.</summary>
+    /// <param name="empresas">Empresas.</param>
+    /// <returns>Las razones sociales separadas por comas.</returns>
     private string NombresDeEmpresas(IReadOnlyList<Guid> empresas)
         => string.Join(", ", _empresas.Where(e => empresas.Contains(e.Id)).Select(e => e.RazonSocial));
 
@@ -296,9 +316,13 @@
         await CargarUsuariosAsync();
     }
 
+    /// <summary>Carga los usuarios con los filtros elegidos.</summary>
+    /// <returns>Tarea que finaliza al cargarlos.</returns>
     private async Task CargarUsuariosAsync()
         => _usuarios = await Casos.ConsultarAsync<ListarUsuariosQuery, IReadOnlyList<UsuarioDto>>(new ListarUsuariosQuery(_filtroEmpresa, _incluirInactivos));
 
+    /// <summary>Filtra los usuarios por nombre o correo.</summary>
+    /// <returns>Los usuarios visibles.</returns>
     private IReadOnlyList<UsuarioDto> Filtrados()
     {
         if (string.IsNullOrWhiteSpace(_texto))
@@ -313,24 +337,35 @@
             .ToList();
     }
 
+    /// <summary>Filtra por otra empresa.</summary>
+    /// <param name="argumentos">Evento del selector de empresa.</param>
+    /// <returns>Tarea que finaliza al cargar los usuarios.</returns>
     private Task CambiarFiltroEmpresaAsync(ChangeEventArgs argumentos)
     {
         _filtroEmpresa = Guid.TryParse(argumentos.Value?.ToString(), out Guid id) ? id : null;
         return EjecutarAsync(CargarUsuariosAsync);
     }
 
+    /// <summary>Abre el formulario de un usuario nuevo en la empresa de trabajo.</summary>
     private void Nuevo()
     {
         LimpiarMensajes();
         _modelo = ModeloUsuario.Nuevo(Estado.EmpresaId);
     }
 
+    /// <summary>Abre el formulario con los datos de un usuario.</summary>
+    /// <param name="usuario">Usuario a editar.</param>
     private void Editar(UsuarioDto usuario)
     {
         LimpiarMensajes();
         _modelo = ModeloUsuario.Desde(usuario);
     }
 
+    /// <summary>
+    /// Guarda el usuario del formulario; si el administrador se editó a sí
+    /// mismo, recarga su identidad para reflejar los permisos.
+    /// </summary>
+    /// <returns>Tarea que finaliza al recargar.</returns>
     private Task GuardarAsync() => EjecutarAsync(async () =>
     {
         if (_modelo is not { } m)
@@ -352,6 +387,8 @@
         }
     });
 
+    /// <summary>Abre el diálogo para asignar una contraseña temporal.</summary>
+    /// <param name="usuario">Usuario afectado.</param>
     private void PedirRestablecer(UsuarioDto usuario)
     {
         LimpiarMensajes();
@@ -360,6 +397,8 @@
         _restablecer = usuario;
     }
 
+    /// <summary>Asigna la contraseña temporal si la confirmación coincide.</summary>
+    /// <returns>Tarea que finaliza al recargar o al mostrar el error.</returns>
     private Task RestablecerAsync() => EjecutarAsync(async () =>
     {
         if (_restablecer is not { } usuario)
@@ -382,19 +421,54 @@
     /// <summary>Estado editable de un usuario.</summary>
     private sealed class ModeloUsuario
     {
+        /// <summary>Obtiene el identificador.</summary>
+        /// <value><c>null</c> para un usuario nuevo.</value>
         public Guid? Id { get; init; }
+
+        /// <summary>Obtiene o establece el nombre completo.</summary>
+        /// <value>Obligatorio.</value>
         public string NombreCompleto { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece el correo, que es el nombre de acceso.</summary>
+        /// <value>Obligatorio y único.</value>
         public string Correo { get; set; } = string.Empty;
+
+        /// <summary>Obtiene o establece el rol.</summary>
+        /// <value>Empresa cliente para un usuario nuevo.</value>
         public RolUsuario Rol { get; set; } = RolUsuario.ClienteEmpresa;
+
+        /// <summary>Obtiene o establece la empresa principal.</summary>
+        /// <value>Sólo para la empresa cliente.</value>
         public Guid? EmpresaId { get; set; }
+
+        /// <summary>Obtiene las empresas adicionales.</summary>
+        /// <value>Sólo para la empresa cliente; se excluye la principal al guardar.</value>
         public HashSet<Guid> EmpresasAdicionales { get; } = [];
+
+        /// <summary>Obtiene o establece si el usuario está activo.</summary>
+        /// <value><c>true</c> para un usuario nuevo.</value>
         public bool Activo { get; set; } = true;
+
+        /// <summary>Obtiene o establece el idioma.</summary>
+        /// <value>Español para un usuario nuevo.</value>
         public Idioma Idioma { get; set; } = Idioma.Espanol;
+
+        /// <summary>Obtiene o establece la contraseña inicial.</summary>
+        /// <value>Sólo se envía al dar de alta en modo local.</value>
         public string? ContrasenaInicial { get; set; }
+
+        /// <summary>Obtiene el estado de cada permiso respecto del rol.</summary>
+        /// <value>Todos «según el rol» para un usuario nuevo.</value>
         public Dictionary<AccionDelSistema, EstadoDePermiso> Permisos { get; } = Acciones.ToDictionary(a => a, _ => EstadoDePermiso.SegunRol);
 
+        /// <summary>Crea el modelo de un usuario nuevo.</summary>
+        /// <param name="empresaDeTrabajo">Empresa que se propone como principal.</param>
+        /// <returns>El modelo editable.</returns>
         public static ModeloUsuario Nuevo(Guid? empresaDeTrabajo) => new() { EmpresaId = empresaDeTrabajo };
 
+        /// <summary>Crea el modelo con los datos y permisos de un usuario.</summary>
+        /// <param name="u">Usuario.</param>
+        /// <returns>El modelo editable.</returns>
         public static ModeloUsuario Desde(UsuarioDto u)
         {
             var modelo = new ModeloUsuario
@@ -436,6 +510,12 @@
             }
         }
 
+        /// <summary>
+        /// Arma la petición; sólo envía los permisos que cambian algo respecto
+        /// del rol y que el rol admite.
+        /// </summary>
+        /// <param name="modoLocal">Si el portal usa cuentas locales.</param>
+        /// <returns>La petición de guardado.</returns>
         public GuardarUsuarioRequest ARequest(bool modoLocal)
         {
             IReadOnlyList<AccionDelSistema> predeterminadas = PermisosPorRol.Predeterminadas(Rol);

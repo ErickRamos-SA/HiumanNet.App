@@ -41,6 +41,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "solucion", "solucion", "{4C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HuimanNet.Infrastructure.Tests", "tests\HuimanNet.Infrastructure.Tests\HuimanNet.Infrastructure.Tests.csproj", "{D4C5C3B9-E68F-4274-AECB-D381797B5A5D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HuimanNet.Hosting", "src\HuimanNet.Hosting\HuimanNet.Hosting.csproj", "{13DAF04C-1049-46FD-964A-016FB57C8C42}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -189,6 +191,18 @@ Global
 		{D4C5C3B9-E68F-4274-AECB-D381797B5A5D}.Release|x64.Build.0 = Release|Any CPU
 		{D4C5C3B9-E68F-4274-AECB-D381797B5A5D}.Release|x86.ActiveCfg = Release|Any CPU
 		{D4C5C3B9-E68F-4274-AECB-D381797B5A5D}.Release|x86.Build.0 = Release|Any CPU
+		{13DAF04C-1049-46FD-964A-016FB57C8C42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13DAF04C-1049-46FD-964A-016FB57C8C42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13DAF04C-1049-46FD-964A-016FB57C8C42}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{13DAF04C-1049-46FD-964A-016FB57C8C42}.Debug|x64.Build.0 = Debug|Any CPU
+		{13DAF04C-1049-46FD-964A-016FB57C8C42}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{13DAF04C-1049-46FD-964A-016FB57C8C42}.Debug|x86.Build.0 = Debug|Any CPU
+		{13DAF04C-1049-46FD-964A-016FB57C8C42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13DAF04C-1049-46FD-964A-016FB57C8C42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13DAF04C-1049-46FD-964A-016FB57C8C42}.Release|x64.ActiveCfg = Release|Any CPU
+		{13DAF04C-1049-46FD-964A-016FB57C8C42}.Release|x64.Build.0 = Release|Any CPU
+		{13DAF04C-1049-46FD-964A-016FB57C8C42}.Release|x86.ActiveCfg = Release|Any CPU
+		{13DAF04C-1049-46FD-964A-016FB57C8C42}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -205,5 +219,6 @@ Global
 		{F75570C5-8DC9-4334-8703-41883DA5FBEC} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{06DFDD86-14BE-449A-85D9-28E210008F05} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{D4C5C3B9-E68F-4274-AECB-D381797B5A5D} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{13DAF04C-1049-46FD-964A-016FB57C8C42} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

@@ -4,32 +4,6 @@ using Microsoft.Data.SqlClient;
 namespace HuimanNet.Infrastructure.Persistence.Connections;
 
 /// <summary>
-/// Conexión y transacción compartidas por todos los repositorios de una misma
-/// petición.
-/// </summary>
-public interface ISesionSql
-{
-    /// <summary>
-    /// Obtiene la conexión de la petición, abriéndola la primera vez.
-    /// </summary>
-    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
-    /// <returns>La conexión abierta y compartida.</returns>
-    ValueTask<SqlConnection> ObtenerConexionAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Obtiene la transacción abierta, si el caso de uso inició una.
-    /// </summary>
-    /// <value><c>null</c> cuando las escrituras se ejecutan en confirmación automática.</value>
-    SqlTransaction? TransaccionActual { get; }
-
-    /// <summary>
-    /// Obtiene el tiempo máximo de ejecución que debe aplicarse a cada comando.
-    /// </summary>
-    /// <value>Valor en segundos, tomado de la configuración.</value>
-    int TiempoDeEsperaComandoSegundos { get; }
-}
-
-/// <summary>
 /// Implementación de <see cref="ISesionSql"/> y <see cref="IUnitOfWork"/> con
 /// ámbito de petición.
 /// </summary>
@@ -137,14 +111,22 @@ public sealed class SesionSql : ISesionSql, IUnitOfWork, IAsyncDisposable
         private readonly Action _alCerrar;
         private bool _finalizada;
 
+        /// <summary>
+        /// Inicializa una nueva instancia de <see cref="TransaccionSql"/>.
+        /// </summary>
+        /// <param name="interna">Transacción de ADO.NET.</param>
+        /// <param name="alCerrar">Acción que avisa a la sesión de que ya no hay transacción abierta.</param>
         internal TransaccionSql(SqlTransaction interna, Action alCerrar)
         {
             Interna = interna;
             _alCerrar = alCerrar;
         }
 
+        /// <summary>Obtiene la transacción de ADO.NET que se asigna a los comandos.</summary>
+        /// <value>Transacción abierta sobre la conexión de la sesión.</value>
         internal SqlTransaction Interna { get; }
 
+        /// <inheritdoc/>
         public async Task ConfirmarAsync(CancellationToken cancellationToken = default)
         {
             if (_finalizada)
@@ -156,6 +138,7 @@ public sealed class SesionSql : ISesionSql, IUnitOfWork, IAsyncDisposable
             _finalizada = true;
         }
 
+        /// <inheritdoc/>
         public async Task RevertirAsync(CancellationToken cancellationToken = default)
         {
             if (_finalizada)
@@ -167,6 +150,11 @@ public sealed class SesionSql : ISesionSql, IUnitOfWork, IAsyncDisposable
             _finalizada = true;
         }
 
+        /// <summary>
+        /// Libera la transacción; si no se confirmó, la revierte para no dejar
+        /// escrituras parciales.
+        /// </summary>
+        /// <returns>Tarea que finaliza al liberar la transacción.</returns>
         public async ValueTask DisposeAsync()
         {
             // Liberar sin haber confirmado equivale a revertir: así una excepción

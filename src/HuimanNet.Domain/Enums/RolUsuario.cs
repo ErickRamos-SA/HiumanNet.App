@@ -4,9 +4,11 @@ namespace HuimanNet.Domain.Enums;
 /// Rol funcional de un usuario dentro del portal.
 /// </summary>
 /// <remarks>
-/// El rol viaja en el token de Entra y se traduce a este enumerado en el borde
-/// (API o Blazor). Determina qué operaciones y qué tipos de documento puede
-/// manipular el usuario; consulte <see cref="Services.PoliticaDeAcceso"/>.
+/// Lo asigna el administrador desde el portal y se guarda en la base de datos,
+/// que es la fuente de verdad: el token (Entra o local) sólo autentica.
+/// Determina qué operaciones y qué tipos de documento puede manipular el
+/// usuario; consulte <see cref="Services.PoliticaDeAcceso"/> y
+/// <see cref="Services.PermisosPorRol"/>.
 /// </remarks>
 public enum RolUsuario
 {

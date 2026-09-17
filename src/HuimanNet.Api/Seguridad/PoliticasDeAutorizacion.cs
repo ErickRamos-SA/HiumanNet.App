@@ -51,8 +51,7 @@ public static class PoliticasDeAutorizacion
                 .RequireAssertion(static c => UsuarioDe(c) is { EstaAutenticado: true }))
             .AddPolicy(RolTransversal, politica => politica
                 .RequireAuthenticatedUser()
-                .RequireAssertion(static c => UsuarioDe(c) is { EstaAutenticado: true } u
-                    && u.Rol is RolUsuario.OperadorNomina or RolUsuario.Administrador))
+                .RequireAssertion(static c => UsuarioDe(c) is { EstaAutenticado: true } u && u.Rol.EsTransversal()))
             .AddPolicy(SoloAdministrador, politica => politica
                 .RequireAuthenticatedUser()
                 .RequireAssertion(static c => UsuarioDe(c) is { EstaAutenticado: true, Rol: RolUsuario.Administrador }))
@@ -63,6 +62,9 @@ public static class PoliticasDeAutorizacion
                 .RequireRole(RolAdministrador));
     }
 
+    /// <summary>Obtiene el usuario resuelto para la petición que se autoriza.</summary>
+    /// <param name="contexto">Contexto de autorización.</param>
+    /// <returns>El usuario, o <c>null</c> si el recurso no es una petición HTTP.</returns>
     private static UsuarioActualDeHttpContext? UsuarioDe(AuthorizationHandlerContext contexto)
         => contexto.Resource is HttpContext http ? http.RequestServices.GetService<UsuarioActualDeHttpContext>() : null;
 }

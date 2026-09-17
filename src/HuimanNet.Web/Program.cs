@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 using HuimanNet.Application;
 using HuimanNet.Application.Interfaces;
 using HuimanNet.Contracts.Localizacion;
+using HuimanNet.Hosting.Endpoints;
 using HuimanNet.Infrastructure;
 using HuimanNet.Infrastructure.Configuracion;
 using HuimanNet.Infrastructure.Storage;

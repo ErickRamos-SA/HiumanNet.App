@@ -27,13 +27,7 @@ public sealed class DocumentoRepository : RepositorioSqlBase, IDocumentoReposito
     public async Task<Documento?> ObtenerPorIdAsync(
         Guid id, Guid empresaId, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeDocumentos.Columnas}
-            FROM   dbo.Documentos AS d
-            WHERE  d.Id = @Id AND d.EmpresaId = @EmpresaId;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Documentos.Obtener, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = id });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
 
@@ -44,13 +38,8 @@ public sealed class DocumentoRepository : RepositorioSqlBase, IDocumentoReposito
     public async Task<Documento?> ObtenerPorIdSinFiltroDeEmpresaAsync(
         Guid id, CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeDocumentos.Columnas}
-            FROM   dbo.Documentos AS d
-            WHERE  d.Id = @Id;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Documentos.ObtenerSinEmpresa, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = id });
 
         return await LeerUnoAsync(comando, cancellationToken);
@@ -62,13 +51,8 @@ public sealed class DocumentoRepository : RepositorioSqlBase, IDocumentoReposito
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rutaBlob);
 
-        string sql = $"""
-            SELECT {LectorDeDocumentos.Columnas}
-            FROM   dbo.Documentos AS d
-            WHERE  d.RutaBlob = @RutaBlob;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Documentos.ObtenerPorRuta, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@RutaBlob", SqlDbType.NVarChar, 400) { Value = rutaBlob });
 
         return await LeerUnoAsync(comando, cancellationToken);
@@ -82,17 +66,8 @@ public sealed class DocumentoRepository : RepositorioSqlBase, IDocumentoReposito
         bool soloDescargables = false,
         CancellationToken cancellationToken = default)
     {
-        string sql = $"""
-            SELECT {LectorDeDocumentos.Columnas}
-            FROM   dbo.Documentos AS d
-            WHERE  d.PeriodoId = @PeriodoId
-              AND  d.EmpresaId = @EmpresaId
-              AND  (@Tipo IS NULL OR d.Tipo = @Tipo)
-              AND  (@SoloDescargables = 0 OR d.Estado = @EstadoDisponible)
-            ORDER BY d.FechaSolicitud DESC;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Documentos.ListarPorPeriodo, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@PeriodoId", SqlDbType.UniqueIdentifier) { Value = periodoId });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = empresaId });
         comando.Parameters.Add(new SqlParameter("@Tipo", SqlDbType.TinyInt)
@@ -121,13 +96,8 @@ public sealed class DocumentoRepository : RepositorioSqlBase, IDocumentoReposito
     public async Task<int> ContarDisponiblesAsync(
         Guid periodoId, TipoDocumento tipo, CancellationToken cancellationToken = default)
     {
-        const string sql = """
-            SELECT COUNT_BIG(1)
-            FROM   dbo.Documentos AS d
-            WHERE  d.PeriodoId = @PeriodoId AND d.Tipo = @Tipo AND d.Estado = @Estado;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(
+            Procedimientos.Documentos.ContarDisponibles, cancellationToken);
         comando.Parameters.Add(new SqlParameter("@PeriodoId", SqlDbType.UniqueIdentifier) { Value = periodoId });
         comando.Parameters.Add(new SqlParameter("@Tipo", SqlDbType.TinyInt) { Value = (byte)tipo });
         comando.Parameters.Add(new SqlParameter("@Estado", SqlDbType.TinyInt)
@@ -144,18 +114,7 @@ public sealed class DocumentoRepository : RepositorioSqlBase, IDocumentoReposito
     {
         ArgumentNullException.ThrowIfNull(documento);
 
-        const string sql = """
-            INSERT INTO dbo.Documentos
-                (Id, EmpresaId, PeriodoId, Tipo, NombreOriginal, RutaBlob, TamanoBytes,
-                 Estado, HuellaSha256, CargadoPorUsuarioId, FechaSolicitud,
-                 FechaCargaConfirmada, FechaEscaneo, MotivoCuarentena)
-            VALUES
-                (@Id, @EmpresaId, @PeriodoId, @Tipo, @NombreOriginal, @RutaBlob, @TamanoBytes,
-                 @Estado, @HuellaSha256, @CargadoPorUsuarioId, @FechaSolicitud,
-                 @FechaCargaConfirmada, @FechaEscaneo, @MotivoCuarentena);
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Documentos.Insertar, cancellationToken);
 
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = documento.Id });
         comando.Parameters.Add(new SqlParameter("@EmpresaId", SqlDbType.UniqueIdentifier) { Value = documento.EmpresaId });
@@ -183,18 +142,7 @@ public sealed class DocumentoRepository : RepositorioSqlBase, IDocumentoReposito
     {
         ArgumentNullException.ThrowIfNull(documento);
 
-        const string sql = """
-            UPDATE dbo.Documentos
-            SET    TamanoBytes = @TamanoBytes,
-                   Estado = @Estado,
-                   HuellaSha256 = @HuellaSha256,
-                   FechaCargaConfirmada = @FechaCargaConfirmada,
-                   FechaEscaneo = @FechaEscaneo,
-                   MotivoCuarentena = @MotivoCuarentena
-            WHERE  Id = @Id;
-            """;
-
-        await using SqlCommand comando = await CrearComandoAsync(sql, cancellationToken);
+        await using SqlCommand comando = await CrearProcedimientoAsync(Procedimientos.Documentos.Actualizar, cancellationToken);
 
         comando.Parameters.Add(new SqlParameter("@Id", SqlDbType.UniqueIdentifier) { Value = documento.Id });
         comando.Parameters.Add(new SqlParameter("@TamanoBytes", SqlDbType.BigInt) { Value = documento.Tamano.Bytes });
@@ -210,15 +158,26 @@ public sealed class DocumentoRepository : RepositorioSqlBase, IDocumentoReposito
         await comando.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    /// <summary>Crea el parámetro de la huella SHA-256.</summary>
+    /// <param name="documento">Documento.</param>
+    /// <returns>El parámetro; nulo en la base de datos si aún no hay huella.</returns>
     private static SqlParameter HuellaComoParametro(Documento documento)
         => new("@HuellaSha256", SqlDbType.Char, 64)
         {
             Value = documento.Huella.EstaVacia ? DBNull.Value : documento.Huella.ValorHex,
         };
 
+    /// <summary>Crea un parámetro de fecha opcional.</summary>
+    /// <param name="nombre">Nombre del parámetro.</param>
+    /// <param name="valor">Fecha, o <c>null</c>.</param>
+    /// <returns>El parámetro.</returns>
     private static SqlParameter FechaOpcional(string nombre, DateTimeOffset? valor)
         => new(nombre, SqlDbType.DateTimeOffset) { Value = (object?)valor ?? DBNull.Value };
 
+    /// <summary>Ejecuta un procedimiento y rehidrata la primera fila.</summary>
+    /// <param name="comando">Comando ya preparado.</param>
+    /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+    /// <returns>El documento, o <c>null</c> si no hay filas.</returns>
     private static async Task<Documento?> LeerUnoAsync(
         SqlCommand comando, CancellationToken cancellationToken)
     {

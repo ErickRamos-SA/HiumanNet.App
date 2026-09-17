@@ -16,17 +16,6 @@ namespace HuimanNet.Infrastructure.Persistence.Mappers;
 /// </remarks>
 public static class LectorDeUsuarios
 {
-    /// <summary>Columnas que debe proyectar cualquier consulta que alimente a <see cref="LeerFila"/>.</summary>
-    public const string Columnas =
-        "u.Id, u.IdentificadorExterno, u.NombreCompleto, u.Correo, u.Rol, u.EmpresaId, u.Activo, u.FechaAlta, " +
-        "u.HashContrasena, u.RequiereCambioContrasena, u.Idioma";
-
-    /// <summary>Columnas del segundo conjunto de resultados (permisos).</summary>
-    public const string ColumnasDePermiso = "p.UsuarioId, p.Accion, p.Habilitado";
-
-    /// <summary>Columnas del tercer conjunto de resultados (empresas adicionales).</summary>
-    public const string ColumnasDeEmpresaAdicional = "x.UsuarioId, x.EmpresaId";
-
     /// <summary>
     /// Lee todos los usuarios con sus permisos y sus empresas adicionales.
     /// </summary>
@@ -96,6 +85,11 @@ public static class LectorDeUsuarios
             (Idioma)reader.GetByte(10));
     }
 
+    /// <summary>Añade un valor a la lista de un usuario; la crea si no existe.</summary>
+    /// <typeparam name="T">Permiso o empresa adicional.</typeparam>
+    /// <param name="destino">Listas por usuario.</param>
+    /// <param name="usuarioId">Usuario al que pertenece el valor.</param>
+    /// <param name="valor">Valor leído.</param>
     private static void Agregar<T>(Dictionary<Guid, List<T>> destino, Guid usuarioId, T valor)
     {
         if (!destino.TryGetValue(usuarioId, out List<T>? lista))
@@ -106,44 +100,4 @@ public static class LectorDeUsuarios
 
         lista.Add(valor);
     }
-}
-
-/// <summary>
-/// Datos de una fila de <c>dbo.Usuarios</c>, pendientes de unir con sus permisos
-/// y empresas adicionales.
-/// </summary>
-/// <param name="Id">Identificador local.</param>
-/// <param name="IdentificadorExterno">Identificador en el proveedor de identidad.</param>
-/// <param name="NombreCompleto">Nombre.</param>
-/// <param name="Correo">Correo.</param>
-/// <param name="Rol">Rol.</param>
-/// <param name="EmpresaId">Empresa principal, si aplica.</param>
-/// <param name="Activo">Estado.</param>
-/// <param name="FechaAlta">Fecha de alta.</param>
-/// <param name="HashContrasena">Hash de contraseña local.</param>
-/// <param name="RequiereCambioDeContrasena">Si debe cambiar la contraseña.</param>
-/// <param name="Idioma">Idioma preferido.</param>
-public sealed record FilaDeUsuario(
-    Guid Id,
-    string IdentificadorExterno,
-    string NombreCompleto,
-    string Correo,
-    RolUsuario Rol,
-    Guid? EmpresaId,
-    bool Activo,
-    DateTimeOffset FechaAlta,
-    string? HashContrasena,
-    bool RequiereCambioDeContrasena,
-    Idioma Idioma)
-{
-    /// <summary>
-    /// Construye la entidad con sus permisos y empresas adicionales.
-    /// </summary>
-    /// <param name="permisos">Permisos personalizados.</param>
-    /// <param name="empresasAdicionales">Empresas adicionales de un usuario de empresa cliente.</param>
-    /// <returns>El usuario rehidratado.</returns>
-    public Usuario Construir(IEnumerable<PermisoDeUsuario> permisos, IEnumerable<Guid> empresasAdicionales)
-        => Usuario.Rehidratar(
-            Id, IdentificadorExterno, NombreCompleto, Correo, Rol, EmpresaId, Activo, FechaAlta,
-            HashContrasena, RequiereCambioDeContrasena, Idioma, permisos, empresasAdicionales);
 }

@@ -437,7 +437,10 @@ else if (!Inicializado || EstaCargando)
 </Dialogo>
 
 @code {
-    private const int TamanoPagina = 100;
+    /// <summary>Resultados por página.</summary>
+    private const int TamanoPagina = Paginacion.TamanoDeTablaEnPantalla;
+
+    /// <summary>Diferencias de cotejo que se muestran como máximo, para no saturar el navegador.</summary>
     private const int MaximoDiferenciasVisibles = 1000;
 
     private ResumenDeCorridaDto? _resumen;
@@ -458,10 +461,16 @@ else if (!Inicializado || EstaCargando)
     private Guid? _documentoCotejoId;
     private decimal _tolerancia = 1m;
 
+    /// <summary>Pestañas de la página.</summary>
     private enum Pestana
     {
+        /// <summary>Resultados por trabajador.</summary>
         Resultados,
+
+        /// <summary>Facturación por razón social.</summary>
         Facturacion,
+
+        /// <summary>Cotejo contra el cálculo manual.</summary>
         Cotejo,
     }
 
@@ -469,7 +478,9 @@ else if (!Inicializado || EstaCargando)
     [Parameter]
     public Guid CorridaId { get; set; }
 
-    private string TituloDeDetalle => _detalle is { } d
+    /// <summary>Obtiene el título del diálogo de detalle.</summary>
+    /// <value>Clave, nombre y esquema del trabajador; vacío si no hay detalle abierto.</value>
+    private string TituloDeDetalle =>_detalle is { } d
         ? $"{d.Resultado.ClaveEmpleado} · {d.Resultado.NombreEmpleado} · {T.Enumerado(d.Resultado.Esquema)}"
         : string.Empty;
 
@@ -478,6 +489,9 @@ else if (!Inicializado || EstaCargando)
         => _resumen = await Casos.ConsultarAsync<ObtenerResumenDeCorridaQuery, ResumenDeCorridaDto>(
             new ObtenerResumenDeCorridaQuery(CorridaId, EmpresaDeConsulta));
 
+    /// <summary>Filtra los resultados por esquema y por clave, nombre o razón social.</summary>
+    /// <param name="resultados">Resultados de la corrida.</param>
+    /// <returns>Los resultados visibles.</returns>
     private IReadOnlyList<ResultadoDeNominaDto> ResultadosFiltrados(IReadOnlyList<ResultadoDeNominaDto> resultados)
     {
         IEnumerable<ResultadoDeNominaDto> consulta = resultados;
@@ -498,10 +512,15 @@ else if (!Inicializado || EstaCargando)
         return consulta as IReadOnlyList<ResultadoDeNominaDto> ?? consulta.ToList();
     }
 
+    /// <summary>Abre el detalle por concepto de un trabajador.</summary>
+    /// <param name="resultado">Resultado elegido.</param>
+    /// <returns>Tarea que finaliza al cargar el detalle.</returns>
     private Task AbrirDetalleAsync(ResultadoDeNominaDto resultado) => EjecutarAsync(async () =>
         _detalle = await Casos.ConsultarAsync<ObtenerDetalleDeResultadoQuery, DetalleDeResultadoDto>(
             new ObtenerDetalleDeResultadoQuery(resultado.Id, EmpresaDeConsulta)));
 
+    /// <summary>Exporta la corrida en CSV y la descarga en el navegador.</summary>
+    /// <returns>Tarea que finaliza al iniciar la descarga.</returns>
     private Task ExportarAsync() => EjecutarAsync(async () =>
     {
         ArchivoExportado archivo = await Casos.ConsultarAsync<ExportarCorridaQuery, ArchivoExportado>(
@@ -512,6 +531,8 @@ else if (!Inicializado || EstaCargando)
         await JS.InvokeVoidAsync("huimanNet.descargarFlujo", archivo.Nombre, archivo.TipoDeContenido, referencia);
     });
 
+    /// <summary>Abre la confirmación del cambio de estado, con observaciones opcionales.</summary>
+    /// <param name="estado">Estado pedido.</param>
     private void PedirEstado(EstadoDeCorrida estado)
     {
         LimpiarMensajes();
@@ -519,6 +540,8 @@ else if (!Inicializado || EstaCargando)
         _estadoPedido = estado;
     }
 
+    /// <summary>Aplica el cambio de estado confirmado y recarga la corrida.</summary>
+    /// <returns>Tarea que finaliza al recargar.</returns>
     private Task CambiarEstadoAsync() => EjecutarAsync(async () =>
     {
         if (_estadoPedido is not { } estado)
@@ -532,6 +555,8 @@ else if (!Inicializado || EstaCargando)
         await CargarDatosAsync();
     });
 
+    /// <summary>Abre la pestaña de cotejo con los cotejos y los archivos disponibles.</summary>
+    /// <returns>Tarea que finaliza al cargarlos.</returns>
     private Task AbrirCotejosAsync()
     {
         _pestana = Pestana.Cotejo;
@@ -542,6 +567,8 @@ else if (!Inicializado || EstaCargando)
         });
     }
 
+    /// <summary>Carga los cotejos de la corrida.</summary>
+    /// <returns>Tarea que finaliza al cargarlos.</returns>
     private async Task CargarCotejosAsync()
         => _cotejos = await Casos.ConsultarAsync<ListarCotejosQuery, IReadOnlyList<CotejoDto>>(
             new ListarCotejosQuery(CorridaId, EmpresaDeConsulta));
@@ -569,9 +596,14 @@ else if (!Inicializado || EstaCargando)
         }
     }
 
+    /// <summary>Abre un cotejo con sus diferencias.</summary>
+    /// <param name="cotejoId">Cotejo elegido.</param>
+    /// <returns>Tarea que finaliza al cargarlo.</returns>
     private Task AbrirCotejoAsync(Guid cotejoId) => EjecutarAsync(async () =>
         _cotejo = await Casos.ConsultarAsync<ObtenerCotejoQuery, CotejoDto>(new ObtenerCotejoQuery(cotejoId, EmpresaDeConsulta)));
 
+    /// <summary>Coteja la corrida con el archivo elegido y la tolerancia indicada.</summary>
+    /// <returns>Tarea que finaliza al recargar la corrida y los cotejos.</returns>
     private Task CotejarAsync() => EjecutarAsync(async () =>
     {
         if (_documentoCotejoId is not { } documentoId)
